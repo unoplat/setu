@@ -1,0 +1,181 @@
+{
+  "title": "Choose Setu’s visual world",
+  "question": "Choose the system that should govern both the Penpot design system and the Kanban board.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Assembly Traveler Matrix",
+      "kicker": "THE ROLL",
+      "lineage": "PCB assembly travelers and factory dispatch boards",
+      "thesis": "Status and priority form a physical routing matrix while milestones travel through the board as copper traces.",
+      "palette": ["#F3F4EF", "#1D2420", "#1F5A46", "#C86A3B"],
+      "materials": ["powder-coated steel", "paper traveler slips", "routed copper"],
+      "viewport": "A wide operating board fills the frame: status across the top, a fixed priority rail down the left, and milestone traces routing behind movable task slips.",
+      "risk": "The manufacturing lineage can feel severe if functional labels drift into factory jargon.",
+      "raised": [
+        {"from": "Zoo guide map", "raise": "One continuous geometry now drives both board structure and milestone routing."},
+        {"from": "Warm action surface", "raise": "Copper appears only on real actions and active drop targets."},
+        {"from": "Cyclorama cues", "raise": "Every state is named and patterned so color never carries status alone."},
+        {"from": "Darkroom process", "raise": "A move previews its destination and milestone impact before commitment."}
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "project bar", "x": 0, "y": 0, "w": 12, "h": 1},
+          {"label": "priority rail", "x": 0, "y": 1, "w": 2, "h": 9, "accent": true},
+          {"label": "status matrix", "x": 2, "y": 1, "w": 10, "h": 8},
+          {"label": "milestone trace", "x": 3, "y": 8, "w": 8, "h": 1, "accent": true},
+          {"label": "board controls", "x": 8, "y": 9, "w": 4, "h": 1}
+        ]
+      }
+    },
+    {
+      "id": "model-pick",
+      "label": "Release Coordinate Plot",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "systems plotting tables and engineering control charts",
+      "thesis": "The board behaves like a live coordinate plot: status is the x-axis, priority is the y-axis, and every task has one unambiguous position.",
+      "palette": ["#F7F8F5", "#20262B", "#3157D5", "#B8C0CA"],
+      "materials": ["plotting paper", "acetate overlays", "instrument markings"],
+      "viewport": "A precise axis-led board occupies nearly the whole screen, with a slim command rail and milestone paths drawn as measured overlays.",
+      "risk": "It is the most familiar enterprise direction and can feel generic unless the coordinate logic governs every interaction.",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "command rail", "x": 0, "y": 0, "w": 2, "h": 10},
+          {"label": "status axis", "x": 2, "y": 0, "w": 10, "h": 1, "accent": true},
+          {"label": "priority axis", "x": 2, "y": 1, "w": 1, "h": 9, "accent": true},
+          {"label": "coordinate field", "x": 3, "y": 1, "w": 9, "h": 8},
+          {"label": "legend", "x": 8, "y": 9, "w": 4, "h": 1}
+        ]
+      }
+    },
+    {
+      "id": "challenger-industrial",
+      "label": "Quoted Dispatch Floor",
+      "verdict": "competitive",
+      "lineage": "industrial streetwear labels and stockroom wayfinding",
+      "thesis": "Literal quoted labels, hard black-and-white zones, and safety-orange dispatch tags make ownership and movement impossible to miss.",
+      "palette": ["#F7F6F2", "#111111", "#F36B21", "#D8D8D2"],
+      "materials": ["white cotton", "black nylon", "zip-tie tags"],
+      "viewport": "A stark full-width dispatch board uses oversized quoted status labels and one orange active-task tag crossing the matrix.",
+      "case": "Strong audience recognition and decisive hierarchy; less calm than the assigned direction for an all-day operating surface.",
+      "risk": "The quotation grammar and hazard stripes can become tiring when every region speaks at full volume.",
+      "hero": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-industrial-quote-grammar-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-industrial-quote-grammar.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "quoted project", "x": 0, "y": 0, "w": 7, "h": 2, "accent": true},
+          {"label": "actions", "x": 9, "y": 0, "w": 3, "h": 2},
+          {"label": "priority labels", "x": 0, "y": 2, "w": 2, "h": 8},
+          {"label": "dispatch board", "x": 2, "y": 2, "w": 10, "h": 8}
+        ]
+      }
+    },
+    {
+      "id": "challenger-onebit",
+      "label": "One-Bit Project Desktop",
+      "verdict": "competitive",
+      "lineage": "early monochrome desktop interfaces",
+      "thesis": "The board becomes a crisp one-bit desktop where task windows, marching selections, and integer-pixel states make direct manipulation tangible.",
+      "palette": ["#FFFFFF", "#000000", "#B9B9B9", "#6E6E6E"],
+      "materials": ["one-bit pixels", "ordered dithers", "window chrome"],
+      "viewport": "A tiled Kanban window dominates the desktop while a compact milestone window overlaps its lower edge and the selected task wears marching ants.",
+      "case": "High developer recognition and strong direct-manipulation character; milestone relationships are less immediately legible.",
+      "risk": "Retro novelty can overpower readability at balanced task density.",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-one-bit-desktop-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/medium-native-one-bit-desktop.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "desktop menu", "x": 0, "y": 0, "w": 12, "h": 1},
+          {"label": "kanban window", "x": 1, "y": 1, "w": 10, "h": 8, "accent": true},
+          {"label": "milestone window", "x": 7, "y": 7, "w": 5, "h": 3},
+          {"label": "project icon", "x": 0, "y": 2, "w": 1, "h": 2}
+        ]
+      }
+    },
+    {
+      "id": "challenger-zoo",
+      "label": "Task Territory Map",
+      "verdict": "declined",
+      "lineage": "zoo and gardens guide maps",
+      "thesis": "Priority territories swell around tasks while milestone routes cross their coastlines.",
+      "palette": ["#F5F1E4", "#8ED462", "#2C2E2A", "#F5E211"],
+      "materials": ["flat map color", "cut-paper lobes", "capsule markers"],
+      "viewport": "One large priority territory fills the board with status destinations pinned along its coast.",
+      "case": "The route metaphor is memorable but weakens the familiar Kanban scan pattern.",
+      "kept": "One geometry drives layout, grouping, and milestone routing.",
+      "risk": "Organic territories obscure exact row and column positions.",
+      "hero": "https://impeccable.style/worlds/cards/aww2-zoo-gardens-guide-map-hero.webp"
+    },
+    {
+      "id": "challenger-warm",
+      "label": "Warm Action Cards",
+      "verdict": "declined",
+      "lineage": "friendly consumer application surfaces",
+      "thesis": "Comfortable cards and a single action-only accent make every available move obvious.",
+      "palette": ["#F3EEE7", "#FFFFFF", "#202020", "#5D4AE8"],
+      "materials": ["soft cards", "tinted ground", "single action color"],
+      "viewport": "A generous board of soft cards sits on a warm ground with one saturated move action visible.",
+      "case": "Clear and usable, but it identifies with consumer apps rather than developer operations.",
+      "kept": "Reserve saturated color strictly for actionable elements.",
+      "risk": "The comfortable card language becomes indistinguishable from generic SaaS tooling.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-warm-consumer-app-surface-hero.webp"
+    },
+    {
+      "id": "challenger-cyclorama",
+      "label": "Release Horizon",
+      "verdict": "declined",
+      "lineage": "theater cyclorama lighting cues",
+      "thesis": "Status columns become named phases of light from backlog night to shipped day.",
+      "palette": ["#0A0B0F", "#2447C7", "#D9768C", "#F4F4F0"],
+      "materials": ["seamless light", "horizon bands", "cue labels"],
+      "viewport": "Tasks advance across horizontal light bands whose named phases brighten toward completion.",
+      "case": "Phase progression is clear, but atmospheric light competes with task state and priority scanning.",
+      "kept": "Name and pattern every phase so status is never color-only.",
+      "risk": "The dramatic gradient field is too atmospheric for sustained daily operation.",
+      "hero": "https://impeccable.style/worlds/cards/stagecraft-theater-lighting-cyclorama-dawn-hero.webp"
+    },
+    {
+      "id": "challenger-darkroom",
+      "label": "Development Trays",
+      "verdict": "declined",
+      "lineage": "printing darkroom process stations",
+      "thesis": "Tasks develop through fixed stations with preview strips before a move commits.",
+      "palette": ["#1A130C", "#E09A32", "#A8AAAD", "#F0E9DB"],
+      "materials": ["amber safelight", "wet-print silver", "enamel trays"],
+      "viewport": "A linear row of process trays holds cards that reveal more detail as they move toward completion.",
+      "case": "Fixed stations map to status, but irreversible process conflicts with freely movable task planning.",
+      "kept": "Preview the destination and side effects before committing a move.",
+      "risk": "The dark amber environment reduces long-session clarity and misstates reversible movement.",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-darkroom-safelight-bay-hero.webp"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code"},
+  "canon": true,
+  "canonCard": {
+    "label": "Polished SaaS Kanban",
+    "thesis": "A familiar neutral project board with equal status columns, white task cards, compact filters, and one blue-violet accent.",
+    "palette": ["#F6F7F9", "#FFFFFF", "#20232A", "#6657D9"],
+    "materials": ["clean grid", "soft cards", "subtle dividers"],
+    "viewport": "A conventional project header sits above evenly divided columns filled with tidy cards and colored metadata pills.",
+    "risk": "Immediately usable but intentionally indistinguishable from established project-management products.",
+    "wireframe": {
+      "cols": 12,
+      "rows": 10,
+      "regions": [
+        {"label": "project header", "x": 0, "y": 0, "w": 12, "h": 2},
+        {"label": "filters", "x": 0, "y": 2, "w": 12, "h": 1},
+        {"label": "equal columns", "x": 0, "y": 3, "w": 12, "h": 7}
+      ]
+    }
+  },
+  "steer": true
+}
