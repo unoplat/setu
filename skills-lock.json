@@ -5,7 +5,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/ask-matt/SKILL.md",
-      "computedHash": "b2e8ef5ffc2f142022c1e1e1bba68073f0821356a8e1cf1b23670f61d13fe50b"
+      "computedHash": "0cd14026efa0330083cbc7adf590976c162b60e02f696a8dcce96f0b4dab8a72"
     },
     "grill-with-docs": {
       "source": "mattpocock/skills",
@@ -17,91 +17,19 @@
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": ".agents/skills/impeccable/SKILL.md",
-      "computedHash": "ecce8e6f40f0b7ea1900e904ad4d808cb7b421ff5d0567fc6f7251d0179ea1ba"
-    },
-    "penpot-audit-accessibility": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-audit-accessibility/SKILL.md",
-      "computedHash": "5acb814526ac725521fd4721726ea043b520a3f938ccc582a3dda457e72f7226"
-    },
-    "penpot-audit-tokens": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-audit-tokens/SKILL.md",
-      "computedHash": "d9877e006703ace9819f70937f852a07700c15e63a5c48be45096c250bca6fa1"
-    },
-    "penpot-build-from-code": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-build-from-code/SKILL.md",
-      "computedHash": "e33909748aa281bfe772c0d64eec6aecc94f964ac8f60286a1fe48f7f58206ec"
-    },
-    "penpot-build-screen": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-build-screen/SKILL.md",
-      "computedHash": "3cf8fcb05c122ffb11d80db91bac09bd202818ec60e52779a911d2f86085f287"
-    },
-    "penpot-component-factory": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-component-factory/SKILL.md",
-      "computedHash": "13ea82d9d7f631e5df68f096e2b341b3c85148b08aa3bfa6023e3cf3c4091423"
-    },
-    "penpot-design-md": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-design-md/SKILL.md",
-      "computedHash": "6c9d832af5e6c5533b9f90a2fb32b917672ed9c2a5a6c61a7258540ea23ace50"
-    },
-    "penpot-design-to-code-review": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-design-to-code-review/SKILL.md",
-      "computedHash": "37e14438cc50d255eb6f8ee60d2385eed41b14e904003fddac7cf839271b43a9"
-    },
-    "penpot-document-handoff": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-document-handoff/SKILL.md",
-      "computedHash": "cfa0390a2c3754865a09c5a46b15ae420fd22cf69bf470e94d90108f388ab492"
-    },
-    "penpot-foundations": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-foundations/SKILL.md",
-      "computedHash": "8b4110fe52b41d4b791d71b842337fa0484f3b055d5ac6f799d6e500cb501043"
-    },
-    "penpot-migrate": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-migrate/SKILL.md",
-      "computedHash": "c8d9a685d8ee311013b4f4bb41fffdf7271b167c4220f39388f62e4401901038"
-    },
-    "penpot-rename-layers": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-rename-layers/SKILL.md",
-      "computedHash": "adc220bd167f97a4bd3ea0751adbfe73a51f9cdc548763fb9405264c5f7e93fe"
-    },
-    "penpot-router": {
-      "source": "penpot/penpot-ai-kit",
-      "sourceType": "github",
-      "skillPath": "skills/penpot-router/SKILL.md",
-      "computedHash": "c861b3d3e540c5e9fe415bd8420c3b7082d98968a0995604207a2c18ad1747b0"
+      "computedHash": "3afb2a5e8cb327d83f75d585494dcdb6aaaf7506cf0410cddd072b30f960efea"
     },
     "to-spec": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/to-spec/SKILL.md",
-      "computedHash": "e0d6ed875f646b788ea710714ca92b138adad59e18a12a2c045244b9364ca259"
+      "computedHash": "3fa1a0695d4ea242fae9e569e4d22aa1788623197abb33bfadafae7315789bbf"
     },
     "to-tickets": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/to-tickets/SKILL.md",
-      "computedHash": "6d018d31ba390aeaf14ae65e7b3bb5bd693b03d635762e535a71446715780743"
+      "computedHash": "bf5e6ebcb4f1272de0c188d5b3901f265a03d1fa9935a21a7a56938e21e2e761"
     }
   }
 }
