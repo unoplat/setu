@@ -1,0 +1,5 @@
+# Project-local Worktrunk configuration.
+# Worktrunk asks for approval before running this hook for the first time.
+
+[pre-switch]
+setup = "scripts/worktree-pre-switch.sh {{ worktree_path }} {{ branch }} {{ base }}"
