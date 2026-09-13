@@ -1,0 +1,33 @@
+[tools]
+# Keep these aligned with package.json.
+bun = "1.4.2"
+vp = "0.3.1"
+
+[tasks.dev]
+description = "Start the Vite+ development server"
+run = "vp run dev"
+
+[tasks.build]
+description = "Type-check and build the production bundle"
+run = "vp run build"
+
+[tasks.lint]
+description = "Lint the project"
+run = "vp run lint"
+
+[tasks.format]
+description = "Format TypeScript and TSX files"
+run = "vp run format"
+
+[tasks.typecheck]
+description = "Run TypeScript type checking"
+run = "vp run typecheck"
+
+[tasks.preview]
+description = "Preview the production build"
+run = "vp run preview"
+
+[tasks.add]
+description = "Add one or more project dependencies with Vite+"
+raw_args = true
+run = "vp add"
