@@ -1,7 +1,14 @@
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, lazyPlugins } from "vite-plus"
+
+// Frappe site URL comes from the environment; the default lives in mise.toml.
+// Dev requests for Frappe paths are proxied so the session cookie is
+// same-origin with the Vite dev server.
+const FRAPPE_URL = process.env.FRAPPE_URL
+const FRAPPE_PATHS = ["/api", "/login", "/assets", "/files", "/private", "/socket.io"]
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -124,6 +131,20 @@ export default defineConfig({
           browser: true,
         },
       },
+      {
+        // TanStack route files export `Route` (not a component) beside
+        // non-exported components, which keeps them code-splittable.
+        files: ["src/routes/**/*.tsx"],
+        rules: {
+          "react/only-export-components": "off",
+        },
+      },
+      {
+        files: ["vite.config.ts"],
+        env: {
+          node: true,
+        },
+      },
     ],
     options: {
       typeAware: true,
@@ -161,7 +182,24 @@ export default defineConfig({
       "yarn.lock",
     ],
   },
-  plugins: lazyPlugins(() => [react(), tailwindcss()]),
+  plugins: lazyPlugins(() => [
+    // Router plugin must run before the React plugin (TanStack docs).
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
+    react(),
+    tailwindcss(),
+  ]),
+  build: {
+    outDir: "../setu/public/envision",
+    emptyOutDir: true,
+  },
+  server: {
+    proxy: Object.fromEntries(
+      FRAPPE_PATHS.map((p) => [
+        p,
+        { target: FRAPPE_URL, changeOrigin: true, ws: p === "/socket.io" },
+      ])
+    ),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

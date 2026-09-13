@@ -3,6 +3,11 @@
 bun = "1.4.2"
 vp = "0.3.1"
 
+[env]
+# Defaults for local development. Override in the shell to point elsewhere.
+# Local Frappe Manager site; the Vite dev server proxies Frappe paths to it.
+FRAPPE_URL = "http://erpdev.localhost"
+
 [tasks.dev]
 description = "Start the Vite+ development server"
 run = "vp run dev"
@@ -31,3 +36,14 @@ run = "vp run preview"
 description = "Add one or more project dependencies with Vite+"
 raw_args = true
 run = "vp add"
+
+[tasks.deploy-local]
+description = "Build and copy the bundle into the local bench clone of setu"
+depends = ["build"]
+run = """
+set -e
+BENCH_APP=/Users/jg/frappe/sites/erpdev.localhost/workspace/frappe-bench/apps/setu
+rsync -a --delete ../setu/public/envision/ "$BENCH_APP/setu/public/envision/"
+cp ../setu/www/envision.html "$BENCH_APP/setu/www/envision.html"
+echo "deployed to $BENCH_APP"
+"""

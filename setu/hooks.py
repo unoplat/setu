@@ -10,6 +10,14 @@ app_license = "agpl-3.0"
 
 required_apps = ["erpnext"]
 
+# Website
+# ------------------
+
+# Deep links into the Envision SPA all render www/envision.html.
+website_route_rules = [
+	{"from_route": "/envision/<path:app_path>", "to_route": "envision"},
+]
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{

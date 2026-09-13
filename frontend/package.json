@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
-    "build": "tsc -b && vp build",
+    "build": "tsc -b && vp build --base=/assets/setu/envision/ && cp ../setu/public/envision/index.html ../setu/www/envision.html",
     "lint": "vp lint .",
     "format": "vp fmt \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
