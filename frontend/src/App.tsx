@@ -1,3 +1,4 @@
+import { HotkeysProvider } from "@tanstack/react-hotkeys"
 import { RouterProvider } from "@tanstack/react-router"
 import { FrappeProvider, useFrappeAuth } from "frappe-react-sdk"
 
@@ -18,13 +19,20 @@ export function App() {
   // `url` prop. Socket is off until realtime is needed.
   return (
     <FrappeProvider enableSocket={false}>
-      <RouterWithAuth />
+      {/* Command bindings (src/lib/commands) are registered through TanStack
+          Hotkeys; the provider only sets shared defaults. */}
+      <HotkeysProvider defaultOptions={{ hotkeySequence: { timeout: 1500 } }}>
+        <RouterWithAuth />
+      </HotkeysProvider>
     </FrappeProvider>
   )
 }
 
 function RouterWithAuth() {
-  const { currentUser, isLoading } = useFrappeAuth()
+  // The SDK checks the session once and never again by default. Re-check on
+  // window focus so a session that ended elsewhere clears `currentUser` and
+  // the next navigation hits the login redirect in `_authenticated`.
+  const { currentUser, isLoading } = useFrappeAuth({ revalidateOnFocus: true })
   // Wait for the session check so `beforeLoad` guards see the real state.
   if (isLoading) return null
   return (

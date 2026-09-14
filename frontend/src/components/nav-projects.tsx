@@ -1,7 +1,7 @@
 import { Link, useMatchRoute } from "@tanstack/react-router"
 import { FolderIcon, PlusIcon } from "lucide-react"
 
-import { CreateProjectDialog } from "@/components/create-project-dialog"
+import { openCreateProject } from "@/components/create-project/store"
 import {
   SidebarGroup,
   SidebarGroupAction,
@@ -21,14 +21,10 @@ export function NavProjects({
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
-      <CreateProjectDialog
-        trigger={
-          <SidebarGroupAction title="New project">
-            <PlusIcon />
-            <span className="sr-only">New project</span>
-          </SidebarGroupAction>
-        }
-      />
+      <SidebarGroupAction title="New project" onClick={openCreateProject}>
+        <PlusIcon />
+        <span className="sr-only">New project</span>
+      </SidebarGroupAction>
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>

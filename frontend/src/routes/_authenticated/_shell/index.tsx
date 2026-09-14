@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { FolderIcon, LayoutGridIcon, PlusIcon } from "lucide-react"
 
-import { CreateProjectDialog } from "@/components/create-project-dialog"
+import { openCreateProject } from "@/components/create-project/store"
+import { HotkeyHint } from "@/components/hotkey-hint"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -28,14 +29,11 @@ function ProjectsPage() {
           <SidebarTrigger />
           <h1 className="text-sm font-medium">Projects</h1>
         </div>
-        <CreateProjectDialog
-          trigger={
-            <Button variant="outline" size="sm">
-              <PlusIcon />
-              New project
-            </Button>
-          }
-        />
+        <Button variant="outline" size="sm" onClick={openCreateProject}>
+          <PlusIcon />
+          New project
+          <HotkeyHint command="project.new" className="-me-1" />
+        </Button>
       </header>
       <main className="flex flex-1 items-center justify-center p-6">
         {isLoading ? null : projects?.length ? (
@@ -55,14 +53,10 @@ function ProjectsPage() {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <CreateProjectDialog
-                trigger={
-                  <Button size="lg">
-                    <PlusIcon />
-                    Create project
-                  </Button>
-                }
-              />
+              <Button size="lg" onClick={openCreateProject}>
+                <PlusIcon />
+                Create project
+              </Button>
             </EmptyContent>
           </Empty>
         )}

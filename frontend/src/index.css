@@ -117,6 +117,85 @@
     --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* MDXEditor inside the Create Project wizard (Paper: "Expanded Description").
+   Maps the editor's Radix-style variables onto the app tokens and gives the
+   writing area the 760px reading measure from the design. */
+.envision-mdx {
+    --font-body: var(--font-sans);
+    --basePageBg: var(--background);
+    --baseBg: var(--card);
+    --baseBgSubtle: var(--muted);
+    --baseBgHover: var(--muted);
+    --baseBgActive: var(--accent);
+    --baseBorder: var(--border);
+    --baseText: var(--foreground);
+    --baseTextContrast: var(--foreground);
+    --accentSolid: var(--primary);
+    --accentSolidHover: var(--primary);
+    --accentText: var(--primary);
+    --accentBg: color-mix(in oklch, var(--primary) 12%, transparent);
+    --accentBorder: color-mix(in oklch, var(--primary) 40%, transparent);
+    font-family: var(--font-sans);
+}
+.envision-mdx .envision-mdx-toolbar {
+    height: 3.5rem;
+    padding-inline: 2rem;
+    border-radius: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    position: static;
+    z-index: auto;
+}
+.envision-mdx .mdxeditor-root-contenteditable {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--background);
+    padding: 2.5rem 3rem;
+}
+.envision-mdx-content {
+    max-width: 47.5rem;
+    margin-inline: auto;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1.75rem;
+    color: var(--foreground);
+}
+.envision-mdx-content > * + * {
+    margin-top: 0.75rem;
+}
+.envision-mdx-content h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.envision-mdx-content h2 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+}
+.envision-mdx-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.25rem;
+}
+.envision-mdx-content ul,
+.envision-mdx-content ol {
+    padding-inline-start: 1.25rem;
+}
+.envision-mdx-content a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.envision-mdx-content blockquote {
+    border-inline-start: 2px solid var(--sidebar-primary);
+    padding-inline-start: 1rem;
+    color: var(--muted-foreground);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

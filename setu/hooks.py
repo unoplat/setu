@@ -94,7 +94,9 @@ website_route_rules = [
 # ------------
 
 # before_install = "setu.install.before_install"
-# after_install = "setu.install.after_install"
+# Custom Fields on ERPNext DocTypes (setu/setup/custom_fields.py).
+after_install = "setu.setup.custom_fields.create_envision_custom_fields"
+after_migrate = "setu.setup.custom_fields.create_envision_custom_fields"
 
 # Uninstallation
 # ------------
@@ -134,13 +136,14 @@ website_route_rules = [
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# Envision projects are visible only to their members (setu/permissions/project.py).
+permission_query_conditions = {
+	"Project": "setu.permissions.project.get_permission_query_conditions",
+}
+
+has_permission = {
+	"Project": "setu.permissions.project.has_permission",
+}
 
 # Document Events
 # ---------------

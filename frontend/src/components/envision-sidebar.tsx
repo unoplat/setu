@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { BellIcon, SettingsIcon, SquareCheckIcon } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
+import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSearch } from "@/components/nav-search"
 import { NavUser } from "@/components/nav-user"
@@ -19,14 +19,24 @@ import { useProjects } from "@/lib/projects"
 
 // Paper: "Projects Sidebar — Empty" (00 — Empty Projects), built on the
 // shadcn sidebar-07 block (collapses to icons).
-// Global navigation is My tasks, Inbox, Settings; Projects lists open
-// Projects (filtered to Envision-enabled ones once that flag exists).
+// Global navigation is My tasks, Inbox, Settings; Projects lists the
+// Envision-managed projects the signed-in user is a member of.
 
-const NAV = [
-  { title: "My tasks", to: "/my-tasks", icon: <SquareCheckIcon /> },
-  { title: "Inbox", to: "/inbox", icon: <BellIcon /> },
-  { title: "Settings", to: "/settings", icon: <SettingsIcon /> },
-] as const
+const NAV: readonly NavItem[] = [
+  {
+    title: "My tasks",
+    to: "/my-tasks",
+    icon: <SquareCheckIcon />,
+    command: "nav.myTasks",
+  },
+  { title: "Inbox", to: "/inbox", icon: <BellIcon />, command: "nav.inbox" },
+  {
+    title: "Settings",
+    to: "/settings",
+    icon: <SettingsIcon />,
+    command: "nav.settings",
+  },
+]
 
 export function EnvisionSidebar({
   ...props
@@ -48,7 +58,7 @@ export function EnvisionSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <NavSearch items={NAV} />
+        <NavSearch />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={NAV} />
