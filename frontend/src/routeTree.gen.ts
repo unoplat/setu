@@ -15,6 +15,7 @@ import { Route as AuthenticatedShellIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedShellInboxRouteImport } from './routes/_authenticated/_shell/inbox'
 import { Route as AuthenticatedShellMyTasksRouteImport } from './routes/_authenticated/_shell/my-tasks'
 import { Route as AuthenticatedShellSettingsRouteImport } from './routes/_authenticated/_shell/settings'
+import { Route as AuthenticatedShellProjectsNameRouteImport } from './routes/_authenticated/_shell/projects.$name'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -46,18 +47,26 @@ const AuthenticatedShellSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedShellRoute,
   } as any)
+const AuthenticatedShellProjectsNameRoute =
+  AuthenticatedShellProjectsNameRouteImport.update({
+    id: '/projects/$name',
+    path: '/projects/$name',
+    getParentRoute: () => AuthenticatedShellRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedShellIndexRoute
   '/inbox': typeof AuthenticatedShellInboxRoute
   '/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/settings': typeof AuthenticatedShellSettingsRoute
+  '/projects/$name': typeof AuthenticatedShellProjectsNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedShellIndexRoute
   '/inbox': typeof AuthenticatedShellInboxRoute
   '/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/settings': typeof AuthenticatedShellSettingsRoute
+  '/projects/$name': typeof AuthenticatedShellProjectsNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -67,12 +76,13 @@ export interface FileRoutesById {
   '/_authenticated/_shell/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/_authenticated/_shell/settings': typeof AuthenticatedShellSettingsRoute
   '/_authenticated/_shell/': typeof AuthenticatedShellIndexRoute
+  '/_authenticated/_shell/projects/$name': typeof AuthenticatedShellProjectsNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inbox' | '/my-tasks' | '/settings'
+  fullPaths: '/' | '/inbox' | '/my-tasks' | '/settings' | '/projects/$name'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inbox' | '/my-tasks' | '/settings'
+  to: '/' | '/inbox' | '/my-tasks' | '/settings' | '/projects/$name'
   id:
     | '__root__'
     | '/_authenticated'
@@ -81,6 +91,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_shell/my-tasks'
     | '/_authenticated/_shell/settings'
     | '/_authenticated/_shell/'
+    | '/_authenticated/_shell/projects/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -131,6 +142,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedShellSettingsRouteImport
       parentRoute: typeof AuthenticatedShellRoute
     }
+    '/_authenticated/_shell/projects/$name': {
+      id: '/_authenticated/_shell/projects/$name'
+      path: '/projects/$name'
+      fullPath: '/projects/$name'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameRouteImport
+      parentRoute: typeof AuthenticatedShellRoute
+    }
   }
 }
 
@@ -139,6 +157,7 @@ interface AuthenticatedShellRouteChildren {
   AuthenticatedShellMyTasksRoute: typeof AuthenticatedShellMyTasksRoute
   AuthenticatedShellSettingsRoute: typeof AuthenticatedShellSettingsRoute
   AuthenticatedShellIndexRoute: typeof AuthenticatedShellIndexRoute
+  AuthenticatedShellProjectsNameRoute: typeof AuthenticatedShellProjectsNameRoute
 }
 
 const AuthenticatedShellRouteChildren: AuthenticatedShellRouteChildren = {
@@ -146,6 +165,7 @@ const AuthenticatedShellRouteChildren: AuthenticatedShellRouteChildren = {
   AuthenticatedShellMyTasksRoute: AuthenticatedShellMyTasksRoute,
   AuthenticatedShellSettingsRoute: AuthenticatedShellSettingsRoute,
   AuthenticatedShellIndexRoute: AuthenticatedShellIndexRoute,
+  AuthenticatedShellProjectsNameRoute: AuthenticatedShellProjectsNameRoute,
 }
 
 const AuthenticatedShellRouteWithChildren =

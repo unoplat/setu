@@ -1,8 +1,8 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Link, useRouter } from "@tanstack/react-router"
+import { useFrappeAuth, useFrappeGetDoc } from "frappe-react-sdk"
+import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon } from "lucide-react"
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,18 +18,42 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+/** Signed-in Frappe identity. The Envision role label needs membership, which does not exist yet. */
+export function NavUser() {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const { currentUser, logout } = useFrappeAuth()
+  const { data: user } = useFrappeGetDoc<{ full_name?: string }>(
+    "User",
+    currentUser ?? undefined
+  )
+  const name = user?.full_name ?? currentUser ?? ""
+  const email = currentUser ?? ""
+  const initials = name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+
+  async function handleLogout() {
+    await logout()
+    // Re-run route guards with the signed-out context so they redirect to login.
+    await router.invalidate()
+  }
+
+  const identity = (
+    <>
+      <Avatar>
+        <AvatarFallback>{initials}</AvatarFallback>
+      </Avatar>
+      <div className="grid flex-1 text-start text-sm leading-tight">
+        <span className="truncate font-medium">{name}</span>
+        <span className="truncate text-xs">{email}</span>
+      </div>
+    </>
+  )
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -39,14 +63,7 @@ export function NavUser({
               <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
             }
           >
-            <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-start text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
-            </div>
+            {identity}
             <ChevronsUpDownIcon className="ms-auto size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -58,47 +75,20 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                  <Avatar>
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-start text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
-                  </div>
+                  {identity}
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <SparklesIcon
-                />
-                Upgrade to Pro
+              <DropdownMenuItem render={<Link to="/settings" />}>
+                <SettingsIcon />
+                Settings
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheckIcon
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon
-              />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOutIcon />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
