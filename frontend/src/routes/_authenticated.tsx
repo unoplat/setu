@@ -7,7 +7,13 @@ import { frappeLoginHref } from "@/lib/auth"
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: ({ context, location }) => {
     if (!context.auth.currentUser) {
-      throw redirect({ href: frappeLoginHref(location.href) })
+      // `/login` is a Frappe page, not a router route. Without
+      // `reloadDocument` a relative href is treated as in-app navigation and
+      // the basepath rewrite turns it into /envision/login (Not Found).
+      throw redirect({
+        href: frappeLoginHref(location.href),
+        reloadDocument: true,
+      })
     }
   },
 })
