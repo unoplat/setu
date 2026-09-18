@@ -27,10 +27,17 @@ export const DetailsStep = withForm({
   ...createProjectFormOptions,
   props: {
     submitting: false,
+    focusField: "name" as "name" | "description",
     error: null as string | null,
     onExpand: () => {},
   },
-  render: function DetailsStepForm({ form, submitting, error, onExpand }) {
+  render: function DetailsStepForm({
+    form,
+    submitting,
+    focusField,
+    error,
+    onExpand,
+  }) {
     return (
       <form.FormGroup
         name="details"
@@ -64,6 +71,7 @@ export const DetailsStep = withForm({
                     className="-me-1 -mt-1 bg-secondary"
                   />
                 }
+                disabled={submitting}
               >
                 <XIcon />
                 <span className="sr-only">Close</span>
@@ -97,7 +105,7 @@ export const DetailsStep = withForm({
                         name="project_name"
                         placeholder="Mobile App"
                         autoComplete="off"
-                        autoFocus
+                        autoFocus={focusField === "name"}
                         value={field.state.value}
                         onChange={(event) =>
                           field.handleChange(event.target.value)
@@ -143,6 +151,7 @@ export const DetailsStep = withForm({
                       id="project-description"
                       name="description"
                       placeholder="Plan and deliver the next iOS and Android release."
+                      autoFocus={focusField === "description"}
                       value={field.state.value}
                       onChange={(event) =>
                         field.handleChange(event.target.value)
@@ -157,7 +166,10 @@ export const DetailsStep = withForm({
             </FieldGroup>
 
             <DialogFooter className="gap-2.5">
-              <DialogClose render={<Button variant="outline" size="lg" />}>
+              <DialogClose
+                render={<Button variant="outline" size="lg" />}
+                disabled={submitting}
+              >
                 Cancel
               </DialogClose>
               <Button

@@ -20,7 +20,7 @@ export interface UseCommandOptions {
  */
 export function useCommand(
   id: CommandId,
-  handler: () => void,
+  handler: (event: KeyboardEvent) => void,
   options: UseCommandOptions = {}
 ) {
   const spec = getCommand(id)
@@ -28,23 +28,29 @@ export function useCommand(
   const stack = useScopeStack()
   const enabled = (options.enabled ?? true) && isScopeEnabled(spec.scope, stack)
 
+  // `ignoreInputs` is only passed when the registry overrides it. The hooks
+  // re-apply options on every render with `setOptions`, which merges by
+  // spread, so an explicit `undefined` would erase the smart default TanStack
+  // resolved at registration (Mod chords and Escape fire inside inputs).
   const common = {
     enabled,
-    ignoreInputs: spec.ignoreInputs,
+    ...(spec.ignoreInputs === undefined
+      ? {}
+      : { ignoreInputs: spec.ignoreInputs }),
     conflictBehavior: "allow" as const,
     meta: { name: spec.title, description: spec.description },
   }
 
   useHotkeys(
     binding?.kind === "hotkey"
-      ? [{ hotkey: binding.hotkey, callback: () => handler() }]
+      ? [{ hotkey: binding.hotkey, callback: (event) => handler(event) }]
       : [],
     common
   )
 
   useHotkeySequences(
     binding?.kind === "sequence"
-      ? [{ sequence: binding.keys, callback: () => handler() }]
+      ? [{ sequence: binding.keys, callback: (event) => handler(event) }]
       : [],
     common
   )

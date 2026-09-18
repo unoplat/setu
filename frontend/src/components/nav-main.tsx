@@ -9,7 +9,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import type { CommandId } from "@/lib/commands"
+import {
+  isScopeEnabled,
+  useIsTyping,
+  useScopeStack,
+  type CommandId,
+} from "@/lib/commands"
 
 export interface NavItem {
   title: string
@@ -22,7 +27,13 @@ export interface NavItem {
 export function NavMain({ items }: { items: readonly NavItem[] }) {
   const matchRoute = useMatchRoute()
   // Holding the first key of the "G then …" sequences shows what follows.
-  const revealHints = useKeyHold("G")
+  // `useKeyHold` reports the key wherever it is pressed, so the hints stay
+  // hidden while the sequences themselves cannot fire: when typing a "g" into
+  // a field, or under a modal scope.
+  const holdingG = useKeyHold("G")
+  const typing = useIsTyping()
+  const globalEnabled = isScopeEnabled("global", useScopeStack())
+  const revealHints = holdingG && !typing && globalEnabled
   return (
     <SidebarGroup>
       <SidebarMenu>

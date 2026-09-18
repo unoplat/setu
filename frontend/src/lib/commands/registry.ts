@@ -135,8 +135,8 @@ export const COMMANDS = {
     defaultBinding: hotkey("Escape"),
   },
   "createProject.submitStep": {
-    title: "Continue",
-    description: "Submit the Create Project form.",
+    title: "Create project",
+    description: "Submit the Create Project form from any field.",
     group: "Create project",
     scope: "create-project",
     defaultBinding: hotkey("Mod+Enter"),

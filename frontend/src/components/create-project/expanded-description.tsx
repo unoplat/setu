@@ -6,6 +6,7 @@ import { HotkeyText } from "@/components/hotkey-hint"
 import { Button } from "@/components/ui/button"
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
 
 import { createProjectFormOptions, withForm } from "./form"
 
@@ -13,7 +14,7 @@ const DescriptionEditor = React.lazy(() => import("./description-editor"))
 
 // Paper: "Expanded Description — mxeditor". The draft lives in the same form
 // field as the compact textarea, so expanding and collapsing loses nothing
-// and the project is still not created until step 2 submits.
+// and the project is still not created until the form submits.
 
 export const ExpandedDescription = withForm({
   ...createProjectFormOptions,
@@ -25,6 +26,9 @@ export const ExpandedDescription = withForm({
       form.store,
       (state) => state.values.details.project_name
     )
+    // MDXEditor leaves itself empty when it cannot parse the draft; typing
+    // there would overwrite the text. Fall back to a plain editor instead.
+    const [parseFailed, setParseFailed] = React.useState(false)
     return (
       <>
         <header className="flex shrink-0 items-center justify-between gap-4 border-b px-8 py-6">
@@ -52,23 +56,40 @@ export const ExpandedDescription = withForm({
         </header>
 
         <form.Field name="details.description">
-          {(field) => (
-            <React.Suspense
-              fallback={
-                <div className="flex min-h-0 flex-1 flex-col gap-4 px-12 py-10">
-                  <Skeleton className="h-8 w-1/3" />
-                  <Skeleton className="h-5 w-2/3" />
-                  <Skeleton className="h-5 w-1/2" />
-                </div>
-              }
-            >
-              <DescriptionEditor
-                value={field.state.value}
-                onChange={(markdown) => field.handleChange(markdown)}
-                className="flex min-h-0 flex-1 flex-col"
-              />
-            </React.Suspense>
-          )}
+          {(field) =>
+            parseFailed ? (
+              <div className="flex min-h-0 flex-1 flex-col gap-3 px-12 py-8">
+                <p className="text-sm text-muted-foreground">
+                  This text can’t be shown as rich text, so you are editing it
+                  as plain Markdown. Nothing was lost.
+                </p>
+                <Textarea
+                  autoFocus
+                  aria-label="Project description"
+                  value={field.state.value}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  className="min-h-0 flex-1 resize-none rounded-xl font-mono text-sm"
+                />
+              </div>
+            ) : (
+              <React.Suspense
+                fallback={
+                  <div className="flex min-h-0 flex-1 flex-col gap-4 px-12 py-10">
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="h-5 w-1/2" />
+                  </div>
+                }
+              >
+                <DescriptionEditor
+                  value={field.state.value}
+                  onChange={(markdown) => field.handleChange(markdown)}
+                  onError={() => setParseFailed(true)}
+                  className="flex min-h-0 flex-1 flex-col"
+                />
+              </React.Suspense>
+            )
+          }
         </form.Field>
 
         <footer className="flex shrink-0 items-center justify-between gap-4 border-t px-8 py-5">

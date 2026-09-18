@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useHotkeyRecorder } from "@tanstack/react-hotkeys"
+import { useHotkeySequenceRecorder } from "@tanstack/react-hotkeys"
 import { RotateCcwIcon } from "lucide-react"
 
 import { BindingKeys } from "@/components/hotkey-hint"
@@ -13,6 +13,7 @@ import {
   hotkey,
   isCustomized,
   listCommands,
+  sequence,
   resetAllBindings,
   resetBinding,
   setBinding,
@@ -25,13 +26,22 @@ import { cn } from "@/lib/utils"
 
 /**
  * Keyboard shortcut customisation. Commands are listed from the registry;
- * each row records a new chord with TanStack's recorder, checks the bindings
- * store for conflicts in overlapping scopes, and persists the override.
+ * each row records with TanStack's sequence recorder (one chord becomes a
+ * plain hotkey, several become a sequence), checks the bindings store for
+ * conflicts in overlapping scopes, and persists the override.
  */
 export function ShortcutSettings() {
   const version = useBindingsVersion()
   const commands = React.useMemo(() => listCommands(), [])
   const anyCustomized = commands.some((command) => isCustomized(command.id))
+
+  // Every row owns a recorder and each one listens on the document, so only
+  // one may record at a time: starting a row cancels the previous one.
+  const cancelActive = React.useRef<(() => void) | null>(null)
+  const claimRecorder = React.useCallback((cancel: () => void) => {
+    cancelActive.current?.()
+    cancelActive.current = cancel
+  }, [])
 
   return (
     <section className="grid gap-6" data-bindings-version={version}>
@@ -41,9 +51,10 @@ export function ShortcutSettings() {
             Keyboard shortcuts
           </h2>
           <p className="text-sm text-muted-foreground">
-            Click a shortcut to record a new one. Press Escape to cancel,
-            Backspace to remove it. Shortcuts only fire where their command
-            applies.
+            Click a shortcut and press the new keys; press several in a row for
+            a sequence. Enter confirms, Escape cancels, Backspace removes the
+            last key or clears the shortcut. Shortcuts only fire where their
+            command applies.
           </p>
         </div>
         <Button
@@ -67,7 +78,11 @@ export function ShortcutSettings() {
             </h3>
             <div className="divide-y rounded-2xl border">
               {rows.map((command) => (
-                <ShortcutRow key={command.id} command={command} />
+                <ShortcutRow
+                  key={command.id}
+                  command={command}
+                  claimRecorder={claimRecorder}
+                />
               ))}
             </div>
           </div>
@@ -77,7 +92,13 @@ export function ShortcutSettings() {
   )
 }
 
-function ShortcutRow({ command }: { command: CommandDefinition }) {
+function ShortcutRow({
+  command,
+  claimRecorder,
+}: {
+  command: CommandDefinition
+  claimRecorder: (cancel: () => void) => void
+}) {
   const binding = getBinding(command.id)
   const customized = isCustomized(command.id)
   const [pending, setPending] = React.useState<{
@@ -85,9 +106,12 @@ function ShortcutRow({ command }: { command: CommandDefinition }) {
     conflicts: CommandDefinition[]
   } | null>(null)
 
-  const recorder = useHotkeyRecorder({
-    onRecord: (recorded) => {
-      const next = hotkey(recorded)
+  const recorder = useHotkeySequenceRecorder({
+    onRecord: (steps) => {
+      // Backspace on an empty recording reports `[]` after `onClear`.
+      const [first, ...rest] = steps
+      if (!first) return
+      const next = rest.length === 0 ? hotkey(first) : sequence(...steps)
       const conflicts = findConflicts(command.id, next)
       if (conflicts.length > 0) {
         setPending({ binding: next, conflicts })
@@ -96,8 +120,16 @@ function ShortcutRow({ command }: { command: CommandDefinition }) {
       }
     },
     onClear: () => setBinding(command.id, null),
+    // A pause commits too, so a single chord does not need Enter.
+    idleTimeoutMs: 1500,
     ignoreInputs: false,
   })
+
+  function startRecording() {
+    setPending(null)
+    claimRecorder(recorder.cancelRecording)
+    recorder.startRecording()
+  }
 
   // While recording, every other command is muted so the pressed keys are
   // captured instead of executed.
@@ -127,9 +159,7 @@ function ShortcutRow({ command }: { command: CommandDefinition }) {
         <button
           type="button"
           onClick={
-            recorder.isRecording
-              ? recorder.cancelRecording
-              : recorder.startRecording
+            recorder.isRecording ? recorder.cancelRecording : startRecording
           }
           className={cn(
             "flex h-8 min-w-28 items-center justify-center rounded-lg border px-2 text-xs transition-colors",
@@ -140,7 +170,17 @@ function ShortcutRow({ command }: { command: CommandDefinition }) {
           aria-label={`Change shortcut for ${command.title}`}
         >
           {recorder.isRecording ? (
-            "Press keys…"
+            recorder.steps.length > 0 ? (
+              <BindingKeys
+                binding={
+                  recorder.steps.length === 1
+                    ? hotkey(recorder.steps[0])
+                    : sequence(...recorder.steps)
+                }
+              />
+            ) : (
+              "Press keys…"
+            )
           ) : binding ? (
             <BindingKeys binding={binding} />
           ) : (

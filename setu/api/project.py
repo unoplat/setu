@@ -1,8 +1,9 @@
 import frappe
 from frappe import _
-from frappe.utils import md_to_html
+from markdown2 import markdown as render_markdown
 
-@frappe.whitelist()
+
+@frappe.whitelist(methods=["POST"])
 def create_project(project_name: str, description: str | None = None) -> dict:
 	"""Create an Envision-managed ERPNext Project from the Create Project dialog.
 
@@ -11,6 +12,7 @@ def create_project(project_name: str, description: str | None = None) -> dict:
 	  Envision custom field and the rendered HTML goes into ERPNext's ``notes``
 	  so Desk users see the same text.
 	- Access follows ERPNext's standard Project role permissions.
+	- POST only: the method writes, and Frappe commits after a successful POST.
 	"""
 	project_name = (project_name or "").strip()
 	if not project_name:
@@ -24,10 +26,25 @@ def create_project(project_name: str, description: str | None = None) -> dict:
 	markdown = (description or "").strip()
 	if markdown:
 		doc.envision_description = markdown
-		doc.notes = str(md_to_html(markdown) or "")
+		doc.notes = description_html(markdown)
 
 	doc.insert()
 	return {"name": doc.name, "project_name": doc.project_name}
+
+
+# frappe.utils.md_to_html has a fixed set of markdown2 extras without
+# strikethrough or task lists, both of which the Envision editor's toolbar
+# produces, so the description is rendered with markdown2 directly.
+DESCRIPTION_EXTRAS = {
+	"fenced-code-blocks": None,
+	"tables": None,
+	"strike": None,
+	"task_list": None,
+}
+
+
+def description_html(markdown: str) -> str:
+	return str(render_markdown(markdown, extras=DESCRIPTION_EXTRAS))
 
 
 def resolve_company() -> str:

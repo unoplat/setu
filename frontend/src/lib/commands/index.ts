@@ -26,4 +26,5 @@ export {
 } from "./registry"
 export { chordTokens, formatBinding } from "./format"
 export { isScopeEnabled, useScope, useScopeStack } from "./scopes"
+export { useIsTyping } from "./typing"
 export { useCommand } from "./use-command"

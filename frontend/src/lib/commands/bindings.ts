@@ -136,6 +136,24 @@ export function bindingKey(binding: Binding | null): string | null {
   return binding.keys.map((key) => normalizeHotkey(key)).join(" ")
 }
 
+/** Normalised chords of a binding; a plain hotkey is a one-step sequence. */
+function bindingSteps(binding: Binding | null): string[] {
+  if (!binding) return []
+  const keys = binding.kind === "hotkey" ? [binding.hotkey] : binding.keys
+  return keys.map((key) => normalizeHotkey(key))
+}
+
+/**
+ * Two bindings collide when one is a prefix of the other (equal included):
+ * `G` fires on the first key of `G then T`, so the sequence can never finish
+ * without also running the single-key command.
+ */
+function stepsCollide(a: string[], b: string[]): boolean {
+  if (a.length === 0 || b.length === 0) return false
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a]
+  return short.every((step, index) => step === long[index])
+}
+
 function scopesOverlap(a: CommandDefinition, b: CommandDefinition) {
   return a.scope === b.scope || a.scope === "global" || b.scope === "global"
 }
@@ -149,14 +167,14 @@ export function findConflicts(
   id: CommandId,
   binding: Binding | null
 ): CommandDefinition[] {
-  const key = bindingKey(binding)
-  if (!key) return []
+  const steps = bindingSteps(binding)
+  if (steps.length === 0) return []
   const self = getCommand(id)
   return listCommands().filter(
     (other) =>
       other.id !== id &&
       scopesOverlap(self, other) &&
-      bindingKey(getBinding(other.id)) === key
+      stepsCollide(steps, bindingSteps(getBinding(other.id)))
   )
 }
 
