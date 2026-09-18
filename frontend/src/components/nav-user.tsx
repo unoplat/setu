@@ -19,7 +19,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-/** Signed-in Frappe identity. The Envision role label needs membership, which does not exist yet. */
+/** Signed-in Frappe identity. */
 export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()

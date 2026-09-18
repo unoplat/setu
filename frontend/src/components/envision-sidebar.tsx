@@ -20,7 +20,7 @@ import { useProjects } from "@/lib/projects"
 // Paper: "Projects Sidebar — Empty" (00 — Empty Projects), built on the
 // shadcn sidebar-07 block (collapses to icons).
 // Global navigation is My tasks, Inbox, Settings; Projects lists the
-// Envision-managed projects the signed-in user is a member of.
+// Envision-managed projects.
 
 const NAV: readonly NavItem[] = [
   {

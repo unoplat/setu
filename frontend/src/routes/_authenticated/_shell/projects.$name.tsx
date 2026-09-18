@@ -3,8 +3,8 @@ import { useFrappeGetDoc } from "frappe-react-sdk"
 
 import { PagePlaceholder } from "@/components/page-placeholder"
 
-// Landing route for a single Project. Screens 02 (Invite members) and 03
-// (Board) replace this placeholder.
+// Landing route for a single Project. Screen 03 (Board) replaces this
+// placeholder.
 export const Route = createFileRoute("/_authenticated/_shell/projects/$name")({
   component: ProjectPage,
 })

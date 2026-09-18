@@ -5,45 +5,40 @@ import { useFrappePostCall } from "frappe-react-sdk"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
-import { useProjects, type CreatedProject } from "@/lib/projects"
+import { useProjects, type ProjectSummary } from "@/lib/projects"
 import { cn } from "@/lib/utils"
 
 import { DetailsStep } from "./details-step"
 import { ExpandedDescription } from "./expanded-description"
 import { createProjectFormOptions, useAppForm } from "./form"
-import { MembersStep } from "./members-step"
 import {
   closeCreateProject,
   openCreateProject,
   useCreateProjectOpen,
 } from "./store"
 
-type Step = "details" | "members"
-
 /**
- * Create Project wizard (Paper screens 01 and 02): details, then members.
- * Mounted once in the app shell; open it with `openCreateProject()` or the
- * `project.new` command. The expanded description editor is a third view of
- * the same dialog so the draft never leaves the form.
+ * Create Project dialog (Paper screen 01). Mounted once in the app shell;
+ * open it with `openCreateProject()` or the `project.new` command. The
+ * expanded description editor is a second view of the same dialog so the
+ * draft never leaves the form.
  */
 export function CreateProjectDialog() {
   const open = useCreateProjectOpen()
-  const [step, setStep] = React.useState<Step>("details")
   const [expanded, setExpanded] = React.useState(false)
   const navigate = useNavigate()
   const { mutate: revalidateProjects } = useProjects()
   const { call, loading, error, reset } = useFrappePostCall<{
-    message: CreatedProject
+    message: ProjectSummary
   }>("setu.api.project.create_project")
 
   const form = useAppForm({
     ...createProjectFormOptions,
     onSubmit: async ({ value }) => {
-      // On failure the hook exposes `error`, rendered inside the members step.
+      // On failure the hook exposes `error`, rendered inside the form.
       const response = await call({
         project_name: value.details.project_name.trim(),
         description: value.details.description,
-        members: value.members.users,
       }).catch(() => null)
       if (!response) return
 
@@ -60,7 +55,6 @@ export function CreateProjectDialog() {
     closeCreateProject()
     form.reset()
     reset()
-    setStep("details")
     setExpanded(false)
   }
 
@@ -68,7 +62,7 @@ export function CreateProjectDialog() {
   useCommand(
     "createProject.toggleDescription",
     () => setExpanded((value) => !value),
-    { enabled: open && step === "details" }
+    { enabled: open }
   )
   useCommand("createProject.collapseDescription", () => setExpanded(false), {
     enabled: open && expanded,
@@ -102,9 +96,7 @@ export function CreateProjectDialog() {
           "gap-0 rounded-3xl p-7",
           expanded
             ? "flex h-[min(856px,calc(100dvh-3rem))] flex-col overflow-hidden p-0 sm:max-w-[1120px]"
-            : step === "details"
-              ? "sm:max-w-[520px]"
-              : "sm:max-w-[600px]"
+            : "sm:max-w-[520px]"
         )}
       >
         {expanded ? (
@@ -112,22 +104,12 @@ export function CreateProjectDialog() {
             form={form}
             onCollapse={() => setExpanded(false)}
           />
-        ) : step === "details" ? (
+        ) : (
           <DetailsStep
             form={form}
-            onNext={() => setStep("members")}
-            onExpand={() => setExpanded(true)}
-          />
-        ) : (
-          <MembersStep
-            form={form}
-            projectName={form.getFieldValue("details.project_name").trim()}
             submitting={loading}
             error={error ? frappeErrorMessage(error) : null}
-            onSkip={() => {
-              form.setFieldValue("members.users", [])
-              void form.handleSubmit()
-            }}
+            onExpand={() => setExpanded(true)}
           />
         )}
       </DialogContent>

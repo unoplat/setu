@@ -136,14 +136,13 @@ after_migrate = "setu.setup.custom_fields.create_envision_custom_fields"
 # -----------
 # Permissions evaluated in scripted ways
 
-# Envision projects are visible only to their members (setu/permissions/project.py).
-permission_query_conditions = {
-	"Project": "setu.permissions.project.get_permission_query_conditions",
-}
-
-has_permission = {
-	"Project": "setu.permissions.project.has_permission",
-}
+# permission_query_conditions = {
+# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# }
+#
+# has_permission = {
+# 	"Event": "frappe.desk.doctype.event.event.has_permission",
+# }
 
 # Document Events
 # ---------------

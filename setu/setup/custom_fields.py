@@ -21,7 +21,7 @@ ENVISION_CUSTOM_FIELDS = {
 			"label": "Managed in Envision",
 			"insert_after": "envision_section",
 			"default": "0",
-			"description": "Envision lists this project and restricts it to its members.",
+			"description": "Envision lists this project.",
 		},
 		{
 			"fieldname": "envision_description",

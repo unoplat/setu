@@ -21,17 +21,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { createProjectFormOptions, validateProjectName, withForm } from "./form"
 import { StepSubmitHotkey } from "./step-submit-hotkey"
 
-// Paper: "Create Project Dialog" (01 — Create Project Details), step 1 of 2.
+// Paper: "Create Project Dialog" (01 — Create Project Details).
 
 export const DetailsStep = withForm({
   ...createProjectFormOptions,
   props: {
-    onNext: () => {},
+    submitting: false,
+    error: null as string | null,
     onExpand: () => {},
   },
-  render: function DetailsStepForm({ form, onNext, onExpand }) {
+  render: function DetailsStepForm({ form, submitting, error, onExpand }) {
     return (
-      <form.FormGroup name="details" onGroupSubmit={() => onNext()}>
+      <form.FormGroup
+        name="details"
+        onGroupSubmit={() => void form.handleSubmit()}
+      >
         {(group) => (
           <form
             className="grid gap-7"
@@ -49,7 +53,7 @@ export const DetailsStep = withForm({
                   Create a project
                 </DialogTitle>
                 <DialogDescription>
-                  Name the work and add enough context for invited members.
+                  Name the work and add enough context to get started.
                 </DialogDescription>
               </DialogHeader>
               <DialogClose
@@ -149,14 +153,20 @@ export const DetailsStep = withForm({
                   </Field>
                 )}
               </form.Field>
+              {error ? <FieldError>{error}</FieldError> : null}
             </FieldGroup>
 
             <DialogFooter className="gap-2.5">
               <DialogClose render={<Button variant="outline" size="lg" />}>
                 Cancel
               </DialogClose>
-              <Button type="submit" size="lg" className="px-4.5 font-semibold">
-                Next
+              <Button
+                type="submit"
+                size="lg"
+                className="px-4.5 font-semibold"
+                disabled={submitting}
+              >
+                Create project
               </Button>
             </DialogFooter>
           </form>

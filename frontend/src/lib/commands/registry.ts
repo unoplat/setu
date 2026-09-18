@@ -113,7 +113,7 @@ export const COMMANDS = {
   },
   "project.new": {
     title: "New project",
-    description: "Start the Create Project wizard.",
+    description: "Open the Create Project dialog.",
     group: "Projects",
     scope: "global",
     defaultBinding: hotkey("N"),
@@ -136,7 +136,7 @@ export const COMMANDS = {
   },
   "createProject.submitStep": {
     title: "Continue",
-    description: "Submit the current step of the wizard.",
+    description: "Submit the Create Project form.",
     group: "Create project",
     scope: "create-project",
     defaultBinding: hotkey("Mod+Enter"),

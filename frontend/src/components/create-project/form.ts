@@ -5,10 +5,9 @@ import {
 } from "@tanstack/react-form"
 
 /**
- * TanStack Form setup for the Create Project wizard, following the
- * multi-step-wizard example: one form holds every step's values, each step is
- * a `withForm` sub-form that submits its own `FormGroup`, and only the last
- * step calls `form.handleSubmit()`.
+ * TanStack Form setup for the Create Project dialog, following the
+ * multi-step-wizard example: one form holds the values and each view is a
+ * `withForm` sub-form, so further steps can be added as their own `FormGroup`.
  */
 
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
@@ -27,16 +26,11 @@ export interface CreateProjectValues {
     /** Markdown, edited inline as text or in the expanded MDXEditor. */
     description: string
   }
-  members: {
-    /** Frappe User ids picked in step 2. */
-    users: string[]
-  }
 }
 
 export const createProjectFormOptions = formOptions({
   defaultValues: {
     details: { project_name: "", description: "" },
-    members: { users: [] },
   } as CreateProjectValues,
 })
 
