@@ -94,14 +94,20 @@ website_route_rules = [
 # ------------
 
 # before_install = "setu.install.before_install"
-# Custom Fields on ERPNext DocTypes (setu/setup/custom_fields.py).
-after_install = "setu.setup.custom_fields.create_envision_custom_fields"
-after_migrate = "setu.setup.custom_fields.create_envision_custom_fields"
+# Custom Fields and Property Setters on ERPNext DocTypes (setu/setup/).
+after_install = [
+	"setu.setup.custom_fields.create_envision_custom_fields",
+	"setu.setup.property_setters.create_envision_property_setters",
+]
+after_migrate = [
+	"setu.setup.custom_fields.create_envision_custom_fields",
+	"setu.setup.property_setters.create_envision_property_setters",
+]
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "setu.uninstall.before_uninstall"
+before_uninstall = "setu.setup.uninstall.before_uninstall"
 # after_uninstall = "setu.uninstall.after_uninstall"
 
 # Integration Setup
@@ -144,6 +150,15 @@ after_migrate = "setu.setup.custom_fields.create_envision_custom_fields"
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
+permission_query_conditions = {
+	"Board Message": "setu.envision.doctype.board_message.board_message.get_permission_query_conditions",
+	"Envision View": "setu.envision.doctype.envision_view.envision_view.get_permission_query_conditions",
+}
+has_permission = {
+	"Board Message": "setu.envision.doctype.board_message.board_message.has_permission",
+	"Envision View": "setu.envision.doctype.envision_view.envision_view.has_permission",
+}
+
 # Document Events
 # ---------------
 # Hook on document methods and events
@@ -156,8 +171,24 @@ after_migrate = "setu.setup.custom_fields.create_envision_custom_fields"
 # 	}
 # }
 
+# Envision's rules for deleting a Project live in on_trash so Desk and the
+# REST API follow them too (setu.api.project.guard_project_delete).
+doc_events = {
+	"Project": {
+		"on_trash": "setu.api.project.guard_project_delete",
+	},
+	"Task": {
+		"validate": "setu.api.task.validate_task_links",
+	},
+}
+
 # Scheduled Tasks
 # ---------------
+
+# Archived Tasks are deleted for good thirty days after they were archived.
+scheduler_events = {
+	"daily": ["setu.api.task.delete_expired_archives"],
+}
 
 # scheduler_events = {
 # 	"all": [
@@ -186,9 +217,9 @@ after_migrate = "setu.setup.custom_fields.create_envision_custom_fields"
 # ------------------------------
 #
 # Specify custom mixins to extend the standard doctype controller.
-# extend_doctype_class = {
-# 	"Task": "setu.custom.task.CustomTaskMixin"
-# }
+extend_doctype_class = {
+	"Task": "setu.api.task.EnvisionTask",
+}
 
 # Overriding Methods
 # ------------------------------
