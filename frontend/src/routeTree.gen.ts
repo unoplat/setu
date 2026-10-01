@@ -16,6 +16,15 @@ import { Route as AuthenticatedShellInboxRouteImport } from './routes/_authentic
 import { Route as AuthenticatedShellMyTasksRouteImport } from './routes/_authenticated/_shell/my-tasks'
 import { Route as AuthenticatedShellSettingsRouteImport } from './routes/_authenticated/_shell/settings'
 import { Route as AuthenticatedShellProjectsNameRouteImport } from './routes/_authenticated/_shell/projects.$name'
+import { Route as AuthenticatedShellProjectsNameIndexRouteImport } from './routes/_authenticated/_shell/projects.$name.index'
+import { Route as AuthenticatedShellProjectsNameSettingsRouteImport } from './routes/_authenticated/_shell/projects.$name.settings'
+import { Route as AuthenticatedShellProjectsNameMilestonesIndexRouteImport } from './routes/_authenticated/_shell/projects.$name.milestones.index'
+import { Route as AuthenticatedShellProjectsNameMilestonesMilestoneRouteImport } from './routes/_authenticated/_shell/projects.$name.milestones.$milestone'
+import { Route as AuthenticatedShellProjectsNameModulesIndexRouteImport } from './routes/_authenticated/_shell/projects.$name.modules.index'
+import { Route as AuthenticatedShellProjectsNameModulesModuleRouteImport } from './routes/_authenticated/_shell/projects.$name.modules.$module'
+import { Route as AuthenticatedShellProjectsNameTasksTaskRouteImport } from './routes/_authenticated/_shell/projects.$name.tasks.$task'
+import { Route as AuthenticatedShellProjectsNameTasksArchivedRouteImport } from './routes/_authenticated/_shell/projects.$name.tasks.archived'
+import { Route as AuthenticatedShellProjectsNameViewsViewRouteImport } from './routes/_authenticated/_shell/projects.$name.views.$view'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -53,20 +62,91 @@ const AuthenticatedShellProjectsNameRoute =
     path: '/projects/$name',
     getParentRoute: () => AuthenticatedShellRoute,
   } as any)
+const AuthenticatedShellProjectsNameIndexRoute =
+  AuthenticatedShellProjectsNameIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameSettingsRoute =
+  AuthenticatedShellProjectsNameSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameMilestonesIndexRoute =
+  AuthenticatedShellProjectsNameMilestonesIndexRouteImport.update({
+    id: '/milestones/',
+    path: '/milestones/',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameMilestonesMilestoneRoute =
+  AuthenticatedShellProjectsNameMilestonesMilestoneRouteImport.update({
+    id: '/milestones/$milestone',
+    path: '/milestones/$milestone',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameModulesIndexRoute =
+  AuthenticatedShellProjectsNameModulesIndexRouteImport.update({
+    id: '/modules/',
+    path: '/modules/',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameModulesModuleRoute =
+  AuthenticatedShellProjectsNameModulesModuleRouteImport.update({
+    id: '/modules/$module',
+    path: '/modules/$module',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameTasksTaskRoute =
+  AuthenticatedShellProjectsNameTasksTaskRouteImport.update({
+    id: '/tasks/$task',
+    path: '/tasks/$task',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameTasksArchivedRoute =
+  AuthenticatedShellProjectsNameTasksArchivedRouteImport.update({
+    id: '/tasks/archived',
+    path: '/tasks/archived',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
+const AuthenticatedShellProjectsNameViewsViewRoute =
+  AuthenticatedShellProjectsNameViewsViewRouteImport.update({
+    id: '/views/$view',
+    path: '/views/$view',
+    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedShellIndexRoute
   '/inbox': typeof AuthenticatedShellInboxRoute
   '/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/settings': typeof AuthenticatedShellSettingsRoute
-  '/projects/$name': typeof AuthenticatedShellProjectsNameRoute
+  '/projects/$name': typeof AuthenticatedShellProjectsNameRouteWithChildren
+  '/projects/$name/settings': typeof AuthenticatedShellProjectsNameSettingsRoute
+  '/projects/$name/': typeof AuthenticatedShellProjectsNameIndexRoute
+  '/projects/$name/milestones/$milestone': typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
+  '/projects/$name/modules/$module': typeof AuthenticatedShellProjectsNameModulesModuleRoute
+  '/projects/$name/tasks/$task': typeof AuthenticatedShellProjectsNameTasksTaskRoute
+  '/projects/$name/tasks/archived': typeof AuthenticatedShellProjectsNameTasksArchivedRoute
+  '/projects/$name/views/$view': typeof AuthenticatedShellProjectsNameViewsViewRoute
+  '/projects/$name/milestones/': typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
+  '/projects/$name/modules/': typeof AuthenticatedShellProjectsNameModulesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedShellIndexRoute
   '/inbox': typeof AuthenticatedShellInboxRoute
   '/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/settings': typeof AuthenticatedShellSettingsRoute
-  '/projects/$name': typeof AuthenticatedShellProjectsNameRoute
+  '/projects/$name/settings': typeof AuthenticatedShellProjectsNameSettingsRoute
+  '/projects/$name': typeof AuthenticatedShellProjectsNameIndexRoute
+  '/projects/$name/milestones/$milestone': typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
+  '/projects/$name/modules/$module': typeof AuthenticatedShellProjectsNameModulesModuleRoute
+  '/projects/$name/tasks/$task': typeof AuthenticatedShellProjectsNameTasksTaskRoute
+  '/projects/$name/tasks/archived': typeof AuthenticatedShellProjectsNameTasksArchivedRoute
+  '/projects/$name/views/$view': typeof AuthenticatedShellProjectsNameViewsViewRoute
+  '/projects/$name/milestones': typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
+  '/projects/$name/modules': typeof AuthenticatedShellProjectsNameModulesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,13 +156,49 @@ export interface FileRoutesById {
   '/_authenticated/_shell/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/_authenticated/_shell/settings': typeof AuthenticatedShellSettingsRoute
   '/_authenticated/_shell/': typeof AuthenticatedShellIndexRoute
-  '/_authenticated/_shell/projects/$name': typeof AuthenticatedShellProjectsNameRoute
+  '/_authenticated/_shell/projects/$name': typeof AuthenticatedShellProjectsNameRouteWithChildren
+  '/_authenticated/_shell/projects/$name/settings': typeof AuthenticatedShellProjectsNameSettingsRoute
+  '/_authenticated/_shell/projects/$name/': typeof AuthenticatedShellProjectsNameIndexRoute
+  '/_authenticated/_shell/projects/$name/milestones/$milestone': typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
+  '/_authenticated/_shell/projects/$name/modules/$module': typeof AuthenticatedShellProjectsNameModulesModuleRoute
+  '/_authenticated/_shell/projects/$name/tasks/$task': typeof AuthenticatedShellProjectsNameTasksTaskRoute
+  '/_authenticated/_shell/projects/$name/tasks/archived': typeof AuthenticatedShellProjectsNameTasksArchivedRoute
+  '/_authenticated/_shell/projects/$name/views/$view': typeof AuthenticatedShellProjectsNameViewsViewRoute
+  '/_authenticated/_shell/projects/$name/milestones/': typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
+  '/_authenticated/_shell/projects/$name/modules/': typeof AuthenticatedShellProjectsNameModulesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/inbox' | '/my-tasks' | '/settings' | '/projects/$name'
+  fullPaths:
+    | '/'
+    | '/inbox'
+    | '/my-tasks'
+    | '/settings'
+    | '/projects/$name'
+    | '/projects/$name/settings'
+    | '/projects/$name/'
+    | '/projects/$name/milestones/$milestone'
+    | '/projects/$name/modules/$module'
+    | '/projects/$name/tasks/$task'
+    | '/projects/$name/tasks/archived'
+    | '/projects/$name/views/$view'
+    | '/projects/$name/milestones/'
+    | '/projects/$name/modules/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/inbox' | '/my-tasks' | '/settings' | '/projects/$name'
+  to:
+    | '/'
+    | '/inbox'
+    | '/my-tasks'
+    | '/settings'
+    | '/projects/$name/settings'
+    | '/projects/$name'
+    | '/projects/$name/milestones/$milestone'
+    | '/projects/$name/modules/$module'
+    | '/projects/$name/tasks/$task'
+    | '/projects/$name/tasks/archived'
+    | '/projects/$name/views/$view'
+    | '/projects/$name/milestones'
+    | '/projects/$name/modules'
   id:
     | '__root__'
     | '/_authenticated'
@@ -92,6 +208,15 @@ export interface FileRouteTypes {
     | '/_authenticated/_shell/settings'
     | '/_authenticated/_shell/'
     | '/_authenticated/_shell/projects/$name'
+    | '/_authenticated/_shell/projects/$name/settings'
+    | '/_authenticated/_shell/projects/$name/'
+    | '/_authenticated/_shell/projects/$name/milestones/$milestone'
+    | '/_authenticated/_shell/projects/$name/modules/$module'
+    | '/_authenticated/_shell/projects/$name/tasks/$task'
+    | '/_authenticated/_shell/projects/$name/tasks/archived'
+    | '/_authenticated/_shell/projects/$name/views/$view'
+    | '/_authenticated/_shell/projects/$name/milestones/'
+    | '/_authenticated/_shell/projects/$name/modules/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -149,15 +274,117 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedShellProjectsNameRouteImport
       parentRoute: typeof AuthenticatedShellRoute
     }
+    '/_authenticated/_shell/projects/$name/': {
+      id: '/_authenticated/_shell/projects/$name/'
+      path: '/'
+      fullPath: '/projects/$name/'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameIndexRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/settings': {
+      id: '/_authenticated/_shell/projects/$name/settings'
+      path: '/settings'
+      fullPath: '/projects/$name/settings'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameSettingsRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/milestones/': {
+      id: '/_authenticated/_shell/projects/$name/milestones/'
+      path: '/milestones'
+      fullPath: '/projects/$name/milestones/'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameMilestonesIndexRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/milestones/$milestone': {
+      id: '/_authenticated/_shell/projects/$name/milestones/$milestone'
+      path: '/milestones/$milestone'
+      fullPath: '/projects/$name/milestones/$milestone'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameMilestonesMilestoneRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/modules/': {
+      id: '/_authenticated/_shell/projects/$name/modules/'
+      path: '/modules'
+      fullPath: '/projects/$name/modules/'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameModulesIndexRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/modules/$module': {
+      id: '/_authenticated/_shell/projects/$name/modules/$module'
+      path: '/modules/$module'
+      fullPath: '/projects/$name/modules/$module'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameModulesModuleRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/tasks/$task': {
+      id: '/_authenticated/_shell/projects/$name/tasks/$task'
+      path: '/tasks/$task'
+      fullPath: '/projects/$name/tasks/$task'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameTasksTaskRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/tasks/archived': {
+      id: '/_authenticated/_shell/projects/$name/tasks/archived'
+      path: '/tasks/archived'
+      fullPath: '/projects/$name/tasks/archived'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameTasksArchivedRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
+    '/_authenticated/_shell/projects/$name/views/$view': {
+      id: '/_authenticated/_shell/projects/$name/views/$view'
+      path: '/views/$view'
+      fullPath: '/projects/$name/views/$view'
+      preLoaderRoute: typeof AuthenticatedShellProjectsNameViewsViewRouteImport
+      parentRoute: typeof AuthenticatedShellProjectsNameRoute
+    }
   }
 }
+
+interface AuthenticatedShellProjectsNameRouteChildren {
+  AuthenticatedShellProjectsNameSettingsRoute: typeof AuthenticatedShellProjectsNameSettingsRoute
+  AuthenticatedShellProjectsNameIndexRoute: typeof AuthenticatedShellProjectsNameIndexRoute
+  AuthenticatedShellProjectsNameMilestonesMilestoneRoute: typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
+  AuthenticatedShellProjectsNameModulesModuleRoute: typeof AuthenticatedShellProjectsNameModulesModuleRoute
+  AuthenticatedShellProjectsNameTasksTaskRoute: typeof AuthenticatedShellProjectsNameTasksTaskRoute
+  AuthenticatedShellProjectsNameTasksArchivedRoute: typeof AuthenticatedShellProjectsNameTasksArchivedRoute
+  AuthenticatedShellProjectsNameViewsViewRoute: typeof AuthenticatedShellProjectsNameViewsViewRoute
+  AuthenticatedShellProjectsNameMilestonesIndexRoute: typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
+  AuthenticatedShellProjectsNameModulesIndexRoute: typeof AuthenticatedShellProjectsNameModulesIndexRoute
+}
+
+const AuthenticatedShellProjectsNameRouteChildren: AuthenticatedShellProjectsNameRouteChildren =
+  {
+    AuthenticatedShellProjectsNameSettingsRoute:
+      AuthenticatedShellProjectsNameSettingsRoute,
+    AuthenticatedShellProjectsNameIndexRoute:
+      AuthenticatedShellProjectsNameIndexRoute,
+    AuthenticatedShellProjectsNameMilestonesMilestoneRoute:
+      AuthenticatedShellProjectsNameMilestonesMilestoneRoute,
+    AuthenticatedShellProjectsNameModulesModuleRoute:
+      AuthenticatedShellProjectsNameModulesModuleRoute,
+    AuthenticatedShellProjectsNameTasksTaskRoute:
+      AuthenticatedShellProjectsNameTasksTaskRoute,
+    AuthenticatedShellProjectsNameTasksArchivedRoute:
+      AuthenticatedShellProjectsNameTasksArchivedRoute,
+    AuthenticatedShellProjectsNameViewsViewRoute:
+      AuthenticatedShellProjectsNameViewsViewRoute,
+    AuthenticatedShellProjectsNameMilestonesIndexRoute:
+      AuthenticatedShellProjectsNameMilestonesIndexRoute,
+    AuthenticatedShellProjectsNameModulesIndexRoute:
+      AuthenticatedShellProjectsNameModulesIndexRoute,
+  }
+
+const AuthenticatedShellProjectsNameRouteWithChildren =
+  AuthenticatedShellProjectsNameRoute._addFileChildren(
+    AuthenticatedShellProjectsNameRouteChildren,
+  )
 
 interface AuthenticatedShellRouteChildren {
   AuthenticatedShellInboxRoute: typeof AuthenticatedShellInboxRoute
   AuthenticatedShellMyTasksRoute: typeof AuthenticatedShellMyTasksRoute
   AuthenticatedShellSettingsRoute: typeof AuthenticatedShellSettingsRoute
   AuthenticatedShellIndexRoute: typeof AuthenticatedShellIndexRoute
-  AuthenticatedShellProjectsNameRoute: typeof AuthenticatedShellProjectsNameRoute
+  AuthenticatedShellProjectsNameRoute: typeof AuthenticatedShellProjectsNameRouteWithChildren
 }
 
 const AuthenticatedShellRouteChildren: AuthenticatedShellRouteChildren = {
@@ -165,7 +392,8 @@ const AuthenticatedShellRouteChildren: AuthenticatedShellRouteChildren = {
   AuthenticatedShellMyTasksRoute: AuthenticatedShellMyTasksRoute,
   AuthenticatedShellSettingsRoute: AuthenticatedShellSettingsRoute,
   AuthenticatedShellIndexRoute: AuthenticatedShellIndexRoute,
-  AuthenticatedShellProjectsNameRoute: AuthenticatedShellProjectsNameRoute,
+  AuthenticatedShellProjectsNameRoute:
+    AuthenticatedShellProjectsNameRouteWithChildren,
 }
 
 const AuthenticatedShellRouteWithChildren =
