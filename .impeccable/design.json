@@ -1,26 +1,32 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-15T05:41:03Z",
-  "title": "Design System: Setu",
+  "generatedAt": "2026-08-25T06:48:52Z",
+  "title": "Design System: Envision",
   "extensions": {
     "colorMeta": {
       "primary": {
         "role": "primary",
         "displayName": "Signal Blue",
-        "canonical": "#1447E6",
-        "tonalRamp": ["#193CB8", "#1447E6", "#155DFC", "#2B7FFF", "#8EC5FF", "#D6E9FF", "#EFF6FF", "#FFFFFF"]
+        "canonical": "oklch(0.488 0.243 264.376)",
+        "tonalRamp": ["#172554", "#1E3A8A", "#1E40AF", "#1447E6", "#155DFC", "#2B7FFF", "#DBEAFE", "#EFF6FF"]
       },
       "foreground": {
         "role": "neutral",
-        "displayName": "Ink",
-        "canonical": "#0C0A09",
-        "tonalRamp": ["#0C0A09", "#1C1917", "#292524", "#57534E", "#79716B", "#A6A09B", "#E7E5E4", "#FAFAF9"]
+        "displayName": "Zinc Ink",
+        "canonical": "oklch(0.141 0.005 285.823)",
+        "tonalRamp": ["#09090B", "#18181B", "#27272A", "#3F3F46", "#71717B", "#A1A1AA", "#E4E4E7", "#FAFAFA"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Soft Zinc",
+        "canonical": "oklch(0.967 0.001 286.375)",
+        "tonalRamp": ["#18181B", "#27272A", "#3F3F46", "#71717B", "#A1A1AA", "#D4D4D8", "#F4F4F5", "#FAFAFA"]
       },
       "destructive": {
         "role": "tertiary",
         "displayName": "Alert Red",
-        "canonical": "#E7000B",
-        "tonalRamp": ["#5A0004", "#8A0007", "#B60009", "#E7000B", "#FF353D", "#FF6467", "#FFB3B5", "#FFF1F1"]
+        "canonical": "oklch(0.577 0.245 27.325)",
+        "tonalRamp": ["#450A0A", "#7F1D1D", "#991B1B", "#E7000B", "#EF4444", "#FF6467", "#FECACA", "#FEF2F2"]
       }
     },
     "typographyMeta": {
@@ -28,135 +34,106 @@
       "headline": {"displayName": "Headline", "purpose": "Primary page headings."},
       "title": {"displayName": "Title", "purpose": "Section and panel titles."},
       "body": {"displayName": "Body", "purpose": "Core reading and important control text."},
-      "body-small": {"displayName": "Body Small", "purpose": "Task cards, controls, navigation, and dense application content."},
-      "label": {"displayName": "Label", "purpose": "Metadata, badges, column summaries, and field labels."},
+      "body-small": {"displayName": "Body Small", "purpose": "Task cards, navigation, and dense application content."},
+      "button": {"displayName": "Button", "purpose": "Implemented button labels at 14px medium."},
+      "label": {"displayName": "Label", "purpose": "Metadata, badges, summaries, and field labels."},
       "caption": {"displayName": "Caption", "purpose": "Timestamps and tertiary metadata only."},
       "metric": {"displayName": "Metric", "purpose": "Compact numeric summaries."}
     },
-    "shadows": [
-      {"name": "shadow-xs", "value": "0 1px 2px rgba(0,0,0,0.05)", "purpose": "Subtle interactive lift."},
-      {"name": "shadow-sm", "value": "0 1px 3px rgba(0,0,0,0.10)", "purpose": "Compact floating elements."},
-      {"name": "shadow-md", "value": "0 4px 6px rgba(0,0,0,0.10)", "purpose": "Transient elevated regions."},
-      {"name": "shadow-lg", "value": "0 10px 15px rgba(0,0,0,0.10)", "purpose": "Rare modal-scale elevation."},
-      {"name": "elevation-card", "value": "0 1px 3px rgba(0,0,0,0.08)", "purpose": "Canonical resting card separation."},
-      {"name": "elevation-popover", "value": "0 4px 12px rgba(0,0,0,0.14)", "purpose": "Menus, comboboxes, and popovers."}
+    "shadows": [],
+    "motion": [
+      {"name": "transition-default", "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default Tailwind transition for button state changes."}
     ],
-    "motion": [],
-    "breakpoints": []
+    "breakpoints": [
+      {"name": "sm", "value": "640px"},
+      {"name": "md", "value": "768px"},
+      {"name": "lg", "value": "1024px"},
+      {"name": "xl", "value": "1280px"},
+      {"name": "2xl", "value": "1536px"}
+    ]
   },
   "components": [
     {
-      "name": "Primary Button",
+      "name": "Default Button",
       "kind": "button",
-      "refersTo": "button-primary",
-      "description": "The single strongest action in a region.",
-      "html": "<button class=\"ds-btn-primary\">Create task</button>",
-      "css": ".ds-btn-primary{height:40px;padding:10px 16px;border:0;border-radius:12px;background:#1447E6;color:#EFF6FF;font:500 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-primary:hover{background:#155DFC}.ds-btn-primary:active{background:#193CB8}.ds-btn-primary:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}"
+      "refersTo": "button-default",
+      "description": "The implemented primary action at the default 36px size.",
+      "html": "<button class=\"ds-btn ds-btn-default\">Create task</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-default{background:var(--color-primary);color:var(--color-primary-foreground)}.ds-btn-default:hover{background:color-mix(in oklch,var(--color-primary) 80%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent);outline-offset:0}.ds-btn:disabled{pointer-events:none;opacity:.5}"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
       "description": "A supporting action with lower visual priority.",
-      "html": "<button class=\"ds-btn-secondary\">Filter</button>",
-      "css": ".ds-btn-secondary{height:40px;padding:10px 16px;border:0;border-radius:12px;background:#F4F4F5;color:#18181B;font:500 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-secondary:hover{background:#E7E5E4}.ds-btn-secondary:active{background:#D6D3D1}.ds-btn-secondary:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}"
+      "html": "<button class=\"ds-btn ds-btn-secondary\">Filter</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-secondary{background:var(--color-secondary);color:var(--color-secondary-foreground)}.ds-btn-secondary:hover{background:color-mix(in oklch,var(--color-secondary),var(--color-foreground) 5%)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
     },
     {
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "A quiet action that still needs a bounded target.",
-      "html": "<button class=\"ds-btn-outline\">View options</button>",
-      "css": ".ds-btn-outline{height:40px;padding:10px 16px;border:1px solid #E7E5E4;border-radius:12px;background:#FFFFFF;color:#0C0A09;font:500 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-outline:hover{background:#F5F5F4}.ds-btn-outline:active{background:#F4F4F5}.ds-btn-outline:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}"
+      "description": "A bounded action using the semantic border and background.",
+      "html": "<button class=\"ds-btn ds-btn-outline\">View options</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-outline{border-color:var(--color-border);background:var(--color-background);color:var(--color-foreground)}.ds-btn-outline:hover{background:var(--color-muted)}.dark .ds-btn-outline{background:transparent}.dark .ds-btn-outline:hover{background:color-mix(in oklch,var(--color-input) 30%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
       "description": "A low-emphasis toolbar or inline action.",
-      "html": "<button class=\"ds-btn-ghost\">More</button>",
-      "css": ".ds-btn-ghost{height:40px;padding:10px 16px;border:0;border-radius:12px;background:transparent;color:#0C0A09;font:500 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-ghost:hover{background:#F5F5F4}.ds-btn-ghost:active{background:#F4F4F5}.ds-btn-ghost:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}"
+      "html": "<button class=\"ds-btn ds-btn-ghost\">More</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-ghost{background:transparent;color:var(--color-foreground)}.ds-btn-ghost:hover{background:var(--color-muted)}.dark .ds-btn-ghost:hover{background:color-mix(in oklch,var(--color-muted) 50%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
     },
     {
       "name": "Destructive Button",
       "kind": "button",
       "refersTo": "button-destructive",
-      "description": "A destructive action that requires explicit risk signaling.",
-      "html": "<button class=\"ds-btn-destructive\">Delete task</button>",
-      "css": ".ds-btn-destructive{height:40px;padding:10px 16px;border:0;border-radius:12px;background:#E7000B;color:#FFFFFF;font:500 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-destructive:hover{background:#B60009}.ds-btn-destructive:active{background:#8A0007}.ds-btn-destructive:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}"
+      "description": "A risk action using a translucent red surface rather than a solid fill.",
+      "html": "<button class=\"ds-btn ds-btn-destructive\">Delete task</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-destructive{background:color-mix(in oklch,var(--color-destructive) 10%,transparent);color:var(--color-destructive)}.ds-btn-destructive:hover{background:color-mix(in oklch,var(--color-destructive) 20%,transparent)}.ds-btn-destructive:focus-visible{border-color:color-mix(in oklch,var(--color-destructive) 40%,transparent);outline:3px solid color-mix(in oklch,var(--color-destructive) 20%,transparent)}.dark .ds-btn-destructive{background:color-mix(in oklch,var(--color-destructive) 20%,transparent)}.dark .ds-btn-destructive:hover{background:color-mix(in oklch,var(--color-destructive) 30%,transparent)}.dark .ds-btn-destructive:focus-visible{outline-color:color-mix(in oklch,var(--color-destructive) 40%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
     },
     {
-      "name": "Status Badge",
-      "kind": "chip",
-      "refersTo": "badge",
-      "description": "Compact selected-state or status metadata.",
-      "html": "<span class=\"ds-badge\">On track</span>",
-      "css": ".ds-badge{display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:2px 10px;border-radius:9999px;background:#1447E6;color:#EFF6FF;font:600 12px/1.333 Inter,ui-sans-serif,system-ui,sans-serif}"
-    },
-    {
-      "name": "Text Input",
-      "kind": "input",
-      "refersTo": "input",
-      "description": "Canonical single-line text field.",
-      "html": "<input class=\"ds-input\" placeholder=\"Search tasks\" />",
-      "css": ".ds-input{width:260px;height:40px;padding:10px 12px;border:1px solid #E7E5E4;border-radius:12px;background:#FFFFFF;color:#0C0A09;font:400 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif}.ds-input::placeholder{color:#79716B}.ds-input:hover{border-color:#A6A09B}.ds-input:focus-visible{outline:3px solid #A6A09B;outline-offset:1px}"
-    },
-    {
-      "name": "Task Card",
-      "kind": "card",
-      "refersTo": "card",
-      "description": "The canonical draggable Kanban work item with milestone, issue, estimate, and assignee context.",
-      "html": "<article class=\"ds-task-card\" tabindex=\"0\" aria-selected=\"false\"><strong>Ship webhook delivery logs</strong><span class=\"ds-task-tag\"><i></i>Private beta</span><footer><span>SET-176</span><b>8 pt</b><span class=\"ds-avatar\">RN</span></footer></article>",
-      "css": ".ds-task-card{width:272px;padding:16px;border:1px solid #E7E5E4;border-radius:14px;background:#FFFFFF;color:#0C0A09;box-shadow:0 1px 3px rgba(0,0,0,.08);font-family:Inter,ui-sans-serif,system-ui,sans-serif;cursor:grab}.ds-task-card strong{display:block;font-size:14px;line-height:1.429;font-weight:600}.ds-task-tag{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:2px 10px;border-radius:9999px;background:#F5F5F4;color:#79716B;font-size:12px;line-height:1.333}.ds-task-tag i{width:6px;height:6px;border-radius:9999px;background:#1447E6}.ds-task-card footer{display:flex;align-items:center;gap:8px;margin-top:12px;color:#79716B;font-size:12px}.ds-task-card footer b{padding:2px 10px;border-radius:9999px;background:#F4F4F5;color:#18181B;font-weight:500}.ds-avatar{display:grid;place-items:center;width:24px;height:24px;margin-left:auto;border-radius:9999px;background:#F4F4F5;color:#18181B;font-weight:600}.ds-task-card:hover{border-color:#A6A09B}.ds-task-card:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}.ds-task-card[aria-selected=\"true\"]{border-color:#1447E6;border-width:2px}"
-    },
-    {
-      "name": "Sidebar Navigation Item",
-      "kind": "nav",
-      "refersTo": "sidebar-accent",
-      "description": "Quiet app-shell navigation with a consistent authored icon and blue active-state indicator.",
-      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg><span>Board</span></a>",
-      "css": ".ds-nav-item{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 12px;border-radius:10px;color:#0C0A09;text-decoration:none;font:500 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif}.ds-nav-item svg{width:18px;height:18px;fill:none;stroke:#79716B;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ds-nav-item:hover{background:#F5F5F4}.ds-nav-item-active{background:#F5F5F4;box-shadow:inset 3px 0 0 #155DFC}.ds-nav-item-active svg{stroke:#155DFC}.ds-nav-item:focus-visible{outline:3px solid #A6A09B;outline-offset:1px}"
-    },
-    {
-      "name": "Move Error Banner",
-      "kind": "custom",
-      "refersTo": "card",
-      "description": "An inline recovery state that explains a failed card move and provides a direct retry action.",
-      "html": "<div class=\"ds-move-error\" role=\"alert\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v6M12 17h.01\"/></svg><div><strong>Couldn’t move SET-221</strong><span>The card returned to In progress. Check your connection and try again.</span></div><button>Retry</button></div>",
-      "css": ".ds-move-error{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid #E7000B;border-radius:14px;background:#FFFFFF;color:#0C0A09;font-family:Inter,ui-sans-serif,system-ui,sans-serif}.ds-move-error>svg{width:24px;height:24px;flex:none;fill:none;stroke:#E7000B;stroke-width:1.8;stroke-linecap:round}.ds-move-error div{display:grid;gap:4px}.ds-move-error strong{font-size:14px;line-height:1.429}.ds-move-error span{color:#79716B;font-size:12px;line-height:1.333}.ds-move-error button{height:40px;margin-left:auto;padding:10px 16px;border:1px solid #E7E5E4;border-radius:12px;background:#FFFFFF;color:#0C0A09;font:600 14px/1.429 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-move-error button:hover{background:#F5F5F4}.ds-move-error button:focus-visible{outline:3px solid #A6A09B;outline-offset:2px}"
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "An inline action styled as primary text.",
+      "html": "<button class=\"ds-btn ds-btn-link\">Open project</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-link{background:transparent;color:var(--color-primary);text-underline-offset:4px}.ds-btn-link:hover{text-decoration:underline}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent);outline-offset:0}.ds-btn:disabled{pointer-events:none;opacity:.5}"
     }
   ],
   "narrative": {
     "northStar": "The Calm Operations Desk",
-    "overview": "Setu uses the incumbent Penpot system as its visual authority: a restrained shadcn-style interface built from semantic tokens, neutral surfaces, a focused blue signal color, and generous but controlled rounding. It is designed for sustained operational use rather than decorative spectacle. Hierarchy comes from spacing, typography, borders, and selective emphasis.\n\nThe system supports matched light and dark modes. Components must bind to semantic roles rather than hard-coded theme colors so each mode remains coherent. Dense project information should still feel breathable, predictable, and direct.",
+    "overview": "Envision is a restrained shadcn-style interface built from the semantic Tailwind v4 theme in frontend/src/index.css. Neutral zinc surfaces carry most of the interface. A concentrated blue marks action and selection, while borders and state changes provide structure without visual noise.\n\nLight and dark themes use the same semantic roles. Components bind to those roles rather than fixed light-mode values, so project information remains legible in either theme.",
     "keyCharacteristics": [
-      "Semantic light and dark color roles.",
-      "Inter throughout, with tighter tracking only on larger headings.",
-      "A 4px spacing foundation and 10–30px radius scale.",
-      "Borders and tonal layering before shadows.",
-      "Blue reserved for primary actions, active navigation, and meaningful state."
+      "Semantic light and dark color roles authored in OKLCH.",
+      "Inter Variable throughout the product.",
+      "A 4px spacing foundation and a computed 6–26px radius scale.",
+      "Zinc surfaces and borders before shadows.",
+      "Blue reserved for primary action, active navigation, and meaningful emphasis."
     ],
     "rules": [
-      {"name": "The Blue Signal Rule", "body": "Blue marks a meaningful action, selected location, focus, or emphasized datum; it is not ambient decoration.", "section": "colors"},
-      {"name": "The Semantic Pairing Rule", "body": "Every surface uses its matched foreground token, including cards, popovers, sidebars, primary controls, and dark-mode equivalents.", "section": "colors"},
-      {"name": "The Single-Family Rule", "body": "Use Inter for every role; hierarchy comes from the documented scale, weight, and spacing rather than decorative font changes.", "section": "typography"},
-      {"name": "The Tightening Rule", "body": "Letter spacing remains neutral through 18px and tightens progressively from 20px upward.", "section": "typography"},
-      {"name": "The Border-First Rule", "body": "If a border or tonal shift can explain the layer, do not add a shadow.", "section": "elevation"},
-      {"name": "The Radius-by-Scale Rule", "body": "Corner size grows with the container; do not apply pill geometry to ordinary rectangular controls or task cards.", "section": "shapes"}
+      {"name": "The Blue Signal Rule", "body": "Blue marks a meaningful action, selected location, or emphasized datum. It is not ambient decoration.", "section": "colors"},
+      {"name": "The Semantic Pairing Rule", "body": "Every surface uses its matching foreground role, including cards, popovers, sidebars, controls, and their dark equivalents.", "section": "colors"},
+      {"name": "The Source Rule", "body": "frontend/src/index.css is the normative color and radius source. Keep this document and Paper tokens aligned when that file changes.", "section": "colors"},
+      {"name": "The Single-Family Rule", "body": "Use Inter Variable for every role. Size and weight carry hierarchy.", "section": "typography"},
+      {"name": "The Tightening Rule", "body": "Keep tracking neutral through 18px, then tighten it gradually for larger roles.", "section": "typography"},
+      {"name": "The Border-First Rule", "body": "If a border or tonal shift explains the layer, do not add a shadow.", "section": "elevation"},
+      {"name": "The Radius-by-Component Rule", "body": "Use the exact radius token chosen by the component implementation. Do not substitute the older 12px-control and 14px-card convention.", "section": "shapes"}
     ],
     "dos": [
-      "Do bind components to semantic tokens so light and dark modes remain synchronized.",
-      "Do use the 4px spacing scale and the established 12px-control / 14px-card radius relationship.",
-      "Do reserve blue for meaningful actions, selection, focus, and data emphasis.",
-      "Do use borders and tonal shifts before increasing elevation.",
-      "Do keep dense metadata in the 12–14px roles while preserving clear task titles."
+      "Do bind component colors to semantic Tailwind tokens so light and dark themes stay synchronized.",
+      "Do preserve the 4px spacing base and the computed radius scale from --radius: 0.625rem.",
+      "Do reserve blue for action, selection, focus-adjacent emphasis, and ordered chart data.",
+      "Do use zinc surfaces and borders before adding elevation.",
+      "Do match implemented component sizes and states before documenting new variants."
     ],
     "donts": [
-      "Don't introduce gradients, glass effects, or decorative color outside the token system.",
-      "Don't use Alert Red for ordinary priority; it is reserved for destructive or genuinely risky states.",
-      "Don't hard-code light colors into components that must support dark mode.",
-      "Don't apply large shadows to resting application surfaces.",
-      "Don't mix radius values arbitrarily within one component family."
+      "Don't reintroduce the previous stone palette; the frontend uses zinc neutrals.",
+      "Don't describe buttons as 12px-radius, 40px controls by default; the implementation is 26px and 36px.",
+      "Don't hard-code light colors into components that support dark mode.",
+      "Don't use Alert Red for ordinary priority or decoration.",
+      "Don't document components as implemented until they exist in frontend/."
     ]
   }
 }

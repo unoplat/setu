@@ -1,310 +1,304 @@
 ---
-name: Setu
+name: Envision
 description: A precise, low-noise operations interface for SaaS project work.
 colors:
-  background: "#FFFFFF"
-  foreground: "#0C0A09"
-  card: "#FFFFFF"
-  card-foreground: "#0C0A09"
-  popover: "#FFFFFF"
-  popover-foreground: "#0C0A09"
-  primary: "#1447E6"
-  primary-foreground: "#EFF6FF"
-  secondary: "#F4F4F5"
-  secondary-foreground: "#18181B"
-  muted: "#F5F5F4"
-  muted-foreground: "#79716B"
-  accent: "#F5F5F4"
-  accent-foreground: "#1C1917"
-  destructive: "#E7000B"
-  border: "#E7E5E4"
-  input: "#E7E5E4"
-  ring: "#A6A09B"
-  sidebar: "#FAFAF9"
-  sidebar-foreground: "#0C0A09"
-  sidebar-primary: "#155DFC"
-  sidebar-primary-foreground: "#EFF6FF"
-  sidebar-accent: "#F5F5F4"
-  sidebar-accent-foreground: "#1C1917"
-  sidebar-border: "#E7E5E4"
-  sidebar-ring: "#A6A09B"
-  chart-1: "#8EC5FF"
-  chart-2: "#2B7FFF"
-  chart-3: "#155DFC"
-  chart-4: "#1447E6"
-  chart-5: "#193CB8"
-  dark-background: "#0C0A09"
-  dark-foreground: "#FAFAF9"
-  dark-card: "#1C1917"
-  dark-card-foreground: "#FAFAF9"
-  dark-primary: "#193CB8"
-  dark-secondary: "#27272A"
-  dark-secondary-foreground: "#FAFAFA"
-  dark-muted: "#292524"
-  dark-muted-foreground: "#A6A09B"
-  dark-destructive: "#FF6467"
-  dark-border: "#FFFFFF1A"
-  dark-input: "#FFFFFF26"
-  dark-ring: "#79716B"
+  background: "oklch(1 0 0)"
+  foreground: "oklch(0.141 0.005 285.823)"
+  card: "oklch(1 0 0)"
+  card-foreground: "oklch(0.141 0.005 285.823)"
+  popover: "oklch(1 0 0)"
+  popover-foreground: "oklch(0.141 0.005 285.823)"
+  primary: "oklch(0.488 0.243 264.376)"
+  primary-foreground: "oklch(0.97 0.014 254.604)"
+  secondary: "oklch(0.967 0.001 286.375)"
+  secondary-foreground: "oklch(0.21 0.006 285.885)"
+  muted: "oklch(0.967 0.001 286.375)"
+  muted-foreground: "oklch(0.552 0.016 285.938)"
+  accent: "oklch(0.967 0.001 286.375)"
+  accent-foreground: "oklch(0.21 0.006 285.885)"
+  destructive: "oklch(0.577 0.245 27.325)"
+  border: "oklch(0.92 0.004 286.32)"
+  input: "oklch(0.92 0.004 286.32)"
+  ring: "oklch(0.705 0.015 286.067)"
+  chart-1: "oklch(0.828 0.111 230.318)"
+  chart-2: "oklch(0.685 0.169 237.323)"
+  chart-3: "oklch(0.588 0.158 241.966)"
+  chart-4: "oklch(0.5 0.134 242.749)"
+  chart-5: "oklch(0.443 0.11 240.79)"
+  sidebar: "oklch(0.985 0 0)"
+  sidebar-foreground: "oklch(0.141 0.005 285.823)"
+  sidebar-primary: "oklch(0.546 0.245 262.881)"
+  sidebar-primary-foreground: "oklch(0.97 0.014 254.604)"
+  sidebar-accent: "oklch(0.967 0.001 286.375)"
+  sidebar-accent-foreground: "oklch(0.21 0.006 285.885)"
+  sidebar-border: "oklch(0.92 0.004 286.32)"
+  sidebar-ring: "oklch(0.705 0.015 286.067)"
+  dark-background: "oklch(0.141 0.005 285.823)"
+  dark-foreground: "oklch(0.985 0 0)"
+  dark-card: "oklch(0.21 0.006 285.885)"
+  dark-card-foreground: "oklch(0.985 0 0)"
+  dark-popover: "oklch(0.21 0.006 285.885)"
+  dark-popover-foreground: "oklch(0.985 0 0)"
+  dark-primary: "oklch(0.424 0.199 265.638)"
+  dark-primary-foreground: "oklch(0.97 0.014 254.604)"
+  dark-secondary: "oklch(0.274 0.006 286.033)"
+  dark-secondary-foreground: "oklch(0.985 0 0)"
+  dark-muted: "oklch(0.274 0.006 286.033)"
+  dark-muted-foreground: "oklch(0.705 0.015 286.067)"
+  dark-accent: "oklch(0.274 0.006 286.033)"
+  dark-accent-foreground: "oklch(0.985 0 0)"
+  dark-destructive: "oklch(0.704 0.191 22.216)"
+  dark-border: "oklch(1 0 0 / 10%)"
+  dark-input: "oklch(1 0 0 / 15%)"
+  dark-ring: "oklch(0.552 0.016 285.938)"
+  dark-sidebar: "oklch(0.21 0.006 285.885)"
+  dark-sidebar-foreground: "oklch(0.985 0 0)"
+  dark-sidebar-primary: "oklch(0.623 0.214 259.815)"
+  dark-sidebar-primary-foreground: "oklch(0.97 0.014 254.604)"
+  dark-sidebar-accent: "oklch(0.274 0.006 286.033)"
+  dark-sidebar-accent-foreground: "oklch(0.985 0 0)"
+  dark-sidebar-border: "oklch(1 0 0 / 10%)"
+  dark-sidebar-ring: "oklch(0.552 0.016 285.938)"
 typography:
   display:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "36px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "2.25rem"
     fontWeight: 700
     lineHeight: 1.111
-    letterSpacing: "-0.6px"
+    letterSpacing: "-0.0167em"
   headline:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "30px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "1.875rem"
     fontWeight: 700
     lineHeight: 1.2
-    letterSpacing: "-0.4px"
+    letterSpacing: "-0.0133em"
   title:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "24px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "1.5rem"
     fontWeight: 600
     lineHeight: 1.333
-    letterSpacing: "-0.2px"
+    letterSpacing: "-0.0083em"
   body:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "16px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
-    letterSpacing: "0px"
+    letterSpacing: "0em"
   body-small:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "14px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.429
-    letterSpacing: "0px"
+    letterSpacing: "0em"
+  button:
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 500
+    lineHeight: 1.429
+    letterSpacing: "0em"
   label:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "12px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: 1.333
-    letterSpacing: "0px"
+    letterSpacing: "0em"
   caption:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "10px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.625rem"
     fontWeight: 400
     lineHeight: 1.4
-    letterSpacing: "0px"
+    letterSpacing: "0em"
   metric:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "28px"
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "1.75rem"
     fontWeight: 700
     lineHeight: 1.143
-    letterSpacing: "-0.2px"
+    letterSpacing: "-0.0071em"
 rounded:
-  sm: "10px"
-  md: "12px"
-  lg: "14px"
-  xl: "18px"
-  2xl: "22px"
-  3xl: "26px"
-  4xl: "30px"
+  sm: "0.375rem"
+  md: "0.5rem"
+  lg: "0.625rem"
+  xl: "0.875rem"
+  2xl: "1.125rem"
+  3xl: "1.375rem"
+  4xl: "1.625rem"
   full: "9999px"
 spacing:
-  1: "4px"
-  2: "8px"
-  3: "12px"
-  4: "16px"
-  5: "20px"
-  6: "24px"
-  8: "32px"
-  10: "40px"
-  12: "48px"
-  16: "64px"
+  1: "0.25rem"
+  2: "0.5rem"
+  3: "0.75rem"
+  4: "1rem"
+  5: "1.25rem"
+  6: "1.5rem"
+  8: "2rem"
+  10: "2.5rem"
+  12: "3rem"
+  16: "4rem"
 components:
-  button-primary:
+  button-default:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
-    typography: "{typography.body-small}"
-    rounded: "{rounded.md}"
-    padding: "10px 16px"
-    height: "40px"
+    typography: "{typography.button}"
+    rounded: "{rounded.4xl}"
+    padding: "0 0.75rem"
+    height: "2.25rem"
   button-secondary:
     backgroundColor: "{colors.secondary}"
     textColor: "{colors.secondary-foreground}"
-    typography: "{typography.body-small}"
-    rounded: "{rounded.md}"
-    padding: "10px 16px"
-    height: "40px"
+    typography: "{typography.button}"
+    rounded: "{rounded.4xl}"
+    padding: "0 0.75rem"
+    height: "2.25rem"
   button-outline:
     backgroundColor: "{colors.background}"
     textColor: "{colors.foreground}"
-    typography: "{typography.body-small}"
-    rounded: "{rounded.md}"
-    padding: "10px 16px"
-    height: "40px"
-  button-destructive:
-    backgroundColor: "{colors.destructive}"
-    textColor: "{colors.background}"
-    typography: "{typography.body-small}"
-    rounded: "{rounded.md}"
-    padding: "10px 16px"
-    height: "40px"
-  card:
-    backgroundColor: "{colors.card}"
-    textColor: "{colors.card-foreground}"
-    rounded: "{rounded.lg}"
-    padding: "16px"
-    width: "272px"
-  input:
-    backgroundColor: "{colors.background}"
+    typography: "{typography.button}"
+    rounded: "{rounded.4xl}"
+    padding: "0 0.75rem"
+    height: "2.25rem"
+  button-ghost:
+    backgroundColor: "transparent"
     textColor: "{colors.foreground}"
-    typography: "{typography.body-small}"
-    rounded: "{rounded.md}"
-    padding: "10px 12px"
-    height: "40px"
-    width: "260px"
-  badge:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.primary-foreground}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "2px 10px"
-    height: "20px"
+    typography: "{typography.button}"
+    rounded: "{rounded.4xl}"
+    padding: "0 0.75rem"
+    height: "2.25rem"
+  button-destructive:
+    backgroundColor: "oklch(0.577 0.245 27.325 / 10%)"
+    textColor: "{colors.destructive}"
+    typography: "{typography.button}"
+    rounded: "{rounded.4xl}"
+    padding: "0 0.75rem"
+    height: "2.25rem"
+  button-link:
+    backgroundColor: "transparent"
+    textColor: "{colors.primary}"
+    typography: "{typography.button}"
+    rounded: "{rounded.4xl}"
+    padding: "0 0.75rem"
+    height: "2.25rem"
 ---
 
-# Design System: Setu
+# Design System: Envision
 
 ## Overview
 
 **Creative North Star: "The Calm Operations Desk"**
 
-Setu uses the incumbent Penpot system as its visual authority: a restrained shadcn-style interface built from semantic tokens, neutral surfaces, a focused blue signal color, and generous but controlled rounding. It is designed for sustained operational use rather than decorative spectacle. Hierarchy comes from spacing, typography, borders, and selective emphasis.
+Envision is a restrained shadcn-style interface built from the semantic Tailwind v4 theme in `frontend/src/index.css`. Neutral zinc surfaces carry most of the interface. A concentrated blue marks action and selection, while borders and state changes provide structure without visual noise.
 
-The system supports matched light and dark modes. Components must bind to semantic roles rather than hard-coded theme colors so each mode remains coherent. Dense project information should still feel breathable, predictable, and direct.
+Light and dark themes use the same semantic roles. Components bind to those roles rather than fixed light-mode values, so project information remains legible in either theme.
 
 **Key Characteristics:**
-- Semantic light and dark color roles.
-- Inter throughout, with tighter tracking only on larger headings.
-- A 4px spacing foundation and 10–30px radius scale.
-- Borders and tonal layering before shadows.
-- Blue reserved for primary actions, active navigation, and meaningful state.
+- Semantic light and dark color roles authored in OKLCH.
+- Inter Variable throughout the product.
+- A 4px spacing foundation and a computed 6–26px radius scale.
+- Zinc surfaces and borders before shadows.
+- Blue reserved for primary action, active navigation, and meaningful emphasis.
 
 ## Colors
 
-The palette pairs warm-neutral surfaces with a concentrated cobalt-blue action scale and a single explicit destructive red.
+The palette combines neutral zinc surfaces, a cobalt primary, a cyan-blue chart sequence, and one destructive red.
 
 ### Primary
-- **Signal Blue:** The primary action, selected-navigation, focus-adjacent, and emphasized data color. Use its five-step chart family when several related series require ordered intensity.
+- **Signal Blue:** Primary actions, selected navigation, focus-adjacent emphasis, and important data. The chart family moves from light cyan to deep blue for ordered series.
 
 ### Secondary
-- **Quiet Zinc:** Secondary controls and low-emphasis containers that need separation without competing with the main action.
-
-### Neutral
-- **Canvas White:** Main light-mode page and card surfaces.
-- **Ink:** Primary text and high-contrast icons.
-- **Soft Stone:** Muted surfaces, hover-ready regions, and quiet grouping.
-- **Warm Gray:** Secondary text, metadata, and placeholders.
-- **Hairline Stone:** Borders, dividers, and field outlines.
-- **Night Ink:** Dark-mode page ground with lifted brown-black cards and translucent borders.
+- **Quiet Zinc:** Secondary controls, muted regions, hover states, and low-emphasis grouping.
 
 ### Tertiary
-- **Alert Red:** Destructive actions and high-risk state only; never use it for ordinary priority or decoration.
+- **Alert Red:** Destructive actions, invalid states, and genuine risk. The button uses a translucent red surface with red text rather than a solid danger fill.
+
+### Neutral
+- **Canvas White:** Main light-mode page, card, and popover ground.
+- **Zinc Ink:** Primary text and high-contrast icons.
+- **Soft Zinc:** Secondary surfaces, muted areas, and hover feedback.
+- **Middle Zinc:** Metadata, placeholders, and focus rings.
+- **Hairline Zinc:** Borders, dividers, and field outlines.
+- **Night Zinc:** Dark canvas with lifted zinc cards and translucent white borders.
 
 ### Named Rules
 
-**The Blue Signal Rule.** Blue marks a meaningful action, selected location, focus, or emphasized datum; it is not ambient decoration.
+**The Blue Signal Rule.** Blue marks a meaningful action, selected location, or emphasized datum. It is not ambient decoration.
 
-**The Semantic Pairing Rule.** Every surface uses its matched foreground token, including cards, popovers, sidebars, primary controls, and dark-mode equivalents.
+**The Semantic Pairing Rule.** Every surface uses its matching foreground role, including cards, popovers, sidebars, controls, and their dark equivalents.
+
+**The Source Rule.** `frontend/src/index.css` is the normative color and radius source. Keep this document and Paper tokens aligned when that file changes.
 
 ## Typography
 
-**Display Font:** Inter (with `ui-sans-serif`, `system-ui`, `sans-serif` fallbacks)  
-**Body Font:** Inter (same fallback stack)  
-**Label Font:** Inter
+**Display Font:** Inter Variable with a sans-serif fallback
 
-**Character:** Neutral, compact, and highly legible. Weight and scale create hierarchy without switching typefaces or relying on uppercase styling.
+**Body Font:** Inter Variable with a sans-serif fallback
+
+**Label Font:** Inter Variable
+
+**Character:** Neutral, compact, and highly legible. Weight and scale create hierarchy without changing typefaces.
 
 ### Hierarchy
-- **Display** (700, 36px, 1.111): Rare top-level statements and major empty states.
-- **Headline** (700, 30px, 1.2): Primary page headings.
-- **Title** (600–700, 24px, 1.333): Section and panel titles.
-- **Body** (400–600, 16px, 1.5): Core reading and important control text.
-- **Body Small** (400–600, 14px, 1.429): Task cards, controls, navigation, and dense application content.
-- **Label** (400–600, 12px, 1.333): Metadata, badges, column summaries, and field labels.
-- **Caption** (400, 10px): Timestamps and tertiary metadata only.
-- **Metric** (700, 28px): Compact numeric summaries.
+- **Display** (700, 36px, 40px): Rare top-level statements and major empty states.
+- **Headline** (700, 30px, 36px): Primary page headings.
+- **Title** (600, 24px, 32px): Section and panel titles.
+- **Body** (400, 16px, 24px): Core reading and important control text.
+- **Body Small** (400, 14px, 20px): Task cards, navigation, and dense application content.
+- **Button** (500, 14px, 20px): Implemented button labels.
+- **Label** (500–600, 12px, 16px): Metadata, badges, summaries, and field labels.
+- **Caption** (400, 10px, 14px): Timestamps and tertiary metadata only.
+- **Metric** (700, 28px, 32px): Compact numeric summaries.
 
 ### Named Rules
 
-**The Single-Family Rule.** Use Inter for every role; hierarchy comes from the documented scale, weight, and spacing rather than decorative font changes.
+**The Single-Family Rule.** Use Inter Variable for every role. Size and weight carry hierarchy.
 
-**The Tightening Rule.** Letter spacing remains neutral through 18px and tightens progressively from 20px upward.
+**The Tightening Rule.** Keep tracking neutral through 18px, then tighten it gradually for larger roles.
 
 ## Layout
 
-The system uses a 4px base rhythm with practical increments at 8, 12, 16, 20, 24, 32, 40, 48, and 64px. Application shells pair a quiet sidebar with a brighter content canvas. Major regions are separated by semantic borders or background changes; cards and controls use internal padding rather than oversized outer whitespace.
+Envision uses Tailwind's 4px spacing base with practical steps at 8, 12, 16, 20, 24, 32, 40, 48, and 64px. App shells pair a quiet sidebar with a brighter content canvas. Borders or semantic background changes separate major regions.
 
-Dense operating surfaces should preserve one stable reading order: page context and actions first, then filters or view controls, then the work surface. Responsive adaptations may collapse secondary navigation and allow the work surface to scroll horizontally when preserving its information topology is more usable than compressing it.
+Keep one stable reading order: page context and actions, view controls, then the work area. On narrow screens, collapse secondary navigation before compressing task content. A Kanban work area may scroll horizontally when that preserves column meaning better than squeezing the board.
 
 ## Elevation & Depth
 
-Setu uses restrained layering. Borders and tonal surfaces establish most hierarchy. Shadows are reserved for cards that need slight separation and popovers that genuinely float above the work surface.
-
-### Shadow Vocabulary
-- **Extra Small:** `0 1px 2px rgba(0,0,0,0.05)` for subtle interactive lift.
-- **Small:** `0 1px 3px rgba(0,0,0,0.10)` for compact floating elements.
-- **Medium:** `0 4px 6px rgba(0,0,0,0.10)` for transient elevated regions.
-- **Large:** `0 10px 15px rgba(0,0,0,0.10)` for rare modal-scale elevation.
-- **Card Elevation:** `0 1px 3px rgba(0,0,0,0.08)` for canonical cards.
-- **Popover Elevation:** `0 4px 12px rgba(0,0,0,0.14)` for menus, comboboxes, and popovers.
+The current frontend theme does not define custom shadow tokens. Use tonal layering and the semantic border by default. Add a Tailwind shadow only for transient UI that must float, such as menus, popovers, and dialogs.
 
 ### Named Rules
 
-**The Border-First Rule.** If a border or tonal shift can explain the layer, do not add a shadow.
+**The Border-First Rule.** If a border or tonal shift explains the layer, do not add a shadow.
 
 ## Shapes
 
-The form language is softly geometric. Controls use 12px corners, cards use 14px, compact surfaces may use 10px, and larger containers can step through 18–30px. Pills and status badges use the full radius. Borders are one pixel by default, two pixels only for explicit emphasis, and focus treatment uses a three-pixel ring.
+The base radius is 10px. Tailwind derives compact 6px and 8px steps, a 10px default, then 14px, 18px, 22px, and 26px steps for progressively larger or more pill-like controls. The implemented button uses the 26px step. Full pills remain appropriate for compact badges and avatars.
 
-**The Radius-by-Scale Rule.** Corner size grows with the container; do not apply pill geometry to ordinary rectangular controls or task cards.
+Borders are one pixel by default. Focus and invalid states use a three-pixel ring with transparent semantic color.
+
+**The Radius-by-Component Rule.** Use the exact radius token chosen by the component implementation. Do not substitute the older 12px-control and 14px-card convention.
 
 ## Components
 
 ### Buttons
-- **Shape:** Soft rectangular control with a 12px radius and 40px height.
-- **Primary:** Signal Blue surface, pale-blue foreground, 14px medium text, and 10px × 16px padding.
-- **Secondary:** Quiet Zinc surface with dark neutral text.
-- **Outline:** Canvas surface with a one-pixel Hairline Stone border.
-- **Ghost:** Transparent at rest with foreground text.
-- **Destructive:** Alert Red surface with white text.
-- **Focus:** Use the semantic ring color with the three-pixel focus-ring width.
-
-### Chips
-- **Style:** Full-radius badges with 12px medium or semibold text and compact horizontal padding.
-- **State:** Primary for selected or emphasized status, secondary for neutral metadata, outline for quiet state, and destructive only for risk or failure.
-
-### Cards / Containers
-- **Corner Style:** 14px radius.
-- **Background:** Semantic card surface and card foreground.
-- **Shadow Strategy:** Card Elevation only when the card needs separation from its immediate background.
-- **Border:** One-pixel semantic border.
-- **Internal Padding:** 16px with an 8px content gap.
-
-### Inputs / Fields
-- **Style:** 40px field height, 12px radius, background surface, one-pixel input border, and 12px horizontal padding.
-- **Text:** 14px regular; muted foreground for placeholders and normal foreground for entered values.
-- **Focus:** Three-pixel semantic ring treatment.
-
-### Navigation
-- **Style:** A quiet sidebar surface with primary foreground text. The active item uses the sidebar accent surface and may carry a small blue indicator. Keep labels at 14px and preserve generous target sizes.
+- **Shape:** The implemented button uses the 26px radius step. Default height is 36px with 12px horizontal padding; sizes run 24px, 32px, 36px, and 40px.
+- **Primary:** Signal Blue surface with pale-blue text. Hover reduces the primary color to 80% opacity.
+- **Secondary:** Quiet Zinc surface with zinc foreground. Hover mixes 5% foreground into the surface.
+- **Outline:** Semantic background with a one-pixel border. Hover moves to the muted surface. Dark mode starts transparent.
+- **Ghost:** Transparent at rest and muted on hover.
+- **Destructive:** Translucent destructive background with destructive text. Increase the tint on hover rather than switching to a solid red fill.
+- **Link:** Primary text with an underline on hover.
+- **Interaction:** Active non-popup buttons move down by one pixel. Focus uses a semantic border and three-pixel ring. Disabled buttons block pointer events and use 50% opacity.
+- **Icons:** Default icon size is 16px; extra-small buttons use 12px icons. Icons do not receive pointer events.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** bind components to semantic tokens so light and dark modes remain synchronized.
-- **Do** use the 4px spacing scale and the established 12px-control / 14px-card radius relationship.
-- **Do** reserve blue for meaningful actions, selection, focus, and data emphasis.
-- **Do** use borders and tonal shifts before increasing elevation.
-- **Do** keep dense metadata in the 12–14px roles while preserving clear task titles.
+- **Do** bind component colors to semantic Tailwind tokens so light and dark themes stay synchronized.
+- **Do** preserve the 4px spacing base and the computed radius scale from `--radius: 0.625rem`.
+- **Do** reserve blue for action, selection, focus-adjacent emphasis, and ordered chart data.
+- **Do** use zinc surfaces and borders before adding elevation.
+- **Do** match implemented component sizes and states before documenting new variants.
 
 ### Don't:
-- **Don't** introduce gradients, glass effects, or decorative color outside the token system.
-- **Don't** use Alert Red for ordinary priority; it is reserved for destructive or genuinely risky states.
-- **Don't** hard-code light colors into components that must support dark mode.
-- **Don't** apply large shadows to resting application surfaces.
-- **Don't** mix radius values arbitrarily within one component family.
+- **Don't** reintroduce the previous stone palette; the frontend uses zinc neutrals.
+- **Don't** describe buttons as 12px-radius, 40px controls by default; the implementation is 26px and 36px.
+- **Don't** hard-code light colors into components that support dark mode.
+- **Don't** use Alert Red for ordinary priority or decoration.
+- **Don't** document components as implemented until they exist in `frontend/`.
