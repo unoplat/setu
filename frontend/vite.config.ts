@@ -8,7 +8,14 @@ import { defineConfig, lazyPlugins } from "vite-plus"
 // Dev requests for Frappe paths are proxied so the session cookie is
 // same-origin with the Vite dev server.
 const FRAPPE_URL = process.env.FRAPPE_URL
-const FRAPPE_PATHS = ["/api", "/login", "/assets", "/files", "/private", "/socket.io"]
+const FRAPPE_PATHS = [
+  "/api",
+  "/login",
+  "/assets",
+  "/files",
+  "/private",
+  "/socket.io",
+]
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,7 +27,46 @@ export default defineConfig({
     env: {
       builtin: true,
     },
-    ignorePatterns: ["dist"],
+    ignorePatterns: [
+      "dist",
+      // Vendored registry code — kept as published so upstream updates
+      // apply cleanly. Fix things here only when they bite.
+      // shadcn
+      "src/components/ui/**",
+      "src/hooks/use-mobile.ts",
+      // @reui (two small Envision edits, marked "Envision:")
+      "src/components/reui/**",
+      "src/components/ui/scroll-area.tsx",
+      "src/components/ui/spinner.tsx",
+      // @ilinxa
+      "src/components/kanban-board/**",
+      // @data-table-filters
+      "src/components/custom/**",
+      "src/components/data-table/data-table-column-header.tsx",
+      "src/components/data-table/data-table-floating-bar.tsx",
+      "src/components/data-table/data-table-provider.tsx",
+      "src/components/data-table/data-table-refresh-button.tsx",
+      "src/components/data-table/data-table-store-sync.tsx",
+      "src/components/data-table/data-table-toolbar.tsx",
+      "src/components/data-table/data-table-view-options.tsx",
+      "src/components/data-table/types.ts",
+      "src/components/data-table/ui-compat.ts",
+      "src/components/data-table/utils.ts",
+      "src/hooks/use-debounce.ts",
+      "src/hooks/use-hot-key.ts",
+      "src/hooks/use-local-storage.ts",
+      "src/lib/actions/**",
+      "src/lib/constants/local-storage.ts",
+      "src/lib/data-table/**",
+      "src/lib/store/**",
+      "src/lib/table/**",
+      "src/lib/table-schema/**",
+      "src/lib/compose-refs.ts",
+      "src/lib/delimiters.ts",
+      "src/lib/format.ts",
+      "src/lib/is-array.ts",
+      "src/lib/style.ts",
+    ],
     overrides: [
       {
         files: ["**/*.{ts,tsx}"],
@@ -155,6 +201,7 @@ export default defineConfig({
         name: "vite-plus",
         specifier: "vite-plus/oxlint-plugin",
       },
+      "@shadcn/lint",
     ],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
@@ -175,6 +222,7 @@ export default defineConfig({
     ignorePatterns: [
       "node_modules/",
       "coverage/",
+      "src/routeTree.gen.ts",
       ".pnpm-store/",
       "pnpm-lock.yaml",
       "package-lock.json",
@@ -191,6 +239,10 @@ export default defineConfig({
   build: {
     outDir: "../setu/public/envision",
     emptyOutDir: true,
+    // The rich-text editor chunk (~950 kB, most of it @tiptap/extension-emoji's
+    // emoji data) is only loaded lazily, when an editor or description view
+    // mounts, so it does not weigh on first load.
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     proxy: Object.fromEntries(
