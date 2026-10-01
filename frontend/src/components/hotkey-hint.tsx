@@ -14,6 +14,17 @@ import {
  * and Linux get labels (Ctrl+Shift+E), both from TanStack's formatter.
  */
 
+// Repeated values (e.g. G then G) need distinct identities. Count occurrences
+// per value, not positions in the list, so unrelated insertions/reorders are safe.
+function keyedKeycaps<T extends string>(values: T[]) {
+  const occurrences = new Map<T, number>()
+  return values.map((value) => {
+    const occurrence = occurrences.get(value) ?? 0
+    occurrences.set(value, occurrence + 1)
+    return { value, id: JSON.stringify([value, occurrence]) }
+  })
+}
+
 /** Keycap rendering of a binding. */
 export function BindingKeys({
   binding,
@@ -26,8 +37,8 @@ export function BindingKeys({
   if (binding.kind === "sequence") {
     return (
       <KbdGroup className={className}>
-        {binding.keys.map((key, index) => (
-          <span key={index} className="inline-flex items-center gap-1">
+        {keyedKeycaps(binding.keys).map(({ value: key, id }, index) => (
+          <span key={id} className="inline-flex items-center gap-1">
             {index > 0 ? (
               <span className="text-[10px] text-muted-foreground">then</span>
             ) : null}
@@ -39,8 +50,8 @@ export function BindingKeys({
   }
   return (
     <KbdGroup className={className}>
-      {chordTokens(binding).map((token, index) => (
-        <Kbd key={index}>{token}</Kbd>
+      {keyedKeycaps(chordTokens(binding)).map(({ value: token, id }) => (
+        <Kbd key={id}>{token}</Kbd>
       ))}
     </KbdGroup>
   )

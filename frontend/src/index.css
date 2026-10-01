@@ -2,211 +2,364 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+/* react-date-range-picker-tailwind4: Tailwind skips node_modules, so the reset
+   file points it at the package's class names. Its stylesheet goes in the
+   components layer so our utilities and className overrides still win. */
+@import "react-date-range-picker-tailwind4/rdrp-reset.css";
+@import "react-date-range-picker-tailwind4/rdrp-styles.css" layer(components);
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Inter Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+	--font-heading: var(--font-sans);
+	--font-sans: "Inter Variable", sans-serif;
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	--color-error: var(--error);
+	--color-info: var(--info);
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
+	@keyframes accordion-down {
+		from {
+			height: 0;
+		}
+		to {
+			height: var(--radix-accordion-content-height);
+		}
+	}
+	@keyframes accordion-up {
+		from {
+			height: var(--radix-accordion-content-height);
+		}
+		to {
+			height: 0;
+		}
+	}
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.141 0.005 285.823);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.141 0.005 285.823);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.141 0.005 285.823);
-    --primary: oklch(0.488 0.243 264.376);
-    --primary-foreground: oklch(0.97 0.014 254.604);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.967 0.001 286.375);
-    --muted-foreground: oklch(0.552 0.016 285.938);
-    --accent: oklch(0.967 0.001 286.375);
-    --accent-foreground: oklch(0.21 0.006 285.885);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.92 0.004 286.32);
-    --input: oklch(0.92 0.004 286.32);
-    --ring: oklch(0.705 0.015 286.067);
-    --chart-1: oklch(0.828 0.111 230.318);
-    --chart-2: oklch(0.685 0.169 237.323);
-    --chart-3: oklch(0.588 0.158 241.966);
-    --chart-4: oklch(0.5 0.134 242.749);
-    --chart-5: oklch(0.443 0.11 240.79);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.141 0.005 285.823);
-    --sidebar-primary: oklch(0.546 0.245 262.881);
-    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-    --sidebar-accent: oklch(0.967 0.001 286.375);
-    --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-    --sidebar-border: oklch(0.92 0.004 286.32);
-    --sidebar-ring: oklch(0.705 0.015 286.067);
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.141 0.005 285.823);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.141 0.005 285.823);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.141 0.005 285.823);
+	--primary: oklch(0.488 0.243 264.376);
+	--primary-foreground: oklch(0.97 0.014 254.604);
+	--secondary: oklch(0.967 0.001 286.375);
+	--secondary-foreground: oklch(0.21 0.006 285.885);
+	--muted: oklch(0.967 0.001 286.375);
+	--muted-foreground: oklch(0.552 0.016 285.938);
+	--accent: oklch(0.967 0.001 286.375);
+	--accent-foreground: oklch(0.21 0.006 285.885);
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: oklch(0.92 0.004 286.32);
+	--input: oklch(0.92 0.004 286.32);
+	--ring: oklch(0.705 0.015 286.067);
+	--chart-1: oklch(0.828 0.111 230.318);
+	--chart-2: oklch(0.685 0.169 237.323);
+	--chart-3: oklch(0.588 0.158 241.966);
+	--chart-4: oklch(0.5 0.134 242.749);
+	--chart-5: oklch(0.443 0.11 240.79);
+	--radius: 0.625rem;
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.141 0.005 285.823);
+	--sidebar-primary: oklch(0.546 0.245 262.881);
+	--sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+	--sidebar-accent: oklch(0.967 0.001 286.375);
+	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+	--sidebar-border: oklch(0.92 0.004 286.32);
+	--sidebar-ring: oklch(0.705 0.015 286.067);
+	--success: oklch(0.723 0.193 149.579);
+	--warning: oklch(0.705 0.187 47.602);
+	--error: oklch(0.637 0.208 25.326);
+	--info: oklch(0.685 0.148 237.321);
 }
 
 .dark {
-    --background: oklch(0.141 0.005 285.823);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.21 0.006 285.885);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.21 0.006 285.885);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.424 0.199 265.638);
-    --primary-foreground: oklch(0.97 0.014 254.604);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.274 0.006 286.033);
-    --muted-foreground: oklch(0.705 0.015 286.067);
-    --accent: oklch(0.274 0.006 286.033);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.552 0.016 285.938);
-    --chart-1: oklch(0.828 0.111 230.318);
-    --chart-2: oklch(0.685 0.169 237.323);
-    --chart-3: oklch(0.588 0.158 241.966);
-    --chart-4: oklch(0.5 0.134 242.749);
-    --chart-5: oklch(0.443 0.11 240.79);
-    --sidebar: oklch(0.21 0.006 285.885);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.623 0.214 259.815);
-    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-    --sidebar-accent: oklch(0.274 0.006 286.033);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.552 0.016 285.938);
+	--background: oklch(0.141 0.005 285.823);
+	--foreground: oklch(0.985 0 0);
+	--card: oklch(0.21 0.006 285.885);
+	--card-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.21 0.006 285.885);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: oklch(0.424 0.199 265.638);
+	--primary-foreground: oklch(0.97 0.014 254.604);
+	--secondary: oklch(0.274 0.006 286.033);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.274 0.006 286.033);
+	--muted-foreground: oklch(0.705 0.015 286.067);
+	--accent: oklch(0.274 0.006 286.033);
+	--accent-foreground: oklch(0.985 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.552 0.016 285.938);
+	--chart-1: oklch(0.828 0.111 230.318);
+	--chart-2: oklch(0.685 0.169 237.323);
+	--chart-3: oklch(0.588 0.158 241.966);
+	--chart-4: oklch(0.5 0.134 242.749);
+	--chart-5: oklch(0.443 0.11 240.79);
+	--sidebar: oklch(0.21 0.006 285.885);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.623 0.214 259.815);
+	--sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+	--sidebar-accent: oklch(0.274 0.006 286.033);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.552 0.016 285.938);
+	--success: oklch(0.723 0.193 149.579);
+	--warning: oklch(0.705 0.187 47.602);
+	--error: oklch(0.637 0.208 25.326);
+	--info: oklch(0.685 0.148 237.321);
 }
 
-/* MDXEditor inside the Create Project wizard (Paper: "Expanded Description").
-   Maps the editor's Radix-style variables onto the app tokens and gives the
-   writing area the 760px reading measure from the design. */
-.envision-mdx {
-    --font-body: var(--font-sans);
-    --basePageBg: var(--background);
-    --baseBg: var(--card);
-    --baseBgSubtle: var(--muted);
-    --baseBgHover: var(--muted);
-    --baseBgActive: var(--accent);
-    --baseBorder: var(--border);
-    --baseText: var(--foreground);
-    --baseTextContrast: var(--foreground);
-    --accentSolid: var(--primary);
-    --accentSolidHover: var(--primary);
-    --accentText: var(--primary);
-    --accentBg: color-mix(in oklch, var(--primary) 12%, transparent);
-    --accentBorder: color-mix(in oklch, var(--primary) 40%, transparent);
-    font-family: var(--font-sans);
+/* reactjs-tiptap-editor inside the Create Project dialog, in its compact and
+   expanded (Paper: "Expanded Description") layouts. Inside
+   `.reactjs-tiptap-editor` the package redefines the shadcn variable names as
+   bare HSL triples, so colours here are wrapped in hsl() instead of reading
+   the app tokens directly. */
+/* The package's own HSL triples, pinned here. It injects them from one shared
+   <style id="richtext-theme"> that every RichTextProvider removes when it
+   unmounts, so with two editors on a page (a description and the comment
+   box, which remounts after each post) the tag vanishes while one is still
+   open. `hsl(var(--popover))` then reads the app's oklch() token, which is
+   invalid, and the "/" and "@" menus, dialogs and tooltips come out
+   transparent with a currentColor border. Values are the app's tokens above,
+   in HSL; `:root` outranks the injected rule wherever it lands in <head>.
+   The package appends "/ alpha" to destructive, foreground, muted, primary
+   and secondary, so only border and input carry their own alpha. */
+:root :is(.reactjs-tiptap-editor, [data-richtext-portal]),
+:root :is(.reactjs-tiptap-editor, [data-richtext-portal]) * {
+	--background: 0 0% 100%;
+	--foreground: 240 10% 3.9%;
+	--card: 0 0% 100%;
+	--card-foreground: 240 10% 3.9%;
+	--popover: 0 0% 100%;
+	--popover-foreground: 240 10% 3.9%;
+	--primary: 224 76.3% 48%;
+	--primary-foreground: 214 100% 97%;
+	--secondary: 240 4.8% 95.9%;
+	--secondary-foreground: 240 5.9% 10%;
+	--muted: 240 4.8% 95.9%;
+	--muted-foreground: 240 3.8% 46.1%;
+	--accent: 240 4.8% 95.9%;
+	--accent-foreground: 240 5.9% 10%;
+	--destructive: 0 72.2% 50.6%;
+	--destructive-foreground: 0 0% 98%;
+	--border: 240 5.9% 90%;
+	--input: 240 5.9% 90%;
+	--ring: 240 5% 64.9%;
+	--radius: 0.625rem;
 }
-.envision-mdx .envision-mdx-toolbar {
-    height: 3.5rem;
-    padding-inline: 2rem;
-    border-radius: 0;
-    border-bottom: 1px solid var(--border);
-    background: var(--card);
-    position: static;
-    z-index: auto;
+:root.dark :is(.reactjs-tiptap-editor, [data-richtext-portal]),
+:root.dark :is(.reactjs-tiptap-editor, [data-richtext-portal]) * {
+	--background: 240 10% 3.9%;
+	--foreground: 0 0% 98%;
+	--card: 240 5.9% 10%;
+	--card-foreground: 0 0% 98%;
+	--popover: 240 5.9% 10%;
+	--popover-foreground: 0 0% 98%;
+	--primary: 226 70.7% 40.2%;
+	--primary-foreground: 214 100% 97%;
+	--secondary: 240 3.7% 15.9%;
+	--secondary-foreground: 0 0% 98%;
+	--muted: 240 3.7% 15.9%;
+	--muted-foreground: 240 5% 64.9%;
+	--accent: 240 3.7% 15.9%;
+	--accent-foreground: 0 0% 98%;
+	--destructive: 0 90.6% 70.8%;
+	--destructive-foreground: 0 0% 98%;
+	--border: 0 0% 100% / 10%;
+	--input: 0 0% 100% / 15%;
+	--ring: 240 3.8% 46.1%;
 }
-.envision-mdx .mdxeditor-root-contenteditable {
-    flex: 1 1 0%;
-    min-height: 0;
-    overflow-y: auto;
-    background: var(--background);
-    padding: 2.5rem 3rem;
+
+.envision-rte > .reactjs-tiptap-editor {
+	display: flex;
+	min-height: 0;
+	flex: 1 1 0%;
+	flex-direction: column;
+	font-family: var(--font-sans);
 }
-.envision-mdx-content {
-    max-width: 47.5rem;
-    margin-inline: auto;
-    padding: 0;
-    font-size: 1rem;
-    line-height: 1.75rem;
-    color: var(--foreground);
+.envision-rte-toolbar {
+	display: flex;
+	flex-shrink: 0;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem;
+	min-height: 3.5rem;
+	/* The first control has 6px of its own inset; pull it back so its label
+       sits on the same line as the dialog title and the text below. */
+	padding-inline: calc(2rem - 6px) 2rem;
+	border-bottom: 1px solid hsl(var(--border));
+	background: hsl(var(--card));
 }
-.envision-mdx-content > * + * {
-    margin-top: 0.75rem;
+.envision-rte-separator {
+	width: 1px;
+	height: 1.25rem;
+	margin-inline: 0.25rem;
+	background: hsl(var(--border));
 }
-.envision-mdx-content h1 {
-    font-size: 1.5rem;
-    line-height: 2rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+.envision-rte-label {
+	margin-inline-start: auto;
+	font-size: 0.75rem;
+	color: hsl(var(--muted-foreground));
 }
-.envision-mdx-content h2 {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
-    font-weight: 600;
-    margin-top: 1.5rem;
+.envision-rte-content {
+	/* Selection, table and code block menus are positioned inside it. */
+	position: relative;
+	display: flex;
+	min-height: 0;
+	flex: 1 1 0%;
+	flex-direction: column;
+	overflow-y: auto;
 }
-.envision-mdx-content h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-top: 1.25rem;
+/* As in the package playground, the writing area spans the full width under
+   the toolbar. One class more than the package's own `.ProseMirror` rule
+   (padding: 32px 80px), because its stylesheet loads later with the lazy
+   chunk and would otherwise win. `outline: none` drops the browser's focus
+   ring around the whole writing area; the caret shows focus. */
+.envision-rte .reactjs-tiptap-editor .ProseMirror.ProseMirror.ProseMirror {
+	flex: 1 0 auto;
+	padding: 2rem;
+	outline: none;
 }
-.envision-mdx-content ul,
-.envision-mdx-content ol {
-    padding-inline-start: 1.25rem;
+/* Compact layout: the same document inside the dialog's description box,
+   which grows with the text up to a point and then scrolls. */
+.envision-rte[data-layout="compact"] .envision-rte-content {
+	min-height: 5.5rem;
+	max-height: min(16rem, 40dvh);
 }
-.envision-mdx-content a {
-    color: var(--primary);
-    text-decoration: underline;
-    text-underline-offset: 3px;
+.envision-rte[data-layout="compact"]
+	.reactjs-tiptap-editor
+	.ProseMirror.ProseMirror.ProseMirror {
+	padding: 0.75rem;
 }
-.envision-mdx-content blockquote {
-    border-inline-start: 2px solid var(--sidebar-primary);
-    padding-inline-start: 1rem;
-    color: var(--muted-foreground);
+/* A record page's description (Paper: 06d, 07d, 09), editable or read-only:
+   part of the page, with no box, as tall as its text. The inset matches the
+   title's, so the two share a left edge. */
+.envision-rte[data-layout="document"] .envision-rte-content {
+	min-height: 3rem;
+	overflow-y: visible;
+}
+.envision-rte[data-layout="document"]
+	.reactjs-tiptap-editor
+	.ProseMirror.ProseMirror.ProseMirror {
+	padding: 0.5rem 0.625rem;
+	font-size: 0.9375rem;
+	line-height: 1.5rem;
+}
+/* The Activity comment box (09): one line, 44px, when empty, then grows with
+   the comment up to a point and scrolls. */
+.envision-rte[data-layout="comment"] .envision-rte-content {
+	min-height: 2.625rem;
+	max-height: min(20rem, 50dvh);
+}
+.envision-rte[data-layout="comment"]
+	.reactjs-tiptap-editor
+	.ProseMirror.ProseMirror.ProseMirror {
+	padding: 0.625rem 0.875rem;
+}
+/* @mentions, in the comment box and in posted comments. */
+.envision-rte .mention,
+.envision-comment .mention {
+	color: var(--sidebar-primary);
+	font-weight: 500;
+}
+/* A posted comment: the HTML Frappe kept, laid out like the editor wrote it. */
+.envision-comment {
+	font-size: 0.875rem;
+	line-height: 1.375rem;
+	overflow-wrap: anywhere;
+}
+.envision-comment > * + * {
+	margin-top: 0.375rem;
+}
+.envision-comment ul {
+	list-style: disc;
+	padding-inline-start: 1.25rem;
+}
+.envision-comment ol {
+	list-style: decimal;
+	padding-inline-start: 1.25rem;
+}
+.envision-comment a {
+	color: var(--sidebar-primary);
+	text-decoration: underline;
+}
+.envision-comment code {
+	border-radius: 0.25rem;
+	background: var(--muted);
+	padding: 0.1rem 0.3rem;
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+}
+.envision-comment blockquote {
+	border-inline-start: 2px solid var(--border);
+	padding-inline-start: 0.75rem;
+	color: var(--muted-foreground);
+}
+.envision-comment img {
+	max-width: 100%;
+	border-radius: 0.5rem;
+}
+/* The "/" menu is appended to <body> with no z-index of its own, which would
+   leave it underneath the dialog (z-50). */
+body > .react-renderer:has(> [data-richtext-portal]) {
+	z-index: 60;
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: pointer;
-    }
-  html {
-    @apply font-sans;
-    }
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+	html {
+		@apply font-sans;
+	}
 }

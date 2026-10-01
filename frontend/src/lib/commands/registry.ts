@@ -13,11 +13,42 @@ import type { Hotkey } from "@tanstack/react-hotkeys"
  * expose their own commands.
  */
 
-export type CommandScope = "global" | "create-project" | "shortcut-recorder"
+export type CommandScope =
+  | "global"
+  | "create-project"
+  | "project-settings"
+  | "create-milestone"
+  | "milestone"
+  | "milestone-comment"
+  | "create-module"
+  | "module"
+  | "module-comment"
+  | "create-task"
+  | "task"
+  | "task-comment"
+  | "confirm"
+  | "shortcut-recorder"
 
 export const SCOPES: Record<CommandScope, { label: string; modal: boolean }> = {
   global: { label: "Everywhere", modal: false },
   "create-project": { label: "Create project dialog", modal: true },
+  "create-milestone": { label: "Create milestone panel", modal: true },
+  // Pages, not dialogs. The comment box is its own scope, active only while
+  // it has focus, so ⌘↵ there posts the comment instead of saving the
+  // description.
+  milestone: { label: "Milestone", modal: false },
+  "milestone-comment": { label: "Milestone comment box", modal: false },
+  "create-module": { label: "Create module panel", modal: true },
+  module: { label: "Module", modal: false },
+  "module-comment": { label: "Module comment box", modal: false },
+  "create-task": { label: "Create task panel", modal: true },
+  task: { label: "Task", modal: false },
+  "task-comment": { label: "Task comment box", modal: false },
+  // A page, not a dialog: global navigation keeps working on it.
+  "project-settings": { label: "Project settings", modal: false },
+  // Owns no commands: a Delete or Archive confirm is open, and nothing
+  // behind it should fire.
+  confirm: { label: "Confirm dialog", modal: true },
   // Owns no commands; pushed while recording so nothing else fires.
   "shortcut-recorder": { label: "Recording a shortcut", modal: true },
 }
@@ -38,12 +69,26 @@ export type CommandGroup =
   | "Navigation"
   | "Projects"
   | "Create project"
+  | "Project settings"
+  | "Create milestone"
+  | "Milestone"
+  | "Create module"
+  | "Module"
+  | "Create task"
+  | "Task"
   | "General"
 
 export const COMMAND_GROUPS: readonly CommandGroup[] = [
   "Navigation",
   "Projects",
   "Create project",
+  "Project settings",
+  "Create milestone",
+  "Milestone",
+  "Create module",
+  "Module",
+  "Create task",
+  "Task",
   "General",
 ]
 
@@ -125,7 +170,7 @@ export const COMMANDS = {
       "Switch the description between the compact field and the full editor.",
     group: "Create project",
     scope: "create-project",
-    defaultBinding: hotkey("Mod+Shift+E"),
+    defaultBinding: hotkey("Mod+Shift+Enter"),
   },
   "createProject.collapseDescription": {
     title: "Return to the form",
@@ -139,6 +184,179 @@ export const COMMANDS = {
     description: "Submit the Create Project form from any field.",
     group: "Create project",
     scope: "create-project",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "projectSettings.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the project description between the field and the full editor.",
+    group: "Project settings",
+    scope: "project-settings",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "projectSettings.collapseDescription": {
+    title: "Return to settings",
+    description: "Leave the full description editor, keeping the edits.",
+    group: "Project settings",
+    scope: "project-settings",
+    defaultBinding: hotkey("Escape"),
+  },
+  "projectSettings.save": {
+    title: "Save changes",
+    description: "Save the project's name and description from any field.",
+    group: "Project settings",
+    scope: "project-settings",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "createMilestone.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the milestone description between the field and the full editor.",
+    group: "Create milestone",
+    scope: "create-milestone",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "createMilestone.collapseDescription": {
+    title: "Return to the form",
+    description: "Leave the full description editor, keeping the draft.",
+    group: "Create milestone",
+    scope: "create-milestone",
+    defaultBinding: hotkey("Escape"),
+  },
+  "createMilestone.submit": {
+    title: "Create milestone",
+    description: "Submit the Create Milestone form from any field.",
+    group: "Create milestone",
+    scope: "create-milestone",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "milestone.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the milestone description between the field and the full editor.",
+    group: "Milestone",
+    scope: "milestone",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "milestone.collapseDescription": {
+    title: "Return to the milestone",
+    description: "Leave the full description editor, keeping the edits.",
+    group: "Milestone",
+    scope: "milestone",
+    defaultBinding: hotkey("Escape"),
+  },
+  "milestone.save": {
+    title: "Save now",
+    description:
+      "Save the milestone's edits right away instead of waiting for autosave.",
+    group: "Milestone",
+    scope: "milestone",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "milestone.comment": {
+    title: "Post comment",
+    description: "Post the comment you are writing on a milestone.",
+    group: "Milestone",
+    scope: "milestone-comment",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "createModule.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the module description between the field and the full editor.",
+    group: "Create module",
+    scope: "create-module",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "createModule.collapseDescription": {
+    title: "Return to the form",
+    description: "Leave the full description editor, keeping the draft.",
+    group: "Create module",
+    scope: "create-module",
+    defaultBinding: hotkey("Escape"),
+  },
+  "createModule.submit": {
+    title: "Create module",
+    description: "Submit the Create Module form from any field.",
+    group: "Create module",
+    scope: "create-module",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "module.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the module description between the field and the full editor.",
+    group: "Module",
+    scope: "module",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "module.collapseDescription": {
+    title: "Return to the module",
+    description: "Leave the full description editor, keeping the edits.",
+    group: "Module",
+    scope: "module",
+    defaultBinding: hotkey("Escape"),
+  },
+  "module.save": {
+    title: "Save now",
+    description:
+      "Save the module's edits right away instead of waiting for autosave.",
+    group: "Module",
+    scope: "module",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "module.comment": {
+    title: "Post comment",
+    description: "Post the comment you are writing on a module.",
+    group: "Module",
+    scope: "module-comment",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "createTask.submit": {
+    title: "Create task",
+    description: "Submit the Create Task form from any field.",
+    group: "Create task",
+    scope: "create-task",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "task.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the task description between the field and the full editor.",
+    group: "Task",
+    scope: "task",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "task.collapseDescription": {
+    title: "Return to the task",
+    description: "Leave the full description editor, keeping the edits.",
+    group: "Task",
+    scope: "task",
+    defaultBinding: hotkey("Escape"),
+  },
+  "task.save": {
+    title: "Save now",
+    description:
+      "Save the task's edits right away instead of waiting for autosave.",
+    group: "Task",
+    scope: "task",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "task.comment": {
+    title: "Post comment",
+    description: "Post the comment you are writing on a task.",
+    group: "Task",
+    scope: "task-comment",
     defaultBinding: hotkey("Mod+Enter"),
     ignoreInputs: false,
   },

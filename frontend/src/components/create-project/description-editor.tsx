@@ -1,102 +1,210 @@
-import {
-  BlockTypeSelect,
-  BoldItalicUnderlineToggles,
-  CreateLink,
-  headingsPlugin,
-  linkDialogPlugin,
-  linkPlugin,
-  listsPlugin,
-  ListsToggle,
-  markdownShortcutPlugin,
-  MDXEditor,
-  type MDXEditorMethods,
-  quotePlugin,
-  Separator,
-  StrikeThroughSupSubToggles,
-  thematicBreakPlugin,
-  toolbarPlugin,
-} from "@mdxeditor/editor"
-import "@mdxeditor/editor/style.css"
+import { EditorContent, useEditor } from "@tiptap/react"
 import * as React from "react"
+import { RichTextProvider } from "reactjs-tiptap-editor"
+import { RichTextBlockquote } from "reactjs-tiptap-editor/blockquote"
+import { RichTextBold } from "reactjs-tiptap-editor/bold"
+import { RichTextBubbleCodeBlock } from "reactjs-tiptap-editor/bubble/codeblock"
+import { RichTextBubbleColumns } from "reactjs-tiptap-editor/bubble/columns"
+import { RichTextBubbleLink } from "reactjs-tiptap-editor/bubble/link"
+import { RichTextBubbleImage } from "reactjs-tiptap-editor/bubble/media"
+import { RichTextBubbleTable } from "reactjs-tiptap-editor/bubble/table"
+import { RichTextBubbleText } from "reactjs-tiptap-editor/bubble/text"
+import { RichTextBulletList } from "reactjs-tiptap-editor/bulletlist"
+import { RichTextClear } from "reactjs-tiptap-editor/clear"
+import { RichTextCode } from "reactjs-tiptap-editor/code"
+import { RichTextCodeBlock } from "reactjs-tiptap-editor/codeblock"
+import { RichTextColor } from "reactjs-tiptap-editor/color"
+import { RichTextColumn } from "reactjs-tiptap-editor/column"
+import { RichTextDetails } from "reactjs-tiptap-editor/details"
+import { RichTextEmoji } from "reactjs-tiptap-editor/emoji"
+import { RichTextFontFamily } from "reactjs-tiptap-editor/fontfamily"
+import { RichTextFontSize } from "reactjs-tiptap-editor/fontsize"
+import { RichTextFormatPainter } from "reactjs-tiptap-editor/formatpainter"
+import { RichTextHeading } from "reactjs-tiptap-editor/heading"
+import { RichTextHighlight } from "reactjs-tiptap-editor/highlight"
+import { RichTextRedo, RichTextUndo } from "reactjs-tiptap-editor/history"
+import { RichTextHorizontalRule } from "reactjs-tiptap-editor/horizontalrule"
+import { RichTextImage } from "reactjs-tiptap-editor/image"
+import { RichTextIndent } from "reactjs-tiptap-editor/indent"
+import { RichTextItalic } from "reactjs-tiptap-editor/italic"
+import { RichTextLineHeight } from "reactjs-tiptap-editor/lineheight"
+import { RichTextLink } from "reactjs-tiptap-editor/link"
+import { RichTextMoreMark } from "reactjs-tiptap-editor/moremark"
+import { RichTextOrderedList } from "reactjs-tiptap-editor/orderedlist"
+import { RichTextSearchAndReplace } from "reactjs-tiptap-editor/searchandreplace"
+import { SlashCommandList } from "reactjs-tiptap-editor/slashcommand"
+import { RichTextStrike } from "reactjs-tiptap-editor/strike"
+import { RichTextTable } from "reactjs-tiptap-editor/table"
+import { RichTextTaskList } from "reactjs-tiptap-editor/tasklist"
+import { RichTextAlign } from "reactjs-tiptap-editor/textalign"
+import { RichTextTextDirection } from "reactjs-tiptap-editor/textdirection"
+import { RichTextUnderline } from "reactjs-tiptap-editor/textunderline"
+import { themeActions } from "reactjs-tiptap-editor/theme"
+import "reactjs-tiptap-editor/style.css"
 
 import { useTheme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 
-// Paper: "Expanded Description — mxeditor" toolbar: block type | B I S |
-// bullet & check lists | link | "Rich text". Loaded lazily by the dialog
-// because MDXEditor (Lexical) is the largest dependency in the app.
+import { descriptionEditorOptions } from "./description-extensions"
+import { editorDescription, storedDescription } from "./description-html"
+import { descriptionSlashCommands } from "./slash-commands"
+
+// The description field of the Create Project form, in both of its layouts:
+// a bordered box in the compact dialog and the full writing surface of Paper's
+// "Expanded Description". `expanded` only changes what surrounds the document,
+// so one editor instance carries the draft across. The toolbar carries every
+// playground control whose result survives being saved as HTML in ERPNext
+// (see description-extensions.ts).
+
+// Shown over a text selection. The package's default set assumes AI is
+// registered, so name the controls this editor has.
+const selectionControls = (
+  <>
+    <RichTextBold />
+    <RichTextItalic />
+    <RichTextUnderline />
+    <RichTextStrike />
+    <RichTextCode />
+    <RichTextColor />
+    <RichTextHighlight />
+    <RichTextLink />
+  </>
+)
 
 export default function DescriptionEditor({
   value,
   onChange,
-  onError,
-  className,
+  onBlur,
+  expanded,
+  plain = false,
+  label = "Project description",
 }: {
+  /** Initial saved HTML; later edits flow out through `onChange` only. */
   value: string
-  onChange: (markdown: string) => void
-  /** The draft could not be parsed; the editor stays empty when this fires. */
-  onError: () => void
-  className?: string
+  onChange: (html: string) => void
+  onBlur?: () => void
+  /** Layout only: the compact box, or the full surface with its toolbar. */
+  expanded: boolean
+  /**
+   * The compact layout without its box: the description as part of a record
+   * page (Paper 09), as tall as its text.
+   */
+  plain?: boolean
+  /** The document's accessible name. */
+  label?: string
 }) {
   const { resolvedTheme } = useTheme()
-  const editor = React.useRef<MDXEditorMethods>(null)
 
-  // The `autoFocus` prop loses to the dialog's focus management when this
-  // chunk loads lazily, so focus through the ref once the editor is mounted.
+  // `value` follows every keystroke, but it only seeds the document: handing
+  // the live value back to useEditor would re-apply the options on each render.
+  const [initialContent] = React.useState(() => editorDescription(value))
+  // Fixed for the editor's life, like the content: new options on a later
+  // render would be re-applied to the editor.
+  const [editorProps] = React.useState(() => ({
+    attributes: { "aria-label": label },
+  }))
+
+  const editor = useEditor({
+    ...descriptionEditorOptions,
+    content: initialContent,
+    editorProps,
+    // Only real edits emit an update, so an untouched editor never dirties
+    // the form with re-serialised HTML. useEditor always calls the latest
+    // callback, so `onChange` needs no ref.
+    onUpdate: ({ editor }) => onChange(storedDescription(editor)),
+    onBlur: () => onBlur?.(),
+  })
+
+  // The package keeps its theme in a shared store rather than reading the
+  // app's `.dark` class.
   React.useEffect(() => {
+    themeActions.setTheme(resolvedTheme === "dark" ? "dark" : "light")
+  }, [resolvedTheme])
+
+  // Changing layout unmounts the control that asked for it, so bring focus
+  // back to the document, where the selection is still in place. The compact
+  // layout leaves the first focus to the project name.
+  const focusedLayout = React.useRef(false)
+  React.useEffect(() => {
+    if (!editor || focusedLayout.current === expanded) return
     const frame = requestAnimationFrame(() => {
-      editor.current?.focus(undefined, { defaultSelection: "rootEnd" })
+      focusedLayout.current = expanded
+      editor.commands.focus()
     })
     return () => cancelAnimationFrame(frame)
-  }, [])
+  }, [editor, expanded])
+
+  if (!editor) return null
 
   return (
-    <MDXEditor
-      ref={editor}
-      markdown={value}
-      // Drafts typed in the compact textarea are not always valid MDX (an
-      // unclosed "<Tag>", a bare "<br>"); the parent then falls back to a
-      // plain editor instead of showing an empty one.
-      onError={onError}
-      onChange={(markdown, initialNormalize) => {
-        // The first call only normalises the initial markdown; keep the draft
-        // untouched so an untouched editor never dirties the form.
-        if (!initialNormalize) onChange(markdown)
-      }}
-      placeholder="Describe the goal, scope, and what done looks like."
+    <div
       className={cn(
-        "envision-mdx",
-        resolvedTheme === "dark" && "dark-theme dark-editor",
-        className
+        "envision-rte",
+        expanded
+          ? "flex min-h-0 flex-1 flex-col"
+          : plain
+            ? "-mx-2.5 rounded-md transition-colors focus-within:bg-foreground/4 hover:bg-foreground/4"
+            : "rounded-xl border border-transparent bg-input/50 transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"
       )}
-      contentEditableClassName="envision-mdx-content"
-      plugins={[
-        headingsPlugin({ allowedHeadingLevels: [1, 2, 3] }),
-        listsPlugin(),
-        quotePlugin(),
-        thematicBreakPlugin(),
-        linkPlugin(),
-        linkDialogPlugin(),
-        markdownShortcutPlugin(),
-        toolbarPlugin({
-          toolbarClassName: "envision-mdx-toolbar",
-          toolbarContents: () => (
-            <>
-              <BlockTypeSelect />
-              <Separator />
-              <BoldItalicUnderlineToggles options={["Bold", "Italic"]} />
-              <StrikeThroughSupSubToggles options={["Strikethrough"]} />
-              <Separator />
-              <ListsToggle options={["bullet", "check"]} />
-              <Separator />
-              <CreateLink />
-              <span className="ms-auto pe-1 text-xs text-muted-foreground">
-                Rich text
-              </span>
-            </>
-          ),
-        }),
-      ]}
-    />
+      data-layout={expanded ? "expanded" : plain ? "document" : "compact"}
+    >
+      <RichTextProvider editor={editor}>
+        {expanded ? (
+          <div
+            role="toolbar"
+            aria-label="Text formatting"
+            className="envision-rte-toolbar"
+          >
+            <RichTextUndo />
+            <RichTextRedo />
+            <span className="envision-rte-separator" />
+            <RichTextSearchAndReplace />
+            <RichTextClear />
+            <RichTextFormatPainter />
+            <span className="envision-rte-separator" />
+            <RichTextHeading />
+            <RichTextFontFamily />
+            <RichTextFontSize />
+            <span className="envision-rte-separator" />
+            <RichTextBold />
+            <RichTextItalic />
+            <RichTextUnderline />
+            <RichTextStrike />
+            <RichTextMoreMark />
+            <RichTextCode />
+            <RichTextColor />
+            <RichTextHighlight />
+            <RichTextEmoji />
+            <span className="envision-rte-separator" />
+            <RichTextAlign />
+            <RichTextIndent />
+            <RichTextLineHeight />
+            <RichTextTextDirection />
+            <span className="envision-rte-separator" />
+            <RichTextBulletList />
+            <RichTextOrderedList />
+            <RichTextTaskList />
+            <span className="envision-rte-separator" />
+            <RichTextLink />
+            <RichTextImage />
+            <RichTextBlockquote />
+            <RichTextHorizontalRule />
+            <RichTextCodeBlock />
+            <RichTextTable />
+            <RichTextColumn />
+            <RichTextDetails />
+            <span className="envision-rte-label">Rich text</span>
+          </div>
+        ) : null}
+        <EditorContent editor={editor} className="envision-rte-content" />
+        <RichTextBubbleText buttonBubble={selectionControls} />
+        <RichTextBubbleLink />
+        <RichTextBubbleImage />
+        <RichTextBubbleTable />
+        <RichTextBubbleColumns />
+        <RichTextBubbleCodeBlock />
+        <SlashCommandList commandList={descriptionSlashCommands} />
+      </RichTextProvider>
+    </div>
   )
 }

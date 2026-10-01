@@ -1,16 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { useFrappeGetDoc } from "frappe-react-sdk"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 
-import { PagePlaceholder } from "@/components/page-placeholder"
-
-// Landing route for a single Project. Screen 03 (Board) replaces this
-// placeholder.
+// Layout for a single Project: its sections (Tasks, Settings, ...) are child
+// routes, and the sidebar lists them under the project (Paper: "Projects and
+// Project Sections"), so nothing here besides the outlet.
 export const Route = createFileRoute("/_authenticated/_shell/projects/$name")({
-  component: ProjectPage,
+  component: Outlet,
 })
-
-function ProjectPage() {
-  const { name } = Route.useParams()
-  const { data } = useFrappeGetDoc<{ project_name?: string }>("Project", name)
-  return <PagePlaceholder title={data?.project_name ?? name} />
-}
