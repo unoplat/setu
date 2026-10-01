@@ -1,5 +1,6 @@
+from urllib.parse import quote
+
 import frappe
-from frappe.utils import escape_html
 
 # Serves the Envision React app (built into setu/public/envision by the
 # frontend build; the entry HTML is copied to www/envision.html).
@@ -10,7 +11,13 @@ no_cache = 1
 
 def get_context(context):
 	if frappe.session.user == "Guest":
-		frappe.local.flags.redirect_location = "/login?redirect-to=" + escape_html(frappe.request.path)
+		# Keep the query string (e.g. ?view=board) so the user lands on the
+		# exact URL they were sent after signing in. Built by hand because
+		# werkzeug's `full_path` appends a trailing "?" even when empty.
+		target = frappe.request.path
+		if frappe.request.query_string:
+			target += "?" + frappe.request.query_string.decode()
+		frappe.local.flags.redirect_location = "/login?redirect-to=" + quote(target, safe="")
 		raise frappe.Redirect
 
 	# The SPA sends this back as X-Frappe-CSRF-Token on writes.
