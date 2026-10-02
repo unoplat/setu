@@ -10,7 +10,11 @@ import {
   RailGroup,
   TitleInput,
 } from "@/components/record-detail"
-import type { AutosaveListeners, AutosaveStatus } from "@/lib/autosave"
+import type {
+  AutosaveListeners,
+  AutosaveStatus,
+  ConflictChoice,
+} from "@/lib/autosave"
 import type { ModuleDetail } from "@/lib/modules"
 
 import {
@@ -33,6 +37,10 @@ export const ModuleForm = withForm({
     projectName: "",
     listeners: {} as AutosaveListeners,
     status: "idle" as AutosaveStatus,
+    /** Moves when the description was replaced from outside. */
+    descriptionRevision: 0,
+    /** Set while the description was changed elsewhere as it was written. */
+    descriptionConflict: null as ((choice: ConflictChoice) => void) | null,
     /** How the edits are doing, shown beside the module's chip. */
     indicator: null as React.ReactNode,
     expanded: false,
@@ -51,6 +59,8 @@ export const ModuleForm = withForm({
     projectName,
     listeners,
     status,
+    descriptionRevision,
+    descriptionConflict,
     indicator,
     expanded,
     onExpand,
@@ -149,6 +159,8 @@ export const ModuleForm = withForm({
             {(field) => (
               <DescriptionField
                 value={field.state.value}
+                revision={descriptionRevision}
+                conflict={descriptionConflict}
                 onChange={field.handleChange}
                 onBlur={field.handleBlur}
                 expanded={expanded}

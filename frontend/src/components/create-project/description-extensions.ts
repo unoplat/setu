@@ -58,6 +58,9 @@ import { TextUnderline } from "reactjs-tiptap-editor/textunderline"
 // Desk cannot show (callout, formula), and anything that needs an upload
 // endpoint or an API key in the browser.
 
+const DESCRIPTION_PLACEHOLDER =
+  "Describe the goal, scope, and what done looks like. Press '/' for commands."
+
 export const descriptionExtensions = [
   Document,
   Paragraph,
@@ -70,10 +73,7 @@ export const descriptionExtensions = [
   Gapcursor,
   // Keeps a paragraph after a trailing table or code block to click into.
   TrailingNode,
-  Placeholder.configure({
-    placeholder:
-      "Describe the goal, scope, and what done looks like. Press '/' for commands.",
-  }),
+  Placeholder.configure({ placeholder: DESCRIPTION_PLACEHOLDER }),
   History,
   SearchAndReplace,
   Clear,
@@ -145,3 +145,23 @@ export const descriptionEditorOptions = {
   extensions: descriptionExtensions,
   textDirection: "auto",
 } as const
+
+// A record page's description field shows the "/" hint under the text
+// itself, so its placeholder only says what to write. The same editor also
+// fills the expanded layout, which has no hint, so there the placeholder
+// names "/" again. It is read on every transaction, and changing layout
+// focuses the editor, which is one.
+export const descriptionFieldEditorOptions = {
+  ...descriptionEditorOptions,
+  extensions: [
+    ...descriptionExtensions.filter(
+      (extension) => extension.name !== "placeholder"
+    ),
+    Placeholder.configure({
+      placeholder: ({ editor }) =>
+        editor.view.dom.closest('[data-layout="expanded"]')
+          ? DESCRIPTION_PLACEHOLDER
+          : "Add a description: the goal, the scope, and what done looks like.",
+    }),
+  ],
+}

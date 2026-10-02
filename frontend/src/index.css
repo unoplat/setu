@@ -263,6 +263,19 @@
 	padding: 2rem;
 	outline: none;
 }
+/* The package's placeholder grey (#adb5bd) is close to the text colour in the
+   dark theme, so an empty editor read as written. Inside the editor the
+   colour variables are HSL channels (see above). */
+.envision-rte
+	.reactjs-tiptap-editor
+	.ProseMirror.ProseMirror.ProseMirror
+	.is-empty::before,
+.envision-rte
+	.reactjs-tiptap-editor
+	.ProseMirror.ProseMirror.ProseMirror
+	p.is-editor-empty:first-child::before {
+	color: hsl(var(--muted-foreground));
+}
 /* Compact layout: the same document inside the dialog's description box,
    which grows with the text up to a point and then scrolls. */
 .envision-rte[data-layout="compact"] .envision-rte-content {
@@ -274,9 +287,30 @@
 	.ProseMirror.ProseMirror.ProseMirror {
 	padding: 0.75rem;
 }
-/* A record page's description (Paper: 06d, 07d, 09), editable or read-only:
-   part of the page, with no box, as tall as its text. The inset matches the
-   title's, so the two share a left edge. */
+/* The outlined boxes paint their own card surface; the package's wrapper
+   would cover it with the page background, leaving the description's "/"
+   hint row as a lighter strip under the text. */
+.envision-rte:is([data-layout="field"], [data-layout="comment"])
+	> .reactjs-tiptap-editor {
+	background-color: transparent;
+}
+/* A record page's description field (Paper: 06d, 07d, 09, 09b, 09c): an
+   outlined box a few lines tall when empty, then as tall as its text. The
+   package's 180px minimum would leave a tall blank box. */
+.envision-rte[data-layout="field"] .envision-rte-content {
+	overflow-y: visible;
+}
+.envision-rte[data-layout="field"]
+	.reactjs-tiptap-editor
+	.ProseMirror.ProseMirror.ProseMirror {
+	min-height: 4.5rem;
+	padding: 0.75rem 0.875rem;
+	font-size: 0.9375rem;
+	line-height: 1.5rem;
+}
+/* A saved description shown read-only: part of the page, with no box, as
+   tall as its text. The inset matches the title's, so the two share a left
+   edge. */
 .envision-rte[data-layout="document"] .envision-rte-content {
 	min-height: 3rem;
 	overflow-y: visible;
@@ -284,6 +318,7 @@
 .envision-rte[data-layout="document"]
 	.reactjs-tiptap-editor
 	.ProseMirror.ProseMirror.ProseMirror {
+	min-height: 0;
 	padding: 0.5rem 0.625rem;
 	font-size: 0.9375rem;
 	line-height: 1.5rem;
@@ -297,6 +332,7 @@
 .envision-rte[data-layout="comment"]
 	.reactjs-tiptap-editor
 	.ProseMirror.ProseMirror.ProseMirror {
+	min-height: 0;
 	padding: 0.625rem 0.875rem;
 }
 /* @mentions, in the comment box and in posted comments. */

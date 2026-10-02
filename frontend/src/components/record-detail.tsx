@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { FieldError } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { AutosaveStatus } from "@/lib/autosave"
+import type { AutosaveStatus, ConflictChoice } from "@/lib/autosave"
 import { bindingKey, getBinding, type CommandId } from "@/lib/commands"
 import { cn } from "@/lib/utils"
 
@@ -98,12 +98,15 @@ export function SaveIndicator({
   error,
   savedAt,
   onRetry,
+  onResolve,
 }: {
   status: AutosaveStatus
   error: string | null
   /** When the last save landed, for "Saved just now". */
   savedAt: number | null
   onRetry: () => void
+  /** Settle every field changed here and elsewhere at once. */
+  onResolve: (choice: ConflictChoice) => void
 }) {
   // "just now" for a minute after a save, then only "Saved".
   const [aged, setAged] = React.useState<number | null>(null)
@@ -132,6 +135,13 @@ export function SaveIndicator({
         <span className="text-destructive">
           Not saved yet. Fix the marked field.
         </span>
+      ) : status === "conflict" ? (
+        <>
+          <span className="truncate text-destructive">
+            Not saved: changed elsewhere
+          </span>
+          <ConflictActions onResolve={onResolve} />
+        </>
       ) : status === "error" ? (
         <>
           <span className="truncate text-destructive" title={error ?? ""}>
@@ -151,6 +161,36 @@ export function SaveIndicator({
         "Edits save automatically"
       )}
     </div>
+  )
+}
+
+/** "Use theirs" or "Keep mine", for edits that collided with someone else's. */
+function ConflictActions({
+  onResolve,
+}: {
+  onResolve: (choice: ConflictChoice) => void
+}) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="xs"
+        className="h-6 shrink-0 rounded-sm px-2"
+        onClick={() => onResolve("theirs")}
+      >
+        Use theirs
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="xs"
+        className="h-6 shrink-0 rounded-sm px-2"
+        onClick={() => onResolve("mine")}
+      >
+        Keep mine
+      </Button>
+    </>
   )
 }
 
@@ -217,6 +257,7 @@ const STATUS_TEXT: Record<AutosaveStatus, string> = {
   saved: "Saved",
   invalid: "Not saved yet",
   error: "Couldn’t save",
+  conflict: "Not saved: changed elsewhere",
 }
 
 /**
@@ -227,6 +268,8 @@ const STATUS_TEXT: Record<AutosaveStatus, string> = {
  */
 export function DescriptionField({
   value,
+  revision,
+  conflict,
   onChange,
   onBlur,
   expanded,
@@ -238,8 +281,15 @@ export function DescriptionField({
   collapseCommand,
   status,
 }: {
-  /** Initial saved HTML; later edits flow out through `onChange` only. */
+  /** The saved HTML; see DescriptionEditor for when it is read. */
   value: string
+  /** Moves when the description was replaced from outside. */
+  revision: number
+  /**
+   * Set while the description was changed elsewhere as it was being written:
+   * the edit waits until one version is picked.
+   */
+  conflict: ((choice: ConflictChoice) => void) | null
   onChange: (html: string) => void
   onBlur: () => void
   expanded: boolean
@@ -259,7 +309,7 @@ export function DescriptionField({
       className={
         expanded
           ? "fixed inset-0 z-50 flex flex-col bg-background"
-          : "group/description flex flex-col gap-1"
+          : "flex flex-col gap-2"
       }
       onKeyDownCapture={(event) => {
         // ProseMirror claims every Escape, so the document-level hotkey may
@@ -297,6 +347,41 @@ export function DescriptionField({
             />
           </Button>
         </header>
+      ) : (
+        // Named like the Comments below it, with Expand always in reach.
+        <div className="flex h-7 items-center justify-between gap-4">
+          <h2 className="text-sm font-semibold">Description</h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            className="h-7 gap-1.5 rounded-sm px-2 text-muted-foreground"
+            onClick={onExpand}
+          >
+            <Maximize2Icon className="size-3" />
+            Expand
+            <HotkeyText
+              command={toggleCommand}
+              className="text-[11px] font-normal"
+            />
+          </Button>
+        </div>
+      )}
+
+      {conflict ? (
+        <div
+          role="alert"
+          className={cn(
+            "flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm",
+            expanded && "mx-8 mt-4 shrink-0"
+          )}
+        >
+          <span className="me-auto">
+            Someone changed this description while you were writing. Yours isn’t
+            saved yet.
+          </span>
+          <ConflictActions onResolve={conflict} />
+        </div>
       ) : null}
 
       <div className={expanded ? "flex min-h-0 flex-1 flex-col" : ""}>
@@ -315,6 +400,7 @@ export function DescriptionField({
         >
           <DescriptionEditor
             value={value}
+            revision={revision}
             onChange={onChange}
             onBlur={onBlur}
             expanded={expanded}
@@ -345,25 +431,7 @@ export function DescriptionField({
             <CheckIcon />
           </Button>
         </footer>
-      ) : (
-        // Quiet until the description is hovered or being written.
-        <div className="flex justify-end opacity-0 transition-opacity group-focus-within/description:opacity-100 group-hover/description:opacity-100">
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            className="h-7 gap-1.5 rounded-sm px-2 text-muted-foreground"
-            onClick={onExpand}
-          >
-            <Maximize2Icon className="size-3" />
-            Expand
-            <HotkeyText
-              command={toggleCommand}
-              className="text-[11px] font-normal"
-            />
-          </Button>
-        </div>
-      )}
+      ) : null}
     </section>
   )
 }
@@ -377,6 +445,7 @@ export function UnsavedEditsDialog({
   record,
   reason,
   saving,
+  conflict = false,
 }: {
   leaving: {
     stay: () => void
@@ -388,6 +457,8 @@ export function UnsavedEditsDialog({
   /** Why the save failed, when the server said. */
   reason: string | null
   saving: boolean
+  /** The edits are held because someone changed the same fields elsewhere. */
+  conflict?: boolean
 }) {
   return (
     <Dialog
@@ -410,8 +481,10 @@ export function UnsavedEditsDialog({
             Your last edits to {record} aren’t saved
           </DialogTitle>
           <DialogDescription className="leading-5.5">
-            {reason ??
-              "A field needs fixing before they can be saved. Keep editing to fix it, or leave without them."}
+            {conflict
+              ? "Someone changed the same fields elsewhere while you were editing. Keep editing to choose which version to keep, or leave without yours."
+              : (reason ??
+                "A field needs fixing before they can be saved. Keep editing to fix it, or leave without them.")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2.5 pt-1">

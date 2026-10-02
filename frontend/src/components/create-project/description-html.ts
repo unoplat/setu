@@ -1,4 +1,4 @@
-import type { Editor } from "@tiptap/react"
+import { createDocument, type Editor } from "@tiptap/react"
 
 // Frappe cleans the description's HTML when the Project is saved and drops
 // attributes it does not know, while keeping any `data-*` attribute. The
@@ -37,4 +37,30 @@ export function storedDescription(editor: Editor): string {
 export function editorDescription(stored: string): string {
   if (!stored) return ""
   return renameAttributes(stored, (name) => [STORED_PREFIX + name, name])
+}
+
+/**
+ * Bring the document to `html` by replacing only the stretch that differs, so
+ * the cursor and the user's undo history outside it stay where they were.
+ * The change is not the user's: it is not undoable and emits no update, so
+ * the form is not handed it back as an edit.
+ */
+export function replaceDocument(editor: Editor, html: string) {
+  const { doc, tr } = editor.state
+  const next = createDocument(html, editor.schema, editor.options.parseOptions)
+  const start = doc.content.findDiffStart(next.content)
+  if (start === null) return
+  let { a: end, b: nextEnd } = doc.content.findDiffEnd(next.content)!
+  // Repeated content can make the two ends cross the start.
+  const overlap = start - Math.min(end, nextEnd)
+  if (overlap > 0) {
+    end += overlap
+    nextEnd += overlap
+  }
+  editor.view.dispatch(
+    tr
+      .replace(start, end, next.slice(start, nextEnd))
+      .setMeta("addToHistory", false)
+      .setMeta("preventUpdate", true)
+  )
 }

@@ -161,12 +161,19 @@ function TaskScreen({
             project={project}
             listeners={autosave.listeners}
             status={autosave.status}
+            descriptionRevision={autosave.replaced.description ?? 0}
+            descriptionConflict={
+              autosave.conflicts.includes("description")
+                ? (choice) => autosave.resolveConflicts(choice, ["description"])
+                : null
+            }
             indicator={
               <SaveIndicator
                 status={autosave.status}
                 error={autosave.error}
                 savedAt={autosave.savedAt}
                 onRetry={() => void flush()}
+                onResolve={(choice) => autosave.resolveConflicts(choice)}
               />
             }
             expanded={expanded}

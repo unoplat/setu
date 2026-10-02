@@ -43,10 +43,18 @@ import { themeActions } from "reactjs-tiptap-editor/theme"
 import "reactjs-tiptap-editor/style.css"
 
 import { useTheme } from "@/components/theme-provider"
+import { Kbd } from "@/components/ui/kbd"
 import { cn } from "@/lib/utils"
 
-import { descriptionEditorOptions } from "./description-extensions"
-import { editorDescription, storedDescription } from "./description-html"
+import {
+  descriptionEditorOptions,
+  descriptionFieldEditorOptions,
+} from "./description-extensions"
+import {
+  editorDescription,
+  replaceDocument,
+  storedDescription,
+} from "./description-html"
 import { descriptionSlashCommands } from "./slash-commands"
 
 // The description field of the Create Project form, in both of its layouts:
@@ -73,21 +81,29 @@ const selectionControls = (
 
 export default function DescriptionEditor({
   value,
+  revision = 0,
   onChange,
   onBlur,
   expanded,
   plain = false,
   label = "Project description",
 }: {
-  /** Initial saved HTML; later edits flow out through `onChange` only. */
+  /** The saved HTML; the editor reads it at first and on each `revision`. */
   value: string
+  /**
+   * Moves when `value` was replaced from outside (a change made elsewhere),
+   * which the editor then shows. Otherwise `value` is only the editor's own
+   * edits coming back, flowing out through `onChange`.
+   */
+  revision?: number
   onChange: (html: string) => void
   onBlur?: () => void
   /** Layout only: the compact box, or the full surface with its toolbar. */
   expanded: boolean
   /**
-   * The compact layout without its box: the description as part of a record
-   * page (Paper 09), as tall as its text.
+   * The description as a field of a record page (Paper 09, 09b, 09c): an
+   * outlined box as tall as its text, with the "/" hint while it is empty or
+   * being written.
    */
   plain?: boolean
   /** The document's accessible name. */
@@ -105,7 +121,7 @@ export default function DescriptionEditor({
   }))
 
   const editor = useEditor({
-    ...descriptionEditorOptions,
+    ...(plain ? descriptionFieldEditorOptions : descriptionEditorOptions),
     content: initialContent,
     editorProps,
     // Only real edits emit an update, so an untouched editor never dirties
@@ -114,6 +130,17 @@ export default function DescriptionEditor({
     onUpdate: ({ editor }) => onChange(storedDescription(editor)),
     onBlur: () => onBlur?.(),
   })
+
+  // A replaced value is loaded into the document, even mid-edit: the form
+  // only replaces it where the user had nothing unsaved.
+  const shownRevision = React.useRef(revision)
+  React.useEffect(() => {
+    if (!editor || editor.isDestroyed || shownRevision.current === revision) {
+      return
+    }
+    shownRevision.current = revision
+    replaceDocument(editor, editorDescription(value))
+  }, [editor, revision, value])
 
   // The package keeps its theme in a shared store rather than reading the
   // app's `.dark` class.
@@ -143,10 +170,10 @@ export default function DescriptionEditor({
         expanded
           ? "flex min-h-0 flex-1 flex-col"
           : plain
-            ? "-mx-2.5 rounded-md transition-colors focus-within:bg-foreground/4 hover:bg-foreground/4"
+            ? "group/field rounded-lg border border-input bg-card transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"
             : "rounded-xl border border-transparent bg-input/50 transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"
       )}
-      data-layout={expanded ? "expanded" : plain ? "document" : "compact"}
+      data-layout={expanded ? "expanded" : plain ? "field" : "compact"}
     >
       <RichTextProvider editor={editor}>
         {expanded ? (
@@ -205,6 +232,21 @@ export default function DescriptionEditor({
         <RichTextBubbleCodeBlock />
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
+      {/* Outside the provider: the package redefines the colour variables
+          for everything inside it. Clicking the hint writes at the end. */}
+      {plain && !expanded ? (
+        <div
+          aria-hidden
+          className="hidden cursor-text items-center justify-end gap-1 px-3.5 pb-2.5 text-xs text-muted-foreground group-focus-within/field:flex group-has-[.is-editor-empty]/field:flex"
+          onMouseDown={(event) => {
+            event.preventDefault()
+            editor.commands.focus("end")
+          }}
+        >
+          <Kbd>/</Kbd>
+          for headings, lists, tables
+        </div>
+      ) : null}
     </div>
   )
 }
