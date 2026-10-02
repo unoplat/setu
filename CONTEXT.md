@@ -7,7 +7,7 @@ Standard DocType and field references in this document must follow the official 
 ## Release Scope
 
 **First version**:
-Envision has no access model of its own. Every Frappe User whose ERPNext role permissions allow it can see and edit every Envision-enabled Project, and whoever can edit a Task can act on it. Envision does not invite people to a Project, does not define Envision roles, and does not add permission rules to Project or Task.
+Envision has no access model of its own. Every Frappe User whose ERPNext role permissions allow it can see and edit every Envision-enabled Project, and Task actions follow ERPNext's standard permissions: editing requires write permission and deletion requires delete permission. Envision does not invite people to a Project, does not define Envision roles, and does not add permission rules to Project or Task.
 
 **Next version**:
 Project membership, invitations, and the roles defined under Membership below (Envision Administrator, Project Admin, Project Member, Project Viewer), together with every rule that depends on them: Project-level visibility, restricting assignees to Project Members, and role-dependent controls. Those terms stay in this document so the language is settled, but nothing in the first version may depend on them.
@@ -144,15 +144,15 @@ _Avoid_: Workspace, Project, daily operating view
 The dedicated full-screen application used for daily work. Its Paper navigation includes global Home, My tasks, Inbox, and Settings plus Project-scoped Tasks, Milestones, Modules, Message Board, Project Todos, Settings, and private Views.
 _Avoid_: Desk Workspace, native Task form
 
-## Completion and Retention
+## Completion and Deletion
 
 **Cancelled Task**:
-Not supported in Envision. Envision has no way to cancel or reopen a Task. Tasks cancelled in ERPNext are hidden and excluded from completed work and Milestone progress. To take a Task out of normal views, archive it.
-_Avoid_: Done Task, Archived Task
+Not supported in Envision. Envision has no way to cancel or reopen a Task. Tasks cancelled in ERPNext are hidden and excluded from completed work and Milestone progress. To remove a Task, delete it.
+_Avoid_: Done Task, Deleted Task
 
-**Archived Task**:
-A Task hidden from normal views for thirty days while retaining its Status. Archiving a parent archives its entire descendant tree under the same retention window; anyone who can edit the Task may restore the tree before permanent deletion. Limiting this to a Project Admin or Project Member belongs to the next version.
-_Avoid_: Cancelled Task, deleted task, trashed task
+**Deleted Task**:
+A Task permanently removed after confirmation. Deleting a parent deletes its entire descendant tree immediately, including cancelled Subtasks. The user must have ERPNext delete permission on every Task being removed; linked records may prevent deletion, in which case the whole tree remains unchanged. Envision does not support archiving, a retention window, Undo, or restoration, and deleted Tasks are not kept in Frappe's Deleted Document recovery store. Project-role restrictions belong to the next version.
+_Avoid_: Cancelled Task, Archived Task, trashed task
 
 ## ERP documentation basis
 

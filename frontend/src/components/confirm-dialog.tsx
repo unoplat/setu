@@ -19,8 +19,8 @@ import { submitOnce, useAppForm } from "@/lib/form"
 import { cn } from "@/lib/utils"
 
 /**
- * Paper: Milestone Delete 02, Module Delete 02, Task Archive 02. One confirm
- * for deleting or archiving a record: what happens, the one number that
+ * One confirm for deleting a milestone, module, project or Task:
+ * what happens, the one number that
  * matters ("3 linked tasks stay, with no milestone"), Cancel and the action.
  *
  * - The dialog is opened from a ⋯ menu, so its `open` state lives beside the
@@ -65,7 +65,7 @@ export function ConfirmDialog({
   onOpenChange: (open: boolean) => void
   /** Where focus goes once it closes: the ⋯ button that opened the menu. */
   finalFocus?: React.RefObject<HTMLElement | null>
-  /** Delete or archive, then move on. Throws when the server refuses. */
+  /** Delete, then move on. Throws when the server refuses. */
   onConfirm: () => Promise<void>
   children: React.ReactNode
 }) {

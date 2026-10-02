@@ -10,7 +10,7 @@ from setu.search import EnvisionSearch
 # the dialog groups them by kind. The full-text index (setu/search.py) finds
 # candidates, and each one is read back through frappe.get_list, so a result
 # is only shown if this user may open it and Envision would list it: not
-# archived, not Cancelled, not a template, in an Envision project.
+# deleted, not Cancelled, not a template, in an Envision project.
 
 # Results show from the second letter typed, as the dialog asks for them.
 MIN_QUERY_LENGTH = 2
@@ -69,7 +69,7 @@ def live_rows(hits: list[dict], projects: dict[str, str]) -> dict[tuple[str, str
 	"""The hits Envision lists and this user may read, read from the database.
 
 	frappe.get_list applies role and user permissions; the filters drop what
-	the index cannot know about, such as a Task archived since it was indexed.
+	the index cannot know about, such as a Task deleted since it was indexed.
 	"""
 	rows = {}
 	tasks = [hit["name"] for hit in hits if hit["doctype"] == "Task"]
@@ -81,7 +81,6 @@ def live_rows(hits: list[dict], projects: dict[str, str]) -> dict[tuple[str, str
 				"project": ["in", list(projects)],
 				"is_template": 0,
 				"status": ["!=", "Cancelled"],
-				"envision_archived_on": ["is", "not set"],
 			},
 			fields=["name", "subject", "status", "project", "is_milestone"],
 			limit_page_length=0,

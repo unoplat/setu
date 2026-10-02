@@ -23,7 +23,6 @@ import { Route as AuthenticatedShellProjectsNameMilestonesMilestoneRouteImport }
 import { Route as AuthenticatedShellProjectsNameModulesIndexRouteImport } from './routes/_authenticated/_shell/projects.$name.modules.index'
 import { Route as AuthenticatedShellProjectsNameModulesModuleRouteImport } from './routes/_authenticated/_shell/projects.$name.modules.$module'
 import { Route as AuthenticatedShellProjectsNameTasksTaskRouteImport } from './routes/_authenticated/_shell/projects.$name.tasks.$task'
-import { Route as AuthenticatedShellProjectsNameTasksArchivedRouteImport } from './routes/_authenticated/_shell/projects.$name.tasks.archived'
 import { Route as AuthenticatedShellProjectsNameViewsViewRouteImport } from './routes/_authenticated/_shell/projects.$name.views.$view'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -104,12 +103,6 @@ const AuthenticatedShellProjectsNameTasksTaskRoute =
     path: '/tasks/$task',
     getParentRoute: () => AuthenticatedShellProjectsNameRoute,
   } as any)
-const AuthenticatedShellProjectsNameTasksArchivedRoute =
-  AuthenticatedShellProjectsNameTasksArchivedRouteImport.update({
-    id: '/tasks/archived',
-    path: '/tasks/archived',
-    getParentRoute: () => AuthenticatedShellProjectsNameRoute,
-  } as any)
 const AuthenticatedShellProjectsNameViewsViewRoute =
   AuthenticatedShellProjectsNameViewsViewRouteImport.update({
     id: '/views/$view',
@@ -128,7 +121,6 @@ export interface FileRoutesByFullPath {
   '/projects/$name/milestones/$milestone': typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
   '/projects/$name/modules/$module': typeof AuthenticatedShellProjectsNameModulesModuleRoute
   '/projects/$name/tasks/$task': typeof AuthenticatedShellProjectsNameTasksTaskRoute
-  '/projects/$name/tasks/archived': typeof AuthenticatedShellProjectsNameTasksArchivedRoute
   '/projects/$name/views/$view': typeof AuthenticatedShellProjectsNameViewsViewRoute
   '/projects/$name/milestones/': typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
   '/projects/$name/modules/': typeof AuthenticatedShellProjectsNameModulesIndexRoute
@@ -143,7 +135,6 @@ export interface FileRoutesByTo {
   '/projects/$name/milestones/$milestone': typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
   '/projects/$name/modules/$module': typeof AuthenticatedShellProjectsNameModulesModuleRoute
   '/projects/$name/tasks/$task': typeof AuthenticatedShellProjectsNameTasksTaskRoute
-  '/projects/$name/tasks/archived': typeof AuthenticatedShellProjectsNameTasksArchivedRoute
   '/projects/$name/views/$view': typeof AuthenticatedShellProjectsNameViewsViewRoute
   '/projects/$name/milestones': typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
   '/projects/$name/modules': typeof AuthenticatedShellProjectsNameModulesIndexRoute
@@ -162,7 +153,6 @@ export interface FileRoutesById {
   '/_authenticated/_shell/projects/$name/milestones/$milestone': typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
   '/_authenticated/_shell/projects/$name/modules/$module': typeof AuthenticatedShellProjectsNameModulesModuleRoute
   '/_authenticated/_shell/projects/$name/tasks/$task': typeof AuthenticatedShellProjectsNameTasksTaskRoute
-  '/_authenticated/_shell/projects/$name/tasks/archived': typeof AuthenticatedShellProjectsNameTasksArchivedRoute
   '/_authenticated/_shell/projects/$name/views/$view': typeof AuthenticatedShellProjectsNameViewsViewRoute
   '/_authenticated/_shell/projects/$name/milestones/': typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
   '/_authenticated/_shell/projects/$name/modules/': typeof AuthenticatedShellProjectsNameModulesIndexRoute
@@ -180,7 +170,6 @@ export interface FileRouteTypes {
     | '/projects/$name/milestones/$milestone'
     | '/projects/$name/modules/$module'
     | '/projects/$name/tasks/$task'
-    | '/projects/$name/tasks/archived'
     | '/projects/$name/views/$view'
     | '/projects/$name/milestones/'
     | '/projects/$name/modules/'
@@ -195,7 +184,6 @@ export interface FileRouteTypes {
     | '/projects/$name/milestones/$milestone'
     | '/projects/$name/modules/$module'
     | '/projects/$name/tasks/$task'
-    | '/projects/$name/tasks/archived'
     | '/projects/$name/views/$view'
     | '/projects/$name/milestones'
     | '/projects/$name/modules'
@@ -213,7 +201,6 @@ export interface FileRouteTypes {
     | '/_authenticated/_shell/projects/$name/milestones/$milestone'
     | '/_authenticated/_shell/projects/$name/modules/$module'
     | '/_authenticated/_shell/projects/$name/tasks/$task'
-    | '/_authenticated/_shell/projects/$name/tasks/archived'
     | '/_authenticated/_shell/projects/$name/views/$view'
     | '/_authenticated/_shell/projects/$name/milestones/'
     | '/_authenticated/_shell/projects/$name/modules/'
@@ -323,13 +310,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedShellProjectsNameTasksTaskRouteImport
       parentRoute: typeof AuthenticatedShellProjectsNameRoute
     }
-    '/_authenticated/_shell/projects/$name/tasks/archived': {
-      id: '/_authenticated/_shell/projects/$name/tasks/archived'
-      path: '/tasks/archived'
-      fullPath: '/projects/$name/tasks/archived'
-      preLoaderRoute: typeof AuthenticatedShellProjectsNameTasksArchivedRouteImport
-      parentRoute: typeof AuthenticatedShellProjectsNameRoute
-    }
     '/_authenticated/_shell/projects/$name/views/$view': {
       id: '/_authenticated/_shell/projects/$name/views/$view'
       path: '/views/$view'
@@ -346,7 +326,6 @@ interface AuthenticatedShellProjectsNameRouteChildren {
   AuthenticatedShellProjectsNameMilestonesMilestoneRoute: typeof AuthenticatedShellProjectsNameMilestonesMilestoneRoute
   AuthenticatedShellProjectsNameModulesModuleRoute: typeof AuthenticatedShellProjectsNameModulesModuleRoute
   AuthenticatedShellProjectsNameTasksTaskRoute: typeof AuthenticatedShellProjectsNameTasksTaskRoute
-  AuthenticatedShellProjectsNameTasksArchivedRoute: typeof AuthenticatedShellProjectsNameTasksArchivedRoute
   AuthenticatedShellProjectsNameViewsViewRoute: typeof AuthenticatedShellProjectsNameViewsViewRoute
   AuthenticatedShellProjectsNameMilestonesIndexRoute: typeof AuthenticatedShellProjectsNameMilestonesIndexRoute
   AuthenticatedShellProjectsNameModulesIndexRoute: typeof AuthenticatedShellProjectsNameModulesIndexRoute
@@ -364,8 +343,6 @@ const AuthenticatedShellProjectsNameRouteChildren: AuthenticatedShellProjectsNam
       AuthenticatedShellProjectsNameModulesModuleRoute,
     AuthenticatedShellProjectsNameTasksTaskRoute:
       AuthenticatedShellProjectsNameTasksTaskRoute,
-    AuthenticatedShellProjectsNameTasksArchivedRoute:
-      AuthenticatedShellProjectsNameTasksArchivedRoute,
     AuthenticatedShellProjectsNameViewsViewRoute:
       AuthenticatedShellProjectsNameViewsViewRoute,
     AuthenticatedShellProjectsNameMilestonesIndexRoute:

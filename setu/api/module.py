@@ -110,7 +110,7 @@ def add_module_comment(name: str, content: str) -> dict:
 @frappe.whitelist()
 def count_module_tasks(name: str) -> dict:
 	"""How many Tasks a delete would move to No module (Paper: Module Delete
-	02). Counted as the Board shows them: neither Cancelled nor archived."""
+	02). Counted as the Board shows them: neither Cancelled nor templates."""
 	module_doc(name)
 	return {"tasks": live_task_count({"envision_module": name})}
 
@@ -120,7 +120,7 @@ def delete_module(name: str) -> dict:
 	"""Delete a module for good (Paper: "Delete module journey").
 
 	Its Tasks stay, under No module: the link is cleared on every one of them
-	first, archived ones included, without touching ``modified`` so the
+	first, without touching ``modified`` so the
 	Board's order holds. Frappe's own delete then checks the Envision Module
 	delete permission and removes its comments with it.
 	"""

@@ -16,7 +16,6 @@ import {
   type KanbanItem,
 } from "@/components/kanban-board"
 import { ProjectHeader } from "@/components/project-header"
-import { ArchivedTasksButton } from "@/components/tasks/archived-tasks-button"
 import { CreateTaskSheet } from "@/components/tasks/create-task-sheet"
 import { TaskDragPreview } from "@/components/tasks/task-card"
 import { taskCardRenderer } from "@/components/tasks/task-card-renderer"
@@ -250,9 +249,7 @@ export function ProjectBoard({
         projectName={projectName}
         section={view ? view.view_name : "Tasks"}
         badge={view ? <OnlyYouBadge /> : undefined}
-      >
-        <ArchivedTasksButton project={name} />
-      </ProjectHeader>
+      />
       <main className="flex min-h-0 flex-1 flex-col">
         <BoardToolbar
           project={name}

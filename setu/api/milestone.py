@@ -139,7 +139,7 @@ def add_milestone_comment(name: str, content: str) -> dict:
 def count_linked_tasks(name: str) -> dict:
 	"""How many Tasks a delete would leave with no milestone (Paper: Milestone
 	Delete 02). Counted as the milestone page lists them: neither Cancelled
-	nor archived."""
+	nor templates."""
 	from setu.api.task import live_task_count
 
 	milestone_doc(name)
@@ -151,7 +151,7 @@ def delete_milestone(name: str) -> dict:
 	"""Delete a milestone for good (Paper: "Delete milestone journey").
 
 	Its Tasks stay, with no milestone: the link is cleared on every one of
-	them first, archived ones included, since a Task pointing at a deleted
+	them first, since a Task pointing at a deleted
 	milestone would also block the delete as a linked record. The link is
 	cleared without touching ``modified``, so the Board's order holds. Frappe's
 	own delete then checks the Task delete permission and removes the

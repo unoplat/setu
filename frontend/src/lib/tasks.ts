@@ -1,10 +1,5 @@
 import * as React from "react"
-import {
-  useFrappeGetCall,
-  useFrappeGetDocList,
-  type Filter,
-  type FrappeDoc,
-} from "frappe-react-sdk"
+import { useFrappeGetCall, useFrappeGetDocList } from "frappe-react-sdk"
 
 import type {
   KanbanData,
@@ -42,16 +37,6 @@ export function projectTasksKey(project: string) {
   return `envision:tasks:${project}`
 }
 
-/**
- * Archived Tasks are listed under Archived only. "is" is Frappe's operator
- * for an empty field; the SDK's Filter type leaves it out.
- */
-const NOT_ARCHIVED = [
-  "envision_archived_on",
-  "is",
-  "not set",
-] as unknown as Filter<FrappeDoc<TaskSummary>>
-
 export function useProjectTasks(project: string) {
   return useFrappeGetDocList<TaskSummary>(
     "Task",
@@ -72,7 +57,6 @@ export function useProjectTasks(project: string) {
         ["project", "=", project],
         ["is_milestone", "=", 0],
         ["status", "not in", ["Template", "Cancelled"]],
-        NOT_ARCHIVED,
       ],
       orderBy: { field: "modified", order: "desc" },
       limit: 500,
@@ -199,6 +183,8 @@ export interface TaskDetail {
   modified: string
   /** Whether this user may edit it; read-only viewers get no editor. */
   can_write: boolean
+  /** Whether this user may permanently delete it and its subtasks. */
+  can_delete: boolean
 }
 
 export function taskKey(name: string) {
@@ -219,7 +205,7 @@ export function taskActivityKey(name: string) {
 }
 
 /**
- * How many subtasks archiving the Task takes with it, for its confirm
+ * How many descendant Tasks deletion takes with it, including nested subtasks
  * (setu.api.task.count_subtasks).
  */
 export function useSubtaskCount(name: string) {
@@ -227,34 +213,6 @@ export function useSubtaskCount(name: string) {
     "setu.api.task.count_subtasks",
     { name },
     ["envision:task-subtasks", name]
-  )
-}
-
-/**
- * An archived Task as Archived lists it (setu.api.task.list_archived_tasks):
- * one someone archived, with a count of the subtasks that went with it.
- */
-export interface ArchivedTask {
-  name: string
-  subject: string
-  status: string
-  subtasks: number
-  /** ISO datetimes with their offsets. */
-  archived_on: string
-  deletes_on: string
-  archived_by: Assignee | null
-}
-
-/** Shared SWR key: the Board's Archived count and the Archived page. */
-export function archivedTasksKey(project: string) {
-  return ["envision:archived-tasks", project]
-}
-
-export function useArchivedTasks(project: string) {
-  return useFrappeGetCall<{ message: ArchivedTask[] }>(
-    "setu.api.task.list_archived_tasks",
-    { project },
-    archivedTasksKey(project)
   )
 }
 

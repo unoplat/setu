@@ -11,7 +11,7 @@ from frappe.search.sqlite_search import SQLiteSearch
 # every three hours, and updated whenever an indexed record is saved or
 # deleted. It finds candidates only: setu.api.search reads each one back
 # through the permission-checked database before showing it, since the index
-# does not know about archiving, Cancelled Tasks or record-level permissions.
+# may be stale and does not know about Cancelled Tasks or record-level permissions.
 
 
 class EnvisionSearch(SQLiteSearch):

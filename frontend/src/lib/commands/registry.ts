@@ -46,7 +46,7 @@ export const SCOPES: Record<CommandScope, { label: string; modal: boolean }> = {
   "task-comment": { label: "Task comment box", modal: false },
   // A page, not a dialog: global navigation keeps working on it.
   "project-settings": { label: "Project settings", modal: false },
-  // Owns no commands: a Delete or Archive confirm is open, and nothing
+  // Owns no commands: a Delete confirm is open, and nothing
   // behind it should fire.
   confirm: { label: "Confirm dialog", modal: true },
   // Owns no commands; pushed while recording so nothing else fires.

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ArchiveIcon, EllipsisIcon, LinkIcon } from "lucide-react"
+import { EllipsisIcon, LinkIcon, Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -11,26 +11,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import { ArchiveTaskDialog } from "./archive-task-dialog"
+import { DeleteTaskDialog } from "./delete-task-dialog"
 
 /**
- * Paper: 09, the ⋯ button in the header, and Task Archive 01. Archive is not
- * destructive (it can be undone for thirty days), so it is an ordinary item.
- * Anyone who can edit the Task may archive it. The confirm is the menu's
- * sibling, since the menu's content unmounts as it closes.
+ * The ⋯ button in the Task header. Deletion requires delete permission and
+ * a destructive confirmation. The confirm is the menu's sibling, since the
+ * menu's content unmounts as it closes.
  * https://base-ui.com/react/components/menu
  */
 export function TaskActions({
   project,
   task,
-  canArchive,
+  canDelete,
 }: {
   project: string
   task: { name: string; subject: string }
-  canArchive: boolean
+  canDelete: boolean
 }) {
   const triggerRef = React.useRef<HTMLButtonElement>(null)
-  const [archiving, setArchiving] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
 
   async function copyLink() {
     try {
@@ -62,22 +61,25 @@ export function TaskActions({
             <LinkIcon />
             Copy link
           </DropdownMenuItem>
-          {canArchive ? (
+          {canDelete ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setArchiving(true)}>
-                <ArchiveIcon />
-                Archive task…
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => setDeleting(true)}
+              >
+                <Trash2Icon />
+                Delete task…
               </DropdownMenuItem>
             </>
           ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
-      <ArchiveTaskDialog
+      <DeleteTaskDialog
         project={project}
         task={task}
-        open={archiving}
-        onOpenChange={setArchiving}
+        open={deleting}
+        onOpenChange={setDeleting}
         finalFocus={triggerRef}
       />
     </>

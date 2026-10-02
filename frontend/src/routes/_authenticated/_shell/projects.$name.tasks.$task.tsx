@@ -150,7 +150,7 @@ function TaskScreen({
         <TaskActions
           project={project}
           task={task}
-          canArchive={task.can_write}
+          canDelete={task.can_delete}
         />
       </ProjectHeader>
       <main className="flex min-h-0 flex-1 flex-col">
@@ -197,6 +197,7 @@ function TaskScreen({
         record={task.subject}
         reason={autosave.error}
         saving={autosave.status === "saving"}
+        conflict={autosave.status === "conflict"}
       />
     </>
   )

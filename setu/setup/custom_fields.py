@@ -46,47 +46,19 @@ ENVISION_CUSTOM_FIELDS = {
 			"insert_after": "envision_milestone",
 			"description": "The part of the project's product this Task belongs to.",
 		},
-		# An Archived Task (CONTEXT.md): hidden from Envision for thirty days,
-		# then deleted for good by setu.api.task.delete_expired_archives.
-		# Archiving a Task takes its whole subtree; each subtask records the
-		# Task it went with, so restoring that one brings them all back.
-		{
-			"fieldname": "envision_archived_on",
-			"fieldtype": "Datetime",
-			"label": "Archived On",
-			"insert_after": "envision_module",
-			"read_only": 1,
-			"no_copy": 1,
-			"description": "Envision hides an archived Task and deletes it 30 days later.",
-		},
-		{
-			"fieldname": "envision_archived_by",
-			"fieldtype": "Link",
-			"label": "Archived By",
-			"options": "User",
-			"insert_after": "envision_archived_on",
-			"read_only": 1,
-			"no_copy": 1,
-			"depends_on": "eval:doc.envision_archived_on",
-		},
-		{
-			"fieldname": "envision_archived_with",
-			"fieldtype": "Link",
-			"label": "Archived With",
-			"options": "Task",
-			"insert_after": "envision_archived_by",
-			"read_only": 1,
-			"no_copy": 1,
-			"depends_on": "eval:doc.envision_archived_with",
-			"description": "The parent Task whose archiving took this one.",
-		},
 	],
 }
 
 
-# Fields an earlier version created and no longer uses. The description now
-# lives in ERPNext's own ``notes``, which already held its rendered HTML.
-RETIRED_CUSTOM_FIELDS = ["Project-envision_description"]
+# Fields earlier versions created and no longer use. Previously archived
+# Tasks are retained as ordinary Tasks, not silently deleted during an upgrade.
+# The description lives in ERPNext's own ``notes``.
+RETIRED_CUSTOM_FIELDS = [
+	"Project-envision_description",
+	"Task-envision_archived_with",
+	"Task-envision_archived_by",
+	"Task-envision_archived_on",
+]
 
 
 def create_envision_custom_fields() -> None:

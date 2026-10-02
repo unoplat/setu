@@ -5,8 +5,8 @@ import {
 } from "frappe-react-sdk"
 
 /**
- * What a confirm states before something is deleted or archived: "3 linked
- * tasks stay", "2 subtasks are archived with it". The number is the reason to
+ * What a confirm states before something is deleted: "3 linked tasks stay",
+ * "2 subtasks are deleted with it". The number is the reason to
  * read the confirm, so it is fetched each time one opens and only shown once
  * that fetch has answered.
  *

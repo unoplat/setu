@@ -192,11 +192,6 @@ sqlite_search = ["setu.search.EnvisionSearch"]
 # Scheduled Tasks
 # ---------------
 
-# Archived Tasks are deleted for good thirty days after they were archived.
-scheduler_events = {
-	"daily": ["setu.api.task.delete_expired_archives"],
-}
-
 # scheduler_events = {
 # 	"all": [
 # 		"setu.tasks.all"
@@ -303,4 +298,3 @@ extend_doctype_class = {
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

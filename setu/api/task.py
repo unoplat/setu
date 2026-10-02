@@ -1,7 +1,8 @@
 import frappe
 from frappe import _
 from frappe.desk.form.assign_to import add as assign_to
-from frappe.utils import add_days, get_datetime, getdate, now_datetime, today
+from frappe.model.delete_doc import get_dynamic_linked_docs, get_linked_docs, raise_link_exists_exception
+from frappe.utils import getdate, today
 from frappe.utils.nestedset import get_descendants_of
 
 from setu.api.milestone import as_date, first_assignee, replace_assignee
@@ -18,14 +19,6 @@ from setu.api.timeline import comment_on, document_activity, people_details, tim
 # Envision does not support Cancelled (CONTEXT.md, Status).
 CREATE_STATUSES = ("Open", "Working", "Pending Review", "Blocked", "Completed")
 PRIORITIES = ("Low", "Medium", "High", "Urgent")
-
-# An Archived Task is deleted for good this many days after it was archived
-# (CONTEXT.md, Archived Task).
-ARCHIVE_RETENTION_DAYS = 30
-
-
-class TaskArchivedError(frappe.ValidationError):
-	"""The Task is archived: Envision shows it only under Archived."""
 
 
 class EnvisionTask:
@@ -239,196 +232,94 @@ def add_task_comment(name: str, content: str) -> dict:
 	return comment_on(task_doc(name, "read"), content)
 
 
-def task_doc(name: str, ptype: str = "read", archived: bool = False):
+def task_doc(name: str, ptype: str = "read"):
 	"""A Task the Board shows, after the permission check.
 
 	Milestones have a page of their own and templates are not project work, so
-	both are reported as missing and this page never opens or changes one. An
-	archived Task is refused too, unless ``archived`` asks for one, so it is
-	neither shown nor edited until it is restored.
+	both are reported as missing and this page never opens or changes one.
 	"""
 	task = frappe.get_doc("Task", name)
 	task.check_permission(ptype)
 	if task.is_milestone or task.is_template:
 		frappe.throw(_("Task {0} not found").format(name), frappe.DoesNotExistError)
-	if bool(task.get("envision_archived_on")) != archived:
-		if archived:
-			frappe.throw(_("{0} is not archived.").format(frappe.bold(task.subject)))
-		frappe.throw(
-			_("{0} is archived. Restore it from Archived to open it.").format(frappe.bold(task.subject)),
-			TaskArchivedError,
-		)
 	return task
 
 
 def live_task_count(filters: dict) -> int:
-	"""Tasks matching ``filters`` that Envision lists: neither Cancelled,
-	which it hides, nor archived."""
+	"""Tasks matching ``filters`` that Envision lists: neither Cancelled
+	nor templates."""
 	return frappe.db.count(
 		"Task",
 		{
 			**filters,
 			"status": ["!=", "Cancelled"],
 			"is_template": 0,
-			"envision_archived_on": ["is", "not set"],
 		},
 	)
 
 
-def subtasks_to_archive(task) -> list[str]:
-	"""The Task's subtasks, at any depth, that archiving it would take: those
-	not already archived on their own, which keep their own thirty days."""
+def task_subtree(task) -> list[str]:
+	"""All descendants and the Task, children before parents.
+
+	Include Cancelled Tasks and every depth: the confirm must count everything
+	that will be deleted, not just the subtasks visible on the Board.
+	"""
 	descendants = get_descendants_of("Task", task.name, ignore_permissions=True)
-	if not descendants:
-		return []
 	return frappe.get_all(
 		"Task",
-		filters={"name": ["in", descendants], "envision_archived_on": ["is", "not set"]},
+		filters={"name": ["in", [task.name, *descendants]]},
 		pluck="name",
+		order_by="lft desc",
 	)
-
-
-def visible_subtasks(names: list[str]) -> int:
-	"""How many of these subtasks Envision would list; Cancelled ones are hidden."""
-	if not names:
-		return 0
-	return frappe.db.count("Task", {"name": ["in", names], "status": ["!=", "Cancelled"]})
 
 
 @frappe.whitelist()
 def count_subtasks(name: str) -> dict:
-	"""How many subtasks archiving the Task takes with it (Paper: Task Archive 02)."""
-	task = task_doc(name)
-	return {"subtasks": visible_subtasks(subtasks_to_archive(task))}
+	"""How many descendant Tasks a permanent delete would remove."""
+	task = task_doc(name, "delete")
+	return {"subtasks": len(task_subtree(task)) - 1}
 
 
 @frappe.whitelist(methods=["POST"])
-def archive_task(name: str) -> dict:
-	"""Archive a Task and its subtree (Paper: "Archive task journey").
+def delete_task(name: str) -> dict:
+	"""Permanently delete a Task and its entire subtree after confirmation.
 
-	Nothing is deleted yet: each Task in the tree is marked with when and by
-	whom, and its subtasks with the Task they went with, so a restore brings
-	the tree back together. Envision hides them all, and
-	``delete_expired_archives`` deletes them after thirty days. The marks are
-	written without touching ``modified``, so a restored Task keeps its place
-	on the Board. Anyone who can edit the Task may archive it.
+	Require delete permission on every Task before any mutation. Internal
+	dependency rows go first, then children before parents. External links
+	(including other Tasks' dependencies and Timesheets) keep Frappe's normal
+	delete protections: any failure rolls back the entire operation. No
+	archive, grace period, or Deleted Document recovery copy is created.
 	"""
-	task = task_doc(name, "write")
-	subtasks = subtasks_to_archive(task)
-	visible = visible_subtasks(subtasks)
-	values = {"envision_archived_on": now_datetime(), "envision_archived_by": frappe.session.user}
-	frappe.db.set_value("Task", task.name, {**values, "envision_archived_with": None}, update_modified=False)
-	if subtasks:
-		frappe.db.set_value(
-			"Task",
-			{"name": ["in", subtasks]},
-			{**values, "envision_archived_with": task.name},
-			update_modified=False,
-		)
-	task.add_comment("Info", _("archived this task"))
-	return {"name": task.name, "subject": task.subject, "subtasks": visible}
-
-
-@frappe.whitelist(methods=["POST"])
-def restore_task(name: str) -> dict:
-	"""Bring an archived Task and the subtasks it took back (Paper: Task
-	Archive 04, and the Undo after archiving). A subtask that went with its
-	parent comes back with that parent, not on its own."""
-	task = task_doc(name, "write", archived=True)
-	if task.get("envision_archived_with"):
-		parent = frappe.db.get_value("Task", task.envision_archived_with, "subject")
-		frappe.throw(
-			_("{0} was archived with {1}. Restore that task instead.").format(
-				frappe.bold(task.subject), frappe.bold(parent or task.envision_archived_with)
+	task = task_doc(name, "delete")
+	tree = task_subtree(task)
+	documents = [frappe.get_doc("Task", task_name) for task_name in tree]
+	for doc in documents:
+		doc.check_permission("delete")
+	# Check every external link before deleting anything: Frappe also removes
+	# attachments from disk, which a database rollback alone cannot restore.
+	tree_names = set(tree)
+	for doc in documents:
+		for link in [*get_linked_docs(doc), *get_dynamic_linked_docs(doc)]:
+			if link["reference_doctype"] == "Task" and link["reference_docname"] in tree_names:
+				continue
+			raise_link_exists_exception(
+				doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
 			)
+
+	frappe.db.savepoint("delete_task_tree")
+	try:
+		# Only dependencies owned by the deleted tree may be removed. Never
+		# silently modify a surviving Task to bypass a linked-record check.
+		frappe.db.delete(
+			"Task Depends On",
+			{"parenttype": "Task", "parent": ["in", tree], "task": ["in", tree]},
 		)
-	subtasks = frappe.get_all("Task", filters={"envision_archived_with": task.name}, pluck="name")
-	cleared = {"envision_archived_on": None, "envision_archived_by": None, "envision_archived_with": None}
-	frappe.db.set_value("Task", {"name": ["in", [task.name, *subtasks]]}, cleared, update_modified=False)
-	task.add_comment("Info", _("restored this task"))
-	return {"name": task.name, "subject": task.subject, "subtasks": visible_subtasks(subtasks)}
-
-
-@frappe.whitelist()
-def list_archived_tasks(project: str) -> list[dict]:
-	"""A project's archived Tasks, newest first (Paper: Task Archive 04).
-
-	Only the Tasks someone archived are listed; the subtasks that went with
-	one are counted on its row, since they come back with it.
-	"""
-	frappe.get_doc("Project", project).check_permission("read")
-	rows = frappe.get_list(
-		"Task",
-		filters={
-			"project": project,
-			"is_milestone": 0,
-			"is_template": 0,
-			"envision_archived_on": ["is", "set"],
-			"envision_archived_with": ["is", "not set"],
-		},
-		fields=["name", "subject", "status", "envision_archived_on", "envision_archived_by"],
-		order_by="envision_archived_on desc",
-		limit_page_length=0,
-	)
-	subtasks: dict[str, int] = {}
-	if rows:
-		for root in frappe.get_all(
-			"Task",
-			filters={
-				"envision_archived_with": ["in", [row.name for row in rows]],
-				"status": ["!=", "Cancelled"],
-			},
-			pluck="envision_archived_with",
-		):
-			subtasks[root] = subtasks.get(root, 0) + 1
-	people = people_details({row.envision_archived_by for row in rows if row.envision_archived_by})
-	return [
-		{
-			"name": row.name,
-			"subject": row.subject,
-			"status": row.status,
-			"subtasks": subtasks.get(row.name, 0),
-			"archived_on": timestamp(row.envision_archived_on),
-			"archived_by": people.get(row.envision_archived_by or ""),
-			"deletes_on": timestamp(add_days(get_datetime(row.envision_archived_on), ARCHIVE_RETENTION_DAYS)),
-		}
-		for row in rows
-	]
-
-
-def delete_expired_archives() -> None:
-	"""Delete every Task archived more than thirty days ago, with the subtasks
-	that went with it (scheduler_events, daily).
-
-	Subtasks go before their parents, since ERPNext refuses to delete a Task
-	that still has children, and dependency rows naming the tree go first, as
-	they would block it as linked records. Each tree is its own attempt: one
-	that cannot be deleted (say, a Timesheet logs time against it) is logged
-	and tried again the next day, and the rest still go.
-	"""
-	cutoff = add_days(now_datetime(), -ARCHIVE_RETENTION_DAYS)
-	roots = frappe.get_all(
-		"Task",
-		filters={
-			"envision_archived_on": ["<", cutoff],
-			"envision_archived_with": ["is", "not set"],
-		},
-		pluck="name",
-	)
-	for root in roots:
-		frappe.db.savepoint("archived_tree")
-		try:
-			subtasks = frappe.get_all("Task", filters={"envision_archived_with": root}, pluck="name")
-			# Deepest first, so no Task is deleted while it still has children.
-			tree = frappe.get_all(
-				"Task", filters={"name": ["in", [root, *subtasks]]}, pluck="name", order_by="lft desc"
-			)
-			frappe.db.delete("Task Depends On", {"task": ["in", tree]})
-			for name in tree:
-				frappe.delete_doc("Task", name, ignore_permissions=True)
-		except Exception:
-			frappe.db.rollback(save_point="archived_tree")
-			frappe.log_error(title=f"Could not delete archived Task {root}")
+		for task_name in tree:
+			frappe.delete_doc("Task", task_name, delete_permanently=True)
+	except Exception:
+		frappe.db.rollback(save_point="delete_task_tree")
+		raise
+	return {"name": task.name, "subject": task.subject, "subtasks": len(tree) - 1}
 
 
 def task_detail(task) -> dict:
@@ -454,6 +345,7 @@ def task_detail(task) -> dict:
 		"modified": timestamp(task.modified),
 		# Read-only viewers see the page without Save or the editor.
 		"can_write": bool(task.has_permission("write")),
+		"can_delete": bool(task.has_permission("delete")),
 	}
 
 
