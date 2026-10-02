@@ -36,7 +36,6 @@ import {
   BOARD_PALETTE,
   columnCreateStatus,
   projectTasksKey,
-  revertTaskMove,
   sectionCreateModule,
   taskActivityKey,
   taskKey,
@@ -156,40 +155,34 @@ export function ProjectBoard({
   // One move of one Task: shown at once, saved, and taken back if the save
   // fails. Resolves to whether it was saved.
   const moveTask = React.useCallback(
-    (task: TaskSummary, move: TaskMove): Promise<boolean> => {
-      const key = projectTasksKey(name)
-      const previous = {
-        status: task.status,
-        envision_module: task.envision_module,
-      }
-      void mutate(
-        key,
-        (current?: TaskSummary[]) =>
-          current && applyTaskMove(current, task.name, move),
-        { revalidate: false }
+    (task: TaskSummary, move: TaskMove): Promise<boolean> =>
+      // SWR shows the move, puts the list back if the save fails, and
+      // refetches the Board either way. The save answers with the one Task,
+      // not the list, so it is kept out of the cache.
+      mutate<TaskSummary[] | undefined, unknown>(
+        projectTasksKey(name),
+        updateTask({ name: task.name, ...move }),
+        {
+          // On the list as displayed, so a move still being saved stays put.
+          optimisticData: (_committed, displayed) =>
+            displayed && applyTaskMove(displayed, task.name, move),
+          populateCache: false,
+        }
       )
-      return updateTask({ name: task.name, ...move })
         .then(() => {
-          // As a save on the Task's page: the Board, a milestone's progress,
-          // the Task's page and its timeline all follow.
-          void mutate(key)
+          // As a save on the Task's page: a milestone's progress, the Task's
+          // page and its timeline all follow.
           void mutate(milestonesKey(name))
           void mutate(taskKey(task.name))
           void mutate(taskActivityKey(task.name))
           return true
         })
         .catch((error: FrappeError) => {
-          void mutate(key, (current?: TaskSummary[]) =>
-            current
-              ? revertTaskMove(current, task.name, move, previous)
-              : current
-          )
           toast.error(`“${task.subject}” could not be moved`, {
             description: frappeErrorMessage(error),
           })
           return false
-        })
-    },
+        }),
     [mutate, name, updateTask]
   )
   const onItemMove = React.useCallback<

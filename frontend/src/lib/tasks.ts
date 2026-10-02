@@ -481,32 +481,6 @@ export function applyTaskMove(
   return [moved, ...tasks.filter((t) => t !== task)]
 }
 
-/**
- * Undo a move that failed, on that Task only and on each field only while it
- * still shows what the move set, so another move made meanwhile stays.
- */
-export function revertTaskMove(
-  tasks: TaskSummary[],
-  name: string,
-  move: TaskMove,
-  previous: Pick<TaskSummary, "status" | "envision_module">
-): TaskSummary[] {
-  return tasks.map((task) => {
-    if (task.name !== name) return task
-    const next = { ...task }
-    if (move.status !== undefined && task.status === move.status) {
-      next.status = previous.status
-    }
-    if (
-      move.module !== undefined &&
-      task.envision_module === (move.module || null)
-    ) {
-      next.envision_module = previous.envision_module
-    }
-    return next
-  })
-}
-
 /** What the user last did to a section, and whether it was empty then. */
 export interface SectionOverride {
   collapsed: boolean
