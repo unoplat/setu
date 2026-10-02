@@ -24,9 +24,12 @@ export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { currentUser, logout } = useFrappeAuth()
+  // A null key skips the fetch until the session user is known; otherwise the
+  // SDK requests /api/resource/User/ with an empty name on first render.
   const { data: user } = useFrappeGetDoc<{ full_name?: string }>(
     "User",
-    currentUser ?? undefined
+    currentUser ?? undefined,
+    currentUser ? undefined : null
   )
   const name = user?.full_name ?? currentUser ?? ""
   const email = currentUser ?? ""

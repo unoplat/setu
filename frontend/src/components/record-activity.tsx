@@ -218,7 +218,7 @@ function CommentComposer({
   const { data: user } = useFrappeGetDoc<{
     full_name?: string
     user_image?: string | null
-  }>("User", currentUser ?? undefined)
+  }>("User", currentUser ?? undefined, currentUser ? undefined : null)
   const [content, setContent] = React.useState("")
   const [focused, setFocused] = React.useState(false)
   // A new key mounts an empty editor once a comment is posted.
