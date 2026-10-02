@@ -9,7 +9,18 @@ from frappe.utils import cint, sbool, strip_html
 from setu.api.task import clean_tags
 from setu.api.timeline import comment_on, document_activity, timestamp
 
-MESSAGE_FIELDS = ["name", "title", "project", "category", "is_pinned", "content", "owner", "creation", "modified", "_user_tags"]
+MESSAGE_FIELDS = [
+	"name",
+	"title",
+	"project",
+	"category",
+	"is_pinned",
+	"content",
+	"owner",
+	"creation",
+	"modified",
+	"_user_tags",
+]
 
 
 @frappe.whitelist()
@@ -45,13 +56,15 @@ def create_message(
 ) -> dict:
 	"""Save HTML from Tiptap, not JSON/Markdown; validation also runs in Desk."""
 	doc = frappe.new_doc("Board Message")
-	doc.update({
-		"project": project,
-		"title": title,
-		"content": content,
-		"category": category,
-		"is_pinned": is_pinned,
-	})
+	doc.update(
+		{
+			"project": project,
+			"title": title,
+			"content": content,
+			"category": category,
+			"is_pinned": is_pinned,
+		}
+	)
 	doc.insert()
 	replace_tags(doc, clean_tags(tags))
 	return message_detail(doc)

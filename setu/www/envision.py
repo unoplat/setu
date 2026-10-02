@@ -22,6 +22,8 @@ def get_context(context):
 
 	# The SPA sends this back as X-Frappe-CSRF-Token on writes.
 	csrf_token = frappe.sessions.get_csrf_token()
-	frappe.db.commit()
+	# Persist a newly generated token on this GET through Frappe's normal
+	# request transaction handling instead of committing mid-request.
+	frappe.local.flags.commit = True
 	context.csrf_token = csrf_token
 	return context

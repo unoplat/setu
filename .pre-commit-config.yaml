@@ -13,6 +13,8 @@ repos:
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
+        # TypeScript config files support JSONC comments, not strict JSON.
+        exclude: '^frontend/tsconfig(\.[^/]+)?\.json$'
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
