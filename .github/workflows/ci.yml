@@ -88,10 +88,12 @@ jobs:
       - name: Install
         working-directory: /home/runner/frappe-bench
         run: |
+          bench get-app --branch develop payments https://github.com/frappe/payments.git
           bench get-app --branch version-16 erpnext https://github.com/frappe/erpnext.git
           bench get-app setu "$GITHUB_WORKSPACE"
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app payments
           bench --site test_site install-app erpnext
           bench --site test_site install-app setu
           bench build
