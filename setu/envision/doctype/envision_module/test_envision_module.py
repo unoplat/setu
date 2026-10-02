@@ -7,11 +7,14 @@ from setu.api.project import create_project, delete_project
 
 class TestEnvisionModule(IntegrationTestCase):
 	def setUp(self):
+		super().setUp()
 		frappe.set_user("Administrator")
+		# Roll back the default and clear its cache even if project setup fails.
+		self.addCleanup(frappe.clear_cache, user="Administrator")
+		self.addCleanup(frappe.db.rollback)
+		# ERPNext's fixtures create multiple companies; select one explicitly.
+		frappe.defaults.set_user_default("Company", "_Test Company")
 		self.project = create_project(frappe.generate_hash(length=10))["name"]
-
-	def tearDown(self):
-		frappe.db.rollback()
 
 	def test_duplicate_name_in_a_project_is_refused(self):
 		create_module(self.project, "Payments")
