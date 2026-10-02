@@ -110,8 +110,8 @@ interface CommandSpec {
 
 export const COMMANDS = {
   "palette.open": {
-    title: "Search projects & actions",
-    description: "Open the command palette.",
+    title: "Search",
+    description: "Search tasks, modules, milestones, projects and actions.",
     group: "General",
     scope: "global",
     defaultBinding: hotkey("Mod+K"),

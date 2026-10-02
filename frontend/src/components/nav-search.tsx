@@ -1,6 +1,13 @@
 import * as React from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { FolderIcon, SearchIcon } from "lucide-react"
+import { defaultFilter } from "cmdk"
+import {
+  FlagIcon,
+  FolderIcon,
+  LayoutGridIcon,
+  SearchIcon,
+  SquareCheckIcon,
+} from "lucide-react"
 
 import { HotkeyHint } from "@/components/hotkey-hint"
 import {
@@ -18,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useDebounce } from "@/hooks/use-debounce"
 import { useCommandActions } from "@/lib/command-actions"
 import {
   COMMAND_GROUPS,
@@ -26,32 +34,184 @@ import {
   type CommandDefinition,
 } from "@/lib/commands"
 import { useProjects } from "@/lib/projects"
+import {
+  groupResults,
+  isSearchable,
+  nameLeads,
+  useRecordSearch,
+  type ExcerptPart,
+  type RecordType,
+  type SearchResult,
+} from "@/lib/search"
+
+// Typing settles for this long before the server is asked.
+const SEARCH_DELAY_MS = 150
+
+const RECORD_ICONS: Record<RecordType, React.ReactNode> = {
+  task: <SquareCheckIcon />,
+  module: <LayoutGridIcon />,
+  milestone: <FlagIcon />,
+}
 
 /**
- * Sidebar search row and the ⌘K palette. The palette lists every command
- * flagged `inPalette` in the registry plus the user's projects; shortcuts
- * shown next to items come from the bindings store, so they follow the
- * user's customisations.
+ * Sidebar search row and the ⌘K dialog (Paper: search-experience, A).
+ *
+ * - Typing searches tasks, modules and milestones across projects
+ *   (lib/search), grouped by kind. Projects and every registry command
+ *   flagged `inPalette` are matched in the browser, as before.
+ * - The server's results arrive after the projects and actions, so cmdk's own
+ *   filtering is off and the list is filtered and ordered here. Names that
+ *   start with the query (a project, "Go to Settings") lead; otherwise the
+ *   matching records do.
+ * - Shortcuts shown next to actions come from the bindings store, so they
+ *   follow the user's customisations.
  */
 export function NavSearch() {
   const [open, setOpen] = React.useState(false)
+  const [query, setQuery] = React.useState("")
+  const [selected, setSelected] = React.useState("")
   const navigate = useNavigate()
   const actions = useCommandActions()
   const { data: projects } = useProjects()
+  const settled = useDebounce(query, SEARCH_DELAY_MS)
+  const search = useRecordSearch(settled)
 
-  useCommand("palette.open", () => setOpen((value) => !value))
+  // Every open and close starts with an empty query.
+  function setPalette(next: boolean) {
+    setOpen(next)
+    setQuery("")
+  }
+  useCommand("palette.open", () => {
+    setOpen((value) => !value)
+    setQuery("")
+  })
 
-  const groups = COMMAND_GROUPS.map((group) => ({
+  const text = query.trim()
+  const shows = (value: string, keywords?: string[]) =>
+    !text || defaultFilter(value, text, keywords) > 0
+
+  const matchingProjects = (projects ?? []).filter((project) =>
+    shows(project.project_name)
+  )
+  const commandGroups = COMMAND_GROUPS.map((group) => ({
     group,
     commands: listCommands().filter(
-      (command) => command.inPalette && command.group === group
+      (command) =>
+        command.inPalette &&
+        command.group === group &&
+        shows(command.title, [command.description])
     ),
   })).filter((entry) => entry.commands.length > 0)
 
+  const searching = isSearchable(text)
+  // Only the current query's answer counts once it is long enough; below
+  // that, the last answer (kept between keystrokes) is not shown.
+  const response = searching ? search.data?.message : undefined
+  const recordGroups = groupResults(response?.results ?? [])
+  const pending = searching && (settled.trim() !== text || search.isLoading)
+  const namesLead =
+    searching &&
+    [
+      ...matchingProjects.map((project) => project.project_name),
+      ...commandGroups.flatMap((entry) =>
+        entry.commands.map((command) => command.title)
+      ),
+    ].some((name) => nameLeads(name, text))
+
+  const recordValues = recordGroups.flatMap((group) =>
+    group.results.map(recordValue)
+  )
+  const otherValues = [
+    ...matchingProjects.map((project) => `project:${project.name}`),
+    ...commandGroups.flatMap((entry) =>
+      entry.commands.map((command) => `command:${command.id}`)
+    ),
+  ]
+  const values = namesLead
+    ? [...otherValues, ...recordValues]
+    : [...recordValues, ...otherValues]
+  // The highlight stays where the user put it, and falls back to the first
+  // row when that row is gone (results arrive or a filter drops it).
+  const highlighted = values.includes(selected) ? selected : (values[0] ?? "")
+
   function run(command: CommandDefinition) {
-    setOpen(false)
+    setPalette(false)
     actions[command.id]?.()
   }
+
+  function openRecord(result: SearchResult) {
+    setPalette(false)
+    const name = result.project
+    if (result.type === "task") {
+      void navigate({
+        to: "/projects/$name/tasks/$task",
+        params: { name, task: result.name },
+      })
+    } else if (result.type === "module") {
+      void navigate({
+        to: "/projects/$name/modules/$module",
+        params: { name, module: result.name },
+      })
+    } else {
+      void navigate({
+        to: "/projects/$name/milestones/$milestone",
+        params: { name, milestone: result.name },
+      })
+    }
+  }
+
+  const records = recordGroups.map((group) => (
+    <CommandGroup key={group.type} heading={group.heading}>
+      {group.results.map((result) => (
+        <RecordItem
+          key={recordValue(result)}
+          result={result}
+          onSelect={() => openRecord(result)}
+        />
+      ))}
+    </CommandGroup>
+  ))
+
+  const others = (
+    <>
+      {matchingProjects.length ? (
+        <CommandGroup heading="Projects">
+          {matchingProjects.map((project) => (
+            <CommandItem
+              key={project.name}
+              value={`project:${project.name}`}
+              onSelect={() => {
+                setPalette(false)
+                void navigate({
+                  to: "/projects/$name",
+                  params: { name: project.name },
+                })
+              }}
+            >
+              <FolderIcon />
+              <span>{project.project_name}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      ) : null}
+      {commandGroups.map(({ group, commands }) => (
+        <CommandGroup key={group} heading={group}>
+          {commands.map((command) => (
+            <CommandItem
+              key={command.id}
+              value={`command:${command.id}`}
+              onSelect={() => run(command)}
+            >
+              <span>{command.title}</span>
+              <CommandShortcut>
+                <HotkeyHint command={command.id} />
+              </CommandShortcut>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      ))}
+    </>
+  )
 
   return (
     <SidebarMenu>
@@ -59,7 +219,7 @@ export function NavSearch() {
         <SidebarMenuButton
           variant="outline"
           tooltip="Search"
-          onClick={() => setOpen(true)}
+          onClick={() => setPalette(true)}
           className="text-muted-foreground"
         >
           <SearchIcon />
@@ -72,54 +232,113 @@ export function NavSearch() {
         </SidebarMenuButton>
         <CommandDialog
           open={open}
-          onOpenChange={setOpen}
+          onOpenChange={setPalette}
           title="Search"
-          description="Search projects and actions"
+          description="Search tasks, modules, milestones, projects and actions"
+          className="sm:max-w-2xl"
         >
-          <Command>
-            <CommandInput placeholder="Search projects & actions…" />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              {projects?.length ? (
-                <CommandGroup heading="Projects">
-                  {projects.map((project) => (
-                    <CommandItem
-                      key={project.name}
-                      value={`project ${project.project_name}`}
-                      onSelect={() => {
-                        setOpen(false)
-                        void navigate({
-                          to: "/projects/$name",
-                          params: { name: project.name },
-                        })
-                      }}
-                    >
-                      <FolderIcon />
-                      <span>{project.project_name}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+          <Command
+            shouldFilter={false}
+            value={highlighted}
+            onValueChange={setSelected}
+          >
+            <CommandInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Search tasks, modules, milestones & actions…"
+            />
+            <CommandList className="max-h-[min(28rem,60vh)]">
+              <CommandEmpty>
+                {emptyMessage({
+                  searching,
+                  pending,
+                  indexing: response?.indexing ?? false,
+                  failed: searching && !!search.error,
+                })}
+              </CommandEmpty>
+              {response?.corrected_query && recordGroups.length ? (
+                <p className="px-4 pt-2 text-xs text-muted-foreground">
+                  Showing results for “{response.corrected_query}”
+                </p>
               ) : null}
-              {groups.map(({ group, commands }) => (
-                <CommandGroup key={group} heading={group}>
-                  {commands.map((command) => (
-                    <CommandItem
-                      key={command.id}
-                      value={`${command.title} ${command.description}`}
-                      onSelect={() => run(command)}
-                    >
-                      <span>{command.title}</span>
-                      <CommandShortcut>
-                        <HotkeyHint command={command.id} />
-                      </CommandShortcut>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
+              {namesLead ? (
+                <>
+                  {others}
+                  {records}
+                </>
+              ) : (
+                <>
+                  {records}
+                  {others}
+                </>
+              )}
             </CommandList>
           </Command>
         </CommandDialog>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+
+function recordValue(result: SearchResult): string {
+  return `${result.type}:${result.name}`
+}
+
+function emptyMessage({
+  searching,
+  pending,
+  indexing,
+  failed,
+}: {
+  searching: boolean
+  pending: boolean
+  indexing: boolean
+  failed: boolean
+}): string {
+  if (searching && pending) return "Searching…"
+  if (indexing) return "Search is getting ready. Try again in a minute."
+  if (failed) return "Search isn’t available right now. Try again."
+  return "No results found."
+}
+
+/** One task, module or milestone: its title, where the query matched in its
+ * description, and its project. */
+function RecordItem({
+  result,
+  onSelect,
+}: {
+  result: SearchResult
+  onSelect: () => void
+}) {
+  return (
+    <CommandItem value={recordValue(result)} onSelect={onSelect}>
+      {RECORD_ICONS[result.type]}
+      <span className="max-w-[45%] shrink-0 truncate">{result.title}</span>
+      <Excerpt parts={result.excerpt} />
+      <CommandShortcut className="max-w-[30%] truncate tracking-normal">
+        {result.project_name ?? result.project}
+      </CommandShortcut>
+    </CommandItem>
+  )
+}
+
+function Excerpt({ parts }: { parts: ExcerptPart[] }) {
+  if (!parts.length) return null
+  return (
+    <span className="min-w-0 flex-1 truncate font-normal text-muted-foreground">
+      {parts.map((part, index) =>
+        part.match ? (
+          <mark
+            // Parts are positional: the same text can match twice.
+            key={index}
+            className="bg-transparent font-medium text-foreground"
+          >
+            {part.text}
+          </mark>
+        ) : (
+          <React.Fragment key={index}>{part.text}</React.Fragment>
+        )
+      )}
+    </span>
   )
 }

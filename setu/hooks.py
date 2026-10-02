@@ -182,6 +182,13 @@ doc_events = {
 	},
 }
 
+# Search
+# ------
+# The ⌘K search index (setu/search.py). Frappe builds it after migrate,
+# checks it every three hours, and updates it as Tasks and Modules change.
+
+sqlite_search = ["setu.search.EnvisionSearch"]
+
 # Scheduled Tasks
 # ---------------
 
