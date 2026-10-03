@@ -1,0 +1,15 @@
+{
+ "app": "setu",
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "App",
+ "label": "Envision",
+ "link": "/envision",
+ "link_type": "External",
+ "logo_url": "/assets/setu/images/envision.svg",
+ "modified": "2026-10-03 19:13:01.000000",
+ "name": "Envision",
+ "owner": "Administrator",
+ "roles": [],
+ "standard": 1
+}
