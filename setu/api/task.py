@@ -1,0 +1,437 @@
+import frappe
+from frappe import _
+from frappe.desk.form.assign_to import add as assign_to
+from frappe.model.delete_doc import get_dynamic_linked_docs, get_linked_docs, raise_link_exists_exception
+from frappe.utils import getdate, today
+from frappe.utils.nestedset import get_descendants_of
+
+from setu.api.milestone import as_date, first_assignee, replace_assignee
+from setu.api.timeline import comment_on, document_activity, people_details, timestamp
+
+# Envision's Task endpoints (Paper: 03 — Create Task, 04 — Task Created, 09 —
+# Task Detail). A
+# Task is the standard ERPNext Task (docs/adr/0001). Envision adds its Blocked
+# status and the Task's Milestone and Module links (setu/setup), and this
+# module keeps both honest on every save, Desk included.
+
+# The statuses a Task can be created in, one per Board column: Todo, In
+# Progress, Review, Blocked and Done. Overdue is ERPNext's to set, and
+# Envision does not support Cancelled (CONTEXT.md, Status).
+CREATE_STATUSES = ("Open", "Working", "Pending Review", "Blocked", "Completed")
+PRIORITIES = ("Low", "Medium", "High", "Urgent")
+
+
+class EnvisionTask:
+	"""Mixed into ERPNext's Task through ``extend_doctype_class``."""
+
+	def update_status(self):
+		# ERPNext's daily job turns every open Task past its due date into
+		# Overdue. A Blocked Task stays Blocked: the blocker is the news, and
+		# the Card still shows the due date.
+		if self.status == "Blocked":
+			return
+		super().update_status()
+
+
+def validate_task_links(doc, method=None) -> None:
+	"""A Task's Milestone and Module must be in its own Project (doc_events)."""
+	# Read with .get(): on a site that has not migrated yet the fields are missing.
+	if doc.get("envision_milestone"):
+		if doc.is_milestone:
+			frappe.throw(_("A milestone cannot belong to another milestone."))
+		milestone = frappe.db.get_value(
+			"Task", doc.envision_milestone, ["is_milestone", "project"], as_dict=True
+		)
+		if not milestone or not milestone.is_milestone:
+			frappe.throw(_("{0} is not a milestone.").format(doc.envision_milestone))
+		if milestone.project != doc.project:
+			frappe.throw(_("The milestone belongs to another project."))
+	if doc.get("envision_module"):
+		if frappe.db.get_value("Envision Module", doc.envision_module, "project") != doc.project:
+			frappe.throw(_("The module belongs to another project."))
+
+
+@frappe.whitelist(methods=["POST"])
+def create_task(
+	project: str,
+	subject: str,
+	description: str | None = None,
+	start_date: str | None = None,
+	due_date: str | None = None,
+	status: str = "Open",
+	priority: str = "Medium",
+	assignee: str | None = None,
+	milestone: str | None = None,
+	module: str | None = None,
+	tags: list[str] | str | None = None,
+) -> dict:
+	"""Create a Task on a project (Paper: 03 — Create Task).
+
+	- Opened from a Board column's "+", so the status is that column's.
+	- The description arrives as HTML from Envision's rich text editor; Frappe
+	  sanitizes it on save like any Text Editor value.
+	- The assignee becomes a standard Frappe assignment and the tags standard
+	  Frappe document tags, so Desk, notifications and filters all see them.
+	- POST only: the method writes, and Frappe commits after a successful POST.
+	"""
+	frappe.get_doc("Project", project).check_permission("read")
+
+	subject = (subject or "").strip()
+	if not subject:
+		frappe.throw(_("Task title is required"), frappe.MandatoryError)
+	if status not in CREATE_STATUSES:
+		frappe.throw(_("A task cannot be created as {0}.").format(status))
+	if priority not in PRIORITIES:
+		frappe.throw(_("Unknown priority {0}.").format(priority))
+	# ERPNext refuses this too, but with a message about expected dates.
+	if start_date and due_date and getdate(start_date) > getdate(due_date):
+		frappe.throw(_("Start date cannot be after the due date."), frappe.exceptions.InvalidDates)
+
+	task = frappe.new_doc("Task")
+	task.project = project
+	task.subject = subject
+	task.description = (description or "").strip()
+	task.exp_start_date = start_date or None
+	task.exp_end_date = due_date or None
+	task.status = status
+	task.priority = priority
+	task.envision_milestone = milestone or None
+	task.envision_module = module or None
+	if status == "Completed":
+		# Mandatory on a Completed Task, as Desk asks for it.
+		task.completed_on = today()
+		task.completed_by = frappe.session.user
+	task.insert()
+
+	for tag in clean_tags(tags):
+		task.add_tag(tag)
+	if assignee:
+		assign_to(
+			{
+				"doctype": "Task",
+				"name": task.name,
+				"assign_to": [assignee],
+				"description": subject,
+			}
+		)
+
+	return {"name": task.name, "subject": task.subject, "status": task.status}
+
+
+@frappe.whitelist()
+def get_task(name: str) -> dict:
+	"""One Task and its project's title (Paper: 09 — Task Detail)."""
+	return task_detail(task_doc(name))
+
+
+@frappe.whitelist(methods=["POST"])
+def update_task(
+	name: str,
+	subject: str | None = None,
+	description: str | None = None,
+	start_date: str | None = None,
+	due_date: str | None = None,
+	status: str | None = None,
+	priority: str | None = None,
+	assignee: str | None = None,
+	milestone: str | None = None,
+	module: str | None = None,
+	tags: list[str] | str | None = None,
+) -> dict:
+	"""Save what changed on the Task (09: one "Save changes" for all).
+
+	As on a milestone, ``None`` (not sent) leaves a field as it is and ``""``
+	clears it, so an edit here never overwrites what someone changed in Desk
+	meanwhile. Saved through the Task document, so ERPNext's validation, the
+	Milestone and Module checks (validate_task_links), Frappe's write
+	permission check and its HTML sanitising all run as they do in Desk. It is
+	all one request, so if any part fails Frappe rolls back the rest.
+	"""
+	task = task_doc(name, "write")
+
+	if subject is not None:
+		subject = subject.strip()
+		if not subject:
+			frappe.throw(_("Task title is required"), frappe.MandatoryError)
+		task.subject = subject
+	if description is not None:
+		task.description = description.strip()
+	if start_date is not None:
+		task.exp_start_date = start_date or None
+	if due_date is not None:
+		task.exp_end_date = due_date or None
+	# As on create: ERPNext refuses this too, but with a message about
+	# expected dates.
+	if (
+		task.exp_start_date
+		and task.exp_end_date
+		and getdate(task.exp_start_date) > getdate(task.exp_end_date)
+	):
+		frappe.throw(_("Start date cannot be after the due date."), frappe.exceptions.InvalidDates)
+	if status is not None:
+		if status not in CREATE_STATUSES:
+			frappe.throw(_("A task cannot be set to {0}.").format(status))
+		if status == "Completed" and task.status != "Completed" and not task.completed_on:
+			# Mandatory on a Completed Task, as Desk asks for it.
+			task.completed_on = today()
+			task.completed_by = frappe.session.user
+		task.status = status
+	if priority is not None:
+		if priority not in PRIORITIES:
+			frappe.throw(_("Unknown priority {0}.").format(priority))
+		task.priority = priority
+	if milestone is not None:
+		task.envision_milestone = milestone or None
+	if module is not None:
+		task.envision_module = module or None
+
+	fields = (subject, description, start_date, due_date, status, priority, milestone, module)
+	if any(value is not None for value in fields):
+		task.save()
+	if tags is not None:
+		replace_tags(task, clean_tags(tags))
+	if assignee is not None:
+		replace_assignee(task, assignee)
+	if tags is not None or assignee is not None:
+		task.reload()
+	return task_detail(task)
+
+
+def replace_tags(task, tags: list[str]) -> None:
+	"""Make ``tags`` the Task's document tags, in Frappe's own tag records."""
+	current = task_tags(task)
+	wanted = {tag.casefold() for tag in tags}
+	for tag in current:
+		if tag.casefold() not in wanted:
+			task.remove_tag(tag)
+	have = {tag.casefold() for tag in current}
+	for tag in tags:
+		if tag.casefold() not in have:
+			task.add_tag(tag)
+
+
+def task_tags(task) -> list[str]:
+	"""The Task's document tags, in the order they were added.
+
+	Read from ``_user_tags`` rather than ``Document.get_tags``, which drops the
+	first tag whenever the column has no leading comma.
+	"""
+	value = frappe.db.get_value("Task", task.name, "_user_tags") or ""
+	return [tag for tag in value.split(",") if tag]
+
+
+@frappe.whitelist()
+def get_task_activity(name: str) -> dict:
+	"""The Task's timeline (09: "Activity (Frappe form timeline)")."""
+	return document_activity(task_doc(name))
+
+
+@frappe.whitelist(methods=["POST"])
+def add_task_comment(name: str, content: str) -> dict:
+	"""Comment on a Task (09: "Comment"), as Desk's timeline does."""
+	return comment_on(task_doc(name, "read"), content)
+
+
+def task_doc(name: str, ptype: str = "read"):
+	"""A Task the Board shows, after the permission check.
+
+	Milestones have a page of their own and templates are not project work, so
+	both are reported as missing and this page never opens or changes one.
+	"""
+	task = frappe.get_doc("Task", name)
+	task.check_permission(ptype)
+	if task.is_milestone or task.is_template:
+		frappe.throw(_("Task {0} not found").format(name), frappe.DoesNotExistError)
+	return task
+
+
+def live_task_count(filters: dict) -> int:
+	"""Tasks matching ``filters`` that Envision lists: neither Cancelled
+	nor templates."""
+	return frappe.db.count(
+		"Task",
+		{
+			**filters,
+			"status": ["!=", "Cancelled"],
+			"is_template": 0,
+		},
+	)
+
+
+def task_subtree(task) -> list[str]:
+	"""All descendants and the Task, children before parents.
+
+	Include Cancelled Tasks and every depth: the confirm must count everything
+	that will be deleted, not just the subtasks visible on the Board.
+	"""
+	descendants = get_descendants_of("Task", task.name, ignore_permissions=True)
+	return frappe.get_all(
+		"Task",
+		filters={"name": ["in", [task.name, *descendants]]},
+		pluck="name",
+		order_by="lft desc",
+	)
+
+
+@frappe.whitelist()
+def count_subtasks(name: str) -> dict:
+	"""How many descendant Tasks a permanent delete would remove."""
+	task = task_doc(name, "delete")
+	return {"subtasks": len(task_subtree(task)) - 1}
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_task(name: str) -> dict:
+	"""Permanently delete a Task and its entire subtree after confirmation.
+
+	Require delete permission on every Task before any mutation. Internal
+	dependency rows go first, then children before parents. External links
+	(including other Tasks' dependencies and Timesheets) keep Frappe's normal
+	delete protections: any failure rolls back the entire operation. No
+	archive, grace period, or Deleted Document recovery copy is created.
+	"""
+	task = task_doc(name, "delete")
+	tree = task_subtree(task)
+	documents = [frappe.get_doc("Task", task_name) for task_name in tree]
+	for doc in documents:
+		doc.check_permission("delete")
+	# Check every external link before deleting anything: Frappe also removes
+	# attachments from disk, which a database rollback alone cannot restore.
+	tree_names = set(tree)
+	for doc in documents:
+		for link in [*get_linked_docs(doc), *get_dynamic_linked_docs(doc)]:
+			if link["reference_doctype"] == "Task" and link["reference_docname"] in tree_names:
+				continue
+			raise_link_exists_exception(
+				doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
+			)
+
+	frappe.db.savepoint("delete_task_tree")
+	try:
+		# Only dependencies owned by the deleted tree may be removed. Never
+		# silently modify a surviving Task to bypass a linked-record check.
+		frappe.db.delete(
+			"Task Depends On",
+			{"parenttype": "Task", "parent": ["in", tree], "task": ["in", tree]},
+		)
+		for task_name in tree:
+			frappe.delete_doc("Task", task_name, delete_permanently=True)
+	except Exception:
+		frappe.db.rollback(save_point="delete_task_tree")
+		raise
+	return {"name": task.name, "subject": task.subject, "subtasks": len(tree) - 1}
+
+
+def task_detail(task) -> dict:
+	assignee = first_assignee(task.get("_assign"))
+	return {
+		"name": task.name,
+		"subject": task.subject,
+		"description": task.description or "",
+		"status": task.status,
+		"priority": task.priority,
+		"start_date": as_date(task.exp_start_date),
+		"due_date": as_date(task.exp_end_date),
+		"assignee": people_details({assignee}).get(assignee) if assignee else None,
+		"milestone": task.get("envision_milestone") or None,
+		"module": task.get("envision_module") or None,
+		"tags": task_tags(task),
+		"project": task.project,
+		"project_name": frappe.db.get_value("Project", task.project, "project_name")
+		if task.project
+		else None,
+		"owner": task.owner,
+		"creation": timestamp(task.creation),
+		"modified": timestamp(task.modified),
+		# Read-only viewers see the page without Save or the editor.
+		"can_write": bool(task.has_permission("write")),
+		"can_delete": bool(task.has_permission("delete")),
+	}
+
+
+@frappe.whitelist()
+def list_tags() -> dict:
+	"""Every Frappe tag on the site, for the Tags picker. Tags are site-wide.
+
+	``can_delete`` is whether this user may delete a tag everywhere (03e),
+	which Frappe gives System Managers only.
+	"""
+	return {
+		"tags": frappe.get_list("Tag", pluck="name", order_by="name asc", limit_page_length=0),
+		"can_delete": bool(frappe.has_permission("Tag", "delete")),
+	}
+
+
+@frappe.whitelist()
+def get_tag_usage(tag: str) -> dict:
+	"""Where a tag is, for the confirm before deleting it everywhere (03f)."""
+	frappe.has_permission("Tag", "delete", throw=True)
+	documents = tagged_documents(tag)
+	tasks = [name for doctype, name in documents if doctype == "Task"]
+	projects = (
+		frappe.get_all("Task", filters={"name": ["in", tasks]}, pluck="project", distinct=True)
+		if tasks
+		else []
+	)
+	return {
+		"tasks": len(tasks),
+		# A count, not names: the confirm says how much, not where.
+		"projects": len([project for project in projects if project]),
+		# Tags are site-wide: Desk can put the same one on any document.
+		"others": len(documents) - len(tasks),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_tag(tag: str) -> dict:
+	"""Delete a tag everywhere (03f): off every document, then the Tag itself.
+
+	Deleting a Tag leaves documents' ``_user_tags`` and Tag Links behind, and a
+	Tag Link would block the delete, so both go first. The permission checked
+	is the Tag's, not each document's: a tag belongs to the whole site.
+	"""
+	frappe.has_permission("Tag", "delete", throw=True)
+	documents = tagged_documents(tag)
+	key = tag.casefold()
+	for doctype, name in documents:
+		value = frappe.db.get_value(doctype, name, "_user_tags") or ""
+		kept = [t for t in value.split(",") if t and t.casefold() != key]
+		frappe.db.set_value(doctype, name, "_user_tags", ",".join(kept), update_modified=False)
+	frappe.db.delete("Tag Link", {"tag": tag})
+	if frappe.db.exists("Tag", tag):
+		frappe.delete_doc("Tag", tag)
+	return {"tasks": sum(1 for doctype, _name in documents if doctype == "Task")}
+
+
+def tagged_documents(tag: str) -> list[tuple[str, str]]:
+	"""Every document with ``tag``, as (doctype, name).
+
+	Tag Links index the tags Desk added. Tasks are also read from their own
+	``_user_tags``, which is what the Board shows, in case a tag there has no
+	Tag Link.
+	"""
+	key = tag.casefold()
+	documents = {
+		(link.document_type, link.document_name)
+		for link in frappe.get_all(
+			"Tag Link", filters={"tag": tag}, fields=["document_type", "document_name"]
+		)
+	}
+	# LIKE narrows the rows; the exact match is on the comma-separated tags.
+	for task in frappe.get_all(
+		"Task", filters={"_user_tags": ["like", f"%{tag}%"]}, fields=["name", "_user_tags"]
+	):
+		if key in {t.casefold() for t in (task._user_tags or "").split(",")}:
+			documents.add(("Task", task.name))
+	return sorted(documents)
+
+
+def clean_tags(tags: list[str] | str | None) -> list[str]:
+	"""Trimmed, without blanks or repeats, in the order they were picked."""
+	values = frappe.parse_json(tags) if isinstance(tags, str) else tags
+	seen: dict[str, None] = {}
+	for tag in values or []:
+		tag = str(tag).strip()
+		if tag and tag.casefold() not in {t.casefold() for t in seen}:
+			seen[tag] = None
+	return list(seen)

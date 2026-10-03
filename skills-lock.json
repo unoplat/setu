@@ -19,6 +19,12 @@
       "skillPath": ".agents/skills/impeccable/SKILL.md",
       "computedHash": "3afb2a5e8cb327d83f75d585494dcdb6aaaf7506cf0410cddd072b30f960efea"
     },
+    "reactjs-tiptap-editor": {
+      "source": "hunghg255/reactjs-tiptap-editor",
+      "sourceType": "github",
+      "skillPath": "skills/reactjs-tiptap-editor/SKILL.md",
+      "computedHash": "8fbe01d16221445191b9b8596a9a81feacf565863b3644917d6be93596a0064f"
+    },
     "to-spec": {
       "source": "mattpocock/skills",
       "sourceType": "github",

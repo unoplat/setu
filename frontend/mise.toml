@@ -1,0 +1,66 @@
+[tools]
+# Keep these aligned with package.json.
+bun = "1.4.2"
+vp = "0.3.1"
+
+[env]
+# Defaults for local development. Override in the shell to point elsewhere.
+# Local Frappe Manager site; the Vite dev server proxies Frappe paths to it.
+FRAPPE_URL = "http://erpdev.localhost"
+# Frappe Manager bench and site; bench commands run inside its container.
+FM_BENCH = "erpdev.localhost"
+FRAPPE_SITE = "erpdev.localhost"
+
+[tasks.backend]
+description = "Start the Frappe Manager site separately (requires Docker/OrbStack)"
+run = 'fm start "$FM_BENCH"'
+
+[tasks.dev]
+description = "Build and deploy the frontend bundle and setu app; start Frappe separately with `mise run backend` (run `mise run migrate` after for custom field changes)"
+depends = ["deploy-local"]
+
+[tasks.build]
+description = "Type-check and build the production bundle"
+run = "vp run build"
+
+[tasks.lint]
+description = "Lint the project"
+run = "vp run lint"
+
+[tasks.format]
+description = "Format TypeScript and TSX files"
+run = "vp run format"
+
+[tasks.typecheck]
+description = "Run TypeScript type checking"
+run = "vp run typecheck"
+
+[tasks.react-audit]
+description = "Do React audit using react doctor"
+run = "pnpm dlx react-doctor@latest --verbose"
+
+[tasks.preview]
+description = "Preview the production build"
+run = "vp run preview"
+
+[tasks.add]
+description = "Add one or more project dependencies with Vite+"
+raw_args = true
+run = "vp add"
+
+[tasks.migrate]
+description = "Run bench migrate on the Frappe Manager site (syncs setu custom fields and property setters)"
+run = 'fm shell "$FM_BENCH" -c "bench --site $FRAPPE_SITE migrate"'
+
+[tasks.deploy-local]
+description = "Build, then copy the bundle and the setu Python app into the local bench clone (run `mise run migrate` after for DocType changes)"
+depends = ["build"]
+run = """
+set -e
+BENCH_APP=/Users/jg/frappe/sites/erpdev.localhost/workspace/frappe-bench/apps/setu
+# Backend: API, DocTypes, hooks and setup. The bundle is copied separately below.
+rsync -a --exclude __pycache__ --exclude public ../setu/ "$BENCH_APP/setu/"
+rsync -a --delete ../setu/public/envision/ "$BENCH_APP/setu/public/envision/"
+cp ../setu/www/envision.html "$BENCH_APP/setu/www/envision.html"
+echo "deployed to $BENCH_APP"
+"""

@@ -8,7 +8,15 @@ app_license = "agpl-3.0"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext"]
+
+# Website
+# ------------------
+
+# Deep links into the Envision SPA all render www/envision.html.
+website_route_rules = [
+	{"from_route": "/envision/<path:app_path>", "to_route": "envision"},
+]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -86,12 +94,20 @@ app_license = "agpl-3.0"
 # ------------
 
 # before_install = "setu.install.before_install"
-# after_install = "setu.install.after_install"
+# Custom Fields and Property Setters on ERPNext DocTypes (setu/setup/).
+after_install = [
+	"setu.setup.custom_fields.create_envision_custom_fields",
+	"setu.setup.property_setters.create_envision_property_setters",
+]
+after_migrate = [
+	"setu.setup.custom_fields.create_envision_custom_fields",
+	"setu.setup.property_setters.create_envision_property_setters",
+]
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "setu.uninstall.before_uninstall"
+before_uninstall = "setu.setup.uninstall.before_uninstall"
 # after_uninstall = "setu.uninstall.after_uninstall"
 
 # Integration Setup
@@ -134,6 +150,15 @@ app_license = "agpl-3.0"
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
+permission_query_conditions = {
+	"Board Message": "setu.envision.doctype.board_message.board_message.get_permission_query_conditions",
+	"Envision View": "setu.envision.doctype.envision_view.envision_view.get_permission_query_conditions",
+}
+has_permission = {
+	"Board Message": "setu.envision.doctype.board_message.board_message.has_permission",
+	"Envision View": "setu.envision.doctype.envision_view.envision_view.has_permission",
+}
+
 # Document Events
 # ---------------
 # Hook on document methods and events
@@ -145,6 +170,24 @@ app_license = "agpl-3.0"
 # 		"on_trash": "method"
 # 	}
 # }
+
+# Envision's rules for deleting a Project live in on_trash so Desk and the
+# REST API follow them too (setu.api.project.guard_project_delete).
+doc_events = {
+	"Project": {
+		"on_trash": "setu.api.project.guard_project_delete",
+	},
+	"Task": {
+		"validate": "setu.api.task.validate_task_links",
+	},
+}
+
+# Search
+# ------
+# The ⌘K search index (setu/search.py). Frappe builds it after migrate,
+# checks it every three hours, and updates it as Tasks and Modules change.
+
+sqlite_search = ["setu.search.EnvisionSearch"]
 
 # Scheduled Tasks
 # ---------------
@@ -176,9 +219,9 @@ app_license = "agpl-3.0"
 # ------------------------------
 #
 # Specify custom mixins to extend the standard doctype controller.
-# extend_doctype_class = {
-# 	"Task": "setu.custom.task.CustomTaskMixin"
-# }
+extend_doctype_class = {
+	"Task": "setu.api.task.EnvisionTask",
+}
 
 # Overriding Methods
 # ------------------------------
@@ -255,4 +298,3 @@ app_license = "agpl-3.0"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
