@@ -18,16 +18,16 @@ website_route_rules = [
 	{"from_route": "/envision/<path:app_path>", "to_route": "envision"},
 ]
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "setu",
-# 		"logo": "/assets/setu/logo.png",
-# 		"title": "Envision",
-# 		"route": "/setu",
-# 		"has_permission": "setu.api.permission.has_app_permission"
-# 	}
-# ]
+# Register the standalone frontend on Frappe's Apps screen.
+add_to_apps_screen = [
+	{
+		"name": "setu",
+		"logo": "/assets/setu/images/envision.svg",
+		"title": "Envision",
+		"route": "/envision",
+		"has_permission": "setu.api.permission.has_app_permission",
+	}
+]
 
 # Includes in <head>
 # ------------------
