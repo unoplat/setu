@@ -9,12 +9,28 @@ class TestEnvisionModule(IntegrationTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.set_user("Administrator")
-		# Roll back the default and clear its cache even if project setup fails.
-		self.addCleanup(frappe.clear_cache, user="Administrator")
+		# Roll back the company/defaults and clear caches even if setup fails.
+		self.addCleanup(frappe.clear_cache)
 		self.addCleanup(frappe.db.rollback)
-		# ERPNext's fixtures create multiple companies; select one explicitly.
-		frappe.defaults.set_user_default("Company", "_Test Company")
+		if not frappe.db.exists("Company", "Unoplat"):
+			frappe.get_doc(
+				{
+					"doctype": "Company",
+					"company_name": "Unoplat",
+					"abbr": "UNOP",
+					"default_currency": "INR",
+					"country": "India",
+					"create_chart_of_accounts_based_on": "Standard Template",
+					"chart_of_accounts": "Standard",
+				}
+			).insert()
+		# Frappe resolves Company defaults through the lowercase storage key.
+		frappe.defaults.set_user_default("company", "Unoplat")
 		self.project = create_project(frappe.generate_hash(length=10))["name"]
+
+	def test_project_uses_unoplat_company(self):
+		self.assertEqual(frappe.defaults.get_user_default("Company"), "Unoplat")
+		self.assertEqual(frappe.db.get_value("Project", self.project, "company"), "Unoplat")
 
 	def test_duplicate_name_in_a_project_is_refused(self):
 		create_module(self.project, "Payments")
