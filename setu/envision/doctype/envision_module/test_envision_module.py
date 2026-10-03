@@ -97,7 +97,19 @@ class TestEnvisionModule(IntegrationTestCase):
 		self.assertFalse(frappe.db.exists("Envision Module", module["name"]))
 
 	def test_summary_is_one_line_of_plain_text(self):
-		self.assertEqual(summary("<p>Checkout,</p><ul><li>refunds</li></ul>"), "Checkout, refunds")
+		cases = [
+			("<p>Checkout,</p><ul><li>refunds</li></ul>", "Checkout, refunds"),
+			("<p>First</p><p>second</p>", "First second"),
+			("<p>First<br />second<br>third</p>", "First second third"),
+			('<DIV class="note">First</DIV><P>second</P>', "First second"),
+			("<table><tr><td>First</td><td>second</td></tr></table>", "First second"),
+			("<p>check<strong>out</strong>, <em>refunds</em></p>", "checkout, refunds"),
+			("  First\n\tsecond  ", "First second"),
+			("", ""),
+		]
+		for html, expected in cases:
+			with self.subTest(html=html):
+				self.assertEqual(summary(html), expected)
 		long = summary("<p>" + "word " * 60 + "</p>")
 		self.assertLessEqual(len(long), 161)
 		self.assertTrue(long.endswith("…"))

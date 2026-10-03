@@ -1,3 +1,5 @@
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import strip_html
@@ -165,6 +167,14 @@ def module_summary(row: dict, people: dict[str, dict]) -> dict:
 
 def summary(html: str) -> str:
 	"""The description's opening words as one line of plain text."""
+	# Removing block tags outright joins adjacent paragraphs and list items.
+	# Keep inline markup transparent (e.g. check<strong>out</strong>).
+	html = re.sub(
+		r"</?(?:p|div|h[1-6]|li|ul|ol|blockquote|pre|br|hr|table|thead|tbody|tfoot|tr|td|th)\b[^>]*>",
+		" ",
+		html,
+		flags=re.IGNORECASE,
+	)
 	text = " ".join(strip_html(html).split())
 	if len(text) <= SUMMARY_LENGTH:
 		return text
