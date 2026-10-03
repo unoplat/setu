@@ -1,4 +1,12 @@
 {
+  "private": true,
+  "scripts": {
+    "postinstall": "cd frontend && ../node_modules/.bin/bun install --frozen-lockfile",
+    "build": "cd frontend && ../node_modules/.bin/bun run build"
+  },
+  "dependencies": {
+    "bun": "1.4.2"
+  },
   "devDependencies": {
     "shadcn": "^4.21.0"
   }
