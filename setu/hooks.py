@@ -18,7 +18,8 @@ website_route_rules = [
 	{"from_route": "/envision/<path:app_path>", "to_route": "envision"},
 ]
 
-# Register the standalone frontend on Frappe's Apps screen.
+# Register the standalone frontend and its permission callback.
+# Frappe v16's Desktop tile is shipped in desktop_icon/envision.json.
 add_to_apps_screen = [
 	{
 		"name": "setu",
