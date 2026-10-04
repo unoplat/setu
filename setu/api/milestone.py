@@ -21,7 +21,6 @@ MILESTONE_FIELDS = [
 	"exp_start_date",
 	"exp_end_date",
 	"status",
-	"progress",
 	"_assign",
 ]
 
@@ -38,7 +37,8 @@ def list_milestones(project: str) -> list[dict]:
 		limit_page_length=0,
 	)
 	people = assignee_details(rows)
-	return [milestone_summary(row, people) for row in rows]
+	counts = linked_task_counts([row.name for row in rows])
+	return [milestone_summary(row, people, counts[row.name]) for row in rows]
 
 
 @frappe.whitelist()
@@ -138,8 +138,7 @@ def add_milestone_comment(name: str, content: str) -> dict:
 @frappe.whitelist()
 def count_linked_tasks(name: str) -> dict:
 	"""How many Tasks a delete would leave with no milestone (Paper: Milestone
-	Delete 02). Counted as the milestone page lists them: neither Cancelled
-	nor templates."""
+	Delete 02). Counted as the milestone page lists them (``LIVE_TASKS``)."""
 	from setu.api.task import live_task_count
 
 	milestone_doc(name)
@@ -184,7 +183,7 @@ def milestone_doc(name: str, ptype: str = "read"):
 def milestone_detail(task) -> dict:
 	row = task_row(task)
 	return {
-		**milestone_summary(row, assignee_details([row])),
+		**milestone_summary(row, assignee_details([row]), linked_task_counts([task.name])[task.name]),
 		"project": task.project,
 		"project_name": frappe.db.get_value("Project", task.project, "project_name")
 		if task.project
@@ -254,11 +253,41 @@ def create_milestone(
 		task.reload()
 
 	row = task_row(task)
-	return milestone_summary(row, assignee_details([row]))
+	# A new milestone has no Tasks yet.
+	return milestone_summary(row, assignee_details([row]), (0, 0))
 
 
-def milestone_summary(row: dict, people: dict[str, dict]) -> dict:
+def linked_task_counts(milestones: list[str]) -> dict[str, tuple[int, int]]:
+	"""Done and total Tasks linked to each milestone, in one query.
+
+	A milestone's progress comes from its Tasks (Paper 06d: "Status updates
+	itself as linked tasks move to Done"), not ERPNext's ``progress``, which
+	nothing here sets. Counted as the milestone page lists them
+	(``LIVE_TASKS``), Completed being done, and only the Tasks the user can
+	read, so the list and the milestone page agree for everyone.
+	"""
+	from setu.api.task import LIVE_TASKS
+
+	counts = dict.fromkeys(milestones, (0, 0))
+	if not milestones:
+		return counts
+	rows = frappe.get_list(
+		"Task",
+		filters={**LIVE_TASKS, "envision_milestone": ["in", milestones]},
+		fields=["envision_milestone", "status", {"COUNT": "*", "as": "tasks"}],
+		group_by="envision_milestone, status",
+		limit_page_length=0,
+	)
+	for row in rows:
+		done, total = counts[row.envision_milestone]
+		completed = row.tasks if row.status == "Completed" else 0
+		counts[row.envision_milestone] = (done + completed, total + row.tasks)
+	return counts
+
+
+def milestone_summary(row: dict, people: dict[str, dict], tasks: tuple[int, int]) -> dict:
 	user = people.get(first_assignee(row.get("_assign")) or "")
+	done, total = tasks
 	return {
 		"name": row["name"],
 		"subject": row["subject"],
@@ -266,7 +295,9 @@ def milestone_summary(row: dict, people: dict[str, dict]) -> dict:
 		"start_date": as_date(row.get("exp_start_date")),
 		"due_date": as_date(row.get("exp_end_date")),
 		"status": row.get("status") or "Open",
-		"progress": row.get("progress") or 0,
+		"progress": done / total * 100 if total else 0,
+		"done_tasks": done,
+		"total_tasks": total,
 		"assignee": user,
 	}
 

@@ -245,17 +245,19 @@ def task_doc(name: str, ptype: str = "read"):
 	return task
 
 
+# The Tasks Envision lists on a project, its milestones and its modules: not
+# milestones, Cancelled or templates (frontend/src/lib/tasks.ts,
+# useProjectTasks).
+LIVE_TASKS = {
+	"is_milestone": 0,
+	"is_template": 0,
+	"status": ["not in", ["Template", "Cancelled"]],
+}
+
+
 def live_task_count(filters: dict) -> int:
-	"""Tasks matching ``filters`` that Envision lists: neither Cancelled
-	nor templates."""
-	return frappe.db.count(
-		"Task",
-		{
-			**filters,
-			"status": ["!=", "Cancelled"],
-			"is_template": 0,
-		},
-	)
+	"""Tasks matching ``filters`` that Envision lists (``LIVE_TASKS``)."""
+	return frappe.db.count("Task", {**filters, **LIVE_TASKS})
 
 
 def task_subtree(task) -> list[str]:

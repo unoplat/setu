@@ -30,16 +30,15 @@ class BoardMessage(Document):
 			frappe.throw(_("Message content is required"), frappe.MandatoryError)
 
 
-def has_permission(doc, ptype="read", user=None):
-	"""Restrict, never grant, the DocType's role permissions by Project access."""
+def has_permission(doc, ptype="read", user=None) -> bool:
+	"""Restrict role permissions by Project access. True lets Frappe continue
+	checking role and user permissions; any falsey return, including None, denies."""
 	user = user or frappe.session.user
 	if user == "Guest":
 		return False
 	if not doc.project:
-		return None if ptype == "create" else False
-	if not frappe.has_permission("Project", "read", doc=doc.project, user=user):
-		return False
-	return None
+		return ptype == "create"
+	return bool(frappe.has_permission("Project", "read", doc=doc.project, user=user))
 
 
 def get_permission_query_conditions(user=None):

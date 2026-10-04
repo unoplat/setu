@@ -57,16 +57,16 @@ def clean_filters(filters) -> dict[str, list[str]]:
 	return cleaned
 
 
-def has_permission(doc, ptype="read", user=None):
+def has_permission(doc, ptype="read", user=None) -> bool:
 	"""Restrict, never grant: a view is its creator's alone, whatever the role
-	(journey guardrail "Private to you"). Creating one needs nothing more than
-	the DocType's own role permissions."""
+	(journey guardrail "Private to you"). True lets Frappe continue checking
+	role and user permissions; any falsey return, including None, denies."""
 	user = user or frappe.session.user
 	if user == "Guest":
 		return False
 	if ptype == "create" or doc.is_new():
-		return None
-	return None if doc.owner == user else False
+		return True
+	return doc.owner == user
 
 
 def get_permission_query_conditions(user=None):
