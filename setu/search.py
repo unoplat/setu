@@ -40,6 +40,20 @@ class EnvisionSearch(SQLiteSearch):
 		"Envision Module": {
 			"fields": ["name", {"title": "module_name"}, {"content": "description"}, "project", "modified"],
 		},
+		# Never the full address, whose path or query string can hold a token:
+		# prepare_document adds the host and the type's name (the type's record
+		# name) to the description. Listed here so a change to them reindexes.
+		"Envision Link": {
+			"fields": [
+				"name",
+				{"title": "link_name"},
+				{"content": "description"},
+				"host",
+				"link_type",
+				"project",
+				"modified",
+			],
+		},
 	}
 
 	# Off for the first try: correcting a half-typed word ("perm") can swap it
@@ -67,6 +81,10 @@ class EnvisionSearch(SQLiteSearch):
 		# are still found. A copy, so a Task being saved is left as it is.
 		doc = frappe._dict(doc.as_dict() if isinstance(doc, Document) else doc)
 		doc.description = doc.get("description") or ""
+		if doc.doctype == "Envision Link":
+			doc.description = " ".join(
+				part for part in (doc.description, doc.get("host"), doc.get("link_type")) if part
+			)
 		return super().prepare_document(doc)
 
 	def _prepare_fts_query(self, query):

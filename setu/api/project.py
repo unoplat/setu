@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 
 from setu.api.board_message import delete_project_messages
+from setu.api.link import delete_project_links
 from setu.api.module import delete_project_modules
 from setu.api.view import delete_project_views
 
@@ -74,7 +75,7 @@ def delete_project(name: str) -> dict:
 def guard_project_delete(doc, method=None) -> None:
 	"""``on_trash`` hook for Project (hooks.py): only the project's creator or a
 	Projects Manager may delete it, and only once it has no tasks. Its modules,
-	board messages and everyone's views of it go with it."""
+	links, board messages and everyone's views of it go with it."""
 	if not user_may_delete(doc):
 		frappe.throw(
 			_("Only the project creator or a Projects Manager can delete {0}.").format(
@@ -89,9 +90,10 @@ def guard_project_delete(doc, method=None) -> None:
 			),
 			ProjectHasTasksError,
 		)
-	# Modules and board messages belong to their project, and would otherwise
-	# block the delete as linked records.
+	# Modules, links and board messages belong to their project, and would
+	# otherwise block the delete as linked records.
 	delete_project_modules(doc.name)
+	delete_project_links(doc.name)
 	delete_project_messages(doc.name)
 	delete_project_views(doc.name)
 

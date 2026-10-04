@@ -2,11 +2,12 @@ import { useFrappeGetCall, type SWRConfiguration } from "frappe-react-sdk"
 
 /**
  * Search across projects for the ⌘K dialog (setu/api/search.py). Tasks,
- * modules and milestones match on their title or description; the dialog
- * shows them grouped by kind, in `RECORD_GROUPS` order.
+ * modules and milestones match on their title or description; links on their
+ * name, description, type and host (never the rest of the address). The
+ * dialog shows them grouped by kind, in `RECORD_GROUPS` order.
  */
 
-export type RecordType = "task" | "module" | "milestone"
+export type RecordType = "task" | "module" | "milestone" | "link"
 
 /** A stretch of the description, `match` where the query was found. */
 export interface ExcerptPart {
@@ -20,10 +21,15 @@ export interface SearchResult {
   title: string
   project: string
   project_name: string | null
-  /** ERPNext's Task status; null for a module. */
+  /** ERPNext's Task status; null for a module, milestone or link. */
   status: string | null
+  /** A link's host or type match reports as "description". */
   matched_in: ("title" | "description")[]
   excerpt: ExcerptPart[]
+  /** A link's host, its type's name and that type's icon key. */
+  host?: string | null
+  link_type_name?: string | null
+  icon?: string | null
 }
 
 export interface SearchResponse {
@@ -41,6 +47,7 @@ export const RECORD_GROUPS: readonly { type: RecordType; heading: string }[] = [
   { type: "task", heading: "Tasks" },
   { type: "module", heading: "Modules" },
   { type: "milestone", heading: "Milestones" },
+  { type: "link", heading: "Links" },
 ]
 
 export function isSearchable(query: string): boolean {

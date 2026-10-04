@@ -3,11 +3,13 @@ import re
 import frappe
 from frappe.search.sqlite_search import build_index_in_background
 
+from setu.api.link import link_types
 from setu.search import EnvisionSearch
 
 # Envision's search across projects (Paper: search-experience, A — the ⌘K
-# dialog). Tasks, modules and milestones match on their title or description;
-# the dialog groups them by kind. The full-text index (setu/search.py) finds
+# dialog). Tasks, modules and milestones match on their title or description,
+# links on their name, description, type or host (never the full address); the
+# dialog groups them by kind. The full-text index (setu/search.py) finds
 # candidates, and each one is read back through frappe.get_list, so a result
 # is only shown if this user may open it and Envision would list it: not
 # deleted, not Cancelled, not a template, in an Envision project.
@@ -26,7 +28,7 @@ MARK = re.compile(r"(<mark>.*?</mark>)", re.S)
 
 @frappe.whitelist()
 def search(text: str) -> dict:
-	"""Tasks, modules and milestones matching ``text``, best match first.
+	"""Tasks, modules, milestones and links matching ``text``, best match first.
 
 	Returns ``indexing: True`` with no results while the index is still being
 	built (after a fresh install or migrate), so the dialog can say so.
@@ -95,15 +97,31 @@ def live_rows(hits: list[dict], projects: dict[str, str]) -> dict[tuple[str, str
 			limit_page_length=0,
 		):
 			rows[("Envision Module", row.name)] = row
+	links = [hit["name"] for hit in hits if hit["doctype"] == "Envision Link"]
+	if links:
+		link_rows = frappe.get_list(
+			"Envision Link",
+			filters={"name": ["in", links], "project": ["in", list(projects)]},
+			fields=["name", "link_name", "project", "host", "link_type"],
+			limit_page_length=0,
+		)
+		types = link_types({row.link_type for row in link_rows})
+		for row in link_rows:
+			link_type = types.get(row.link_type) or {}
+			row.link_type_name = link_type.get("type_name") or row.link_type
+			row.icon = link_type.get("icon")
+			rows[("Envision Link", row.name)] = row
 	return rows
 
 
 def search_result(hit: dict, row: dict, projects: dict[str, str]) -> dict:
 	if hit["doctype"] == "Envision Module":
 		kind, title = "module", row.module_name
+	elif hit["doctype"] == "Envision Link":
+		kind, title = "link", row.link_name
 	else:
 		kind, title = ("milestone" if row.is_milestone else "task"), row.subject
-	return {
+	result = {
 		"type": kind,
 		"name": row.name,
 		# From the database, not the index, in case it was renamed since.
@@ -118,6 +136,10 @@ def search_result(hit: dict, row: dict, projects: dict[str, str]) -> dict:
 		],
 		"excerpt": excerpt(hit.get("content") or ""),
 	}
+	if kind == "link":
+		# The row shows the type's icon and the host, never the full address.
+		result.update(host=row.host, link_type_name=row.link_type_name, icon=row.icon)
+	return result
 
 
 def excerpt(snippet: str) -> list[dict]:

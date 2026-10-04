@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "autoname": "LINK-.#####",
+ "creation": "2026-10-04 12:00:00.000000",
+ "description": "A web address the team keeps with a project, such as its docs, dashboards or design files, shown as a door on the project's Links board.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "link_name",
+  "project",
+  "column_break_main",
+  "link_type",
+  "host",
+  "section_break_url",
+  "url",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "link_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Link Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "link_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "Envision Link Type",
+   "reqd": 1
+  },
+  {
+   "description": "Taken from the web address on save. Search indexes this, never the full address.",
+   "fieldname": "host",
+   "fieldtype": "Data",
+   "label": "Host",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_url",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "An http:// or https:// address. Envision never fetches it.",
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "Web Address",
+   "length": 1000,
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-05 00:50:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision Link",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Projects Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Projects User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "link_name,project,link_type,host",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "link_name",
+ "track_changes": 1
+}
