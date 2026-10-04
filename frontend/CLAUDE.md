@@ -12,6 +12,10 @@ Before editing files for a substantial task:
 
 <!-- intent-skills:end -->
 
+## Tests
+
+- Don't add new tests unless the user asks for them. Running the existing ones (`vp test`) to check a change is fine.
+
 <!--VITE PLUS START-->
 
 # Using Vite+, the Unified Toolchain for the Web

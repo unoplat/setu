@@ -55,7 +55,9 @@ export function useProjectTasks(project: string) {
       ],
       filters: [
         ["project", "=", project],
+        // As setu.api.task.LIVE_TASKS, which counts a milestone's progress.
         ["is_milestone", "=", 0],
+        ["is_template", "=", 0],
         ["status", "not in", ["Template", "Cancelled"]],
       ],
       orderBy: { field: "modified", order: "desc" },

@@ -163,7 +163,6 @@ function MilestoneScreen({
           <MilestoneForm
             form={form}
             milestone={milestone}
-            project={project}
             projectName={projectName}
             listeners={autosave.listeners}
             status={autosave.status}
@@ -192,7 +191,6 @@ function MilestoneScreen({
         ) : (
           <MilestoneReadOnly
             milestone={milestone}
-            project={project}
             projectName={projectName}
             footer={footer}
             activity={activity}

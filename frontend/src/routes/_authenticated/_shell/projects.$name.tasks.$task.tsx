@@ -20,7 +20,7 @@ import { TaskForm } from "@/components/tasks/task-form"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
-import { milestonesKey } from "@/lib/milestones"
+import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
   TAGS_KEY,
   boardStatus,
@@ -116,7 +116,7 @@ function TaskScreen({
       // Tasks' Statuses; the timeline logs the change; a new tag joins the
       // site's list.
       void revalidate(projectTasksKey(project))
-      void revalidate(milestonesKey(project))
+      void revalidate(isMilestoneProgressKey)
       void revalidate(taskActivityKey(task.name))
       if (changes.tags) void revalidate(TAGS_KEY)
       return taskValues(response.message)

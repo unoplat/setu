@@ -46,7 +46,6 @@ export const MilestoneForm = withForm({
   ...createMilestoneFormOptions,
   props: {
     milestone: {} as MilestoneDetail,
-    project: "",
     projectName: "",
     listeners: {} as AutosaveListeners,
     status: "idle" as AutosaveStatus,
@@ -69,7 +68,6 @@ export const MilestoneForm = withForm({
   render: function MilestoneFormView({
     form,
     milestone,
-    project,
     projectName,
     listeners,
     status,
@@ -189,7 +187,7 @@ export const MilestoneForm = withForm({
               </dl>
             </RailGroup>
 
-            <MilestoneProgress project={project} milestone={milestone} />
+            <MilestoneProgress milestone={milestone} />
 
             {activity}
           </>

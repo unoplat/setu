@@ -25,7 +25,11 @@ import { BoardToolbar } from "@/components/views/board-toolbar"
 import { useAssignees, type Assignee } from "@/lib/assignees"
 import { useBoardView, useBoardViewActions } from "@/lib/board-view"
 import { frappeErrorMessage } from "@/lib/frappe-error"
-import { milestonesKey, useMilestones, type Milestone } from "@/lib/milestones"
+import {
+  isMilestoneProgressKey,
+  useMilestones,
+  type Milestone,
+} from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
 import { filterTasks, useBoardFilters } from "@/lib/task-filters"
 import {
@@ -171,7 +175,7 @@ export function ProjectBoard({
         .then(() => {
           // As a save on the Task's page: a milestone's progress, the Task's
           // page and its timeline all follow.
-          void mutate(milestonesKey(name))
+          void mutate(isMilestoneProgressKey)
           void mutate(taskKey(task.name))
           void mutate(taskActivityKey(task.name))
           return true
@@ -305,7 +309,13 @@ export function ProjectBoard({
         projectName={projectName}
         status={createIn?.status ?? "Open"}
         module={createIn?.module}
-        onCreated={() => mutate(projectTasksKey(name))}
+        // A new Task can be linked to a milestone in the form.
+        onCreated={() =>
+          Promise.all([
+            mutate(projectTasksKey(name)),
+            mutate(isMilestoneProgressKey),
+          ])
+        }
       />
     </>
   )

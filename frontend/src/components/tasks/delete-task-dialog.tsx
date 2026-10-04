@@ -10,7 +10,7 @@ import {
   ConfirmImpact,
 } from "@/components/confirm-dialog"
 import { plural } from "@/lib/confirm-count"
-import { milestonesKey } from "@/lib/milestones"
+import { isMilestoneProgressKey } from "@/lib/milestones"
 import { modulesKey } from "@/lib/modules"
 import {
   projectTasksKey,
@@ -53,7 +53,7 @@ export function DeleteTaskDialog({
     void mutate(taskKey(task.name), undefined, { revalidate: false })
     void mutate(taskActivityKey(task.name), undefined, { revalidate: false })
     void mutate(projectTasksKey(project))
-    void mutate(milestonesKey(project))
+    void mutate(isMilestoneProgressKey)
     void mutate(modulesKey(project))
     toast.success(`“${message.subject}” deleted`, {
       description: message.subtasks
