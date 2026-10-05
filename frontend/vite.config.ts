@@ -8,6 +8,8 @@ import { defineConfig, lazyPlugins } from "vite-plus"
 // Dev requests for Frappe paths are proxied so the session cookie is
 // same-origin with the Vite dev server.
 const FRAPPE_URL = process.env.FRAPPE_URL
+const FRAPPE_SITE =
+  process.env.FRAPPE_SITE || (FRAPPE_URL ? new URL(FRAPPE_URL).hostname : "")
 const FRAPPE_PATHS = [
   "/api",
   "/login",
@@ -19,6 +21,9 @@ const FRAPPE_PATHS = [
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_FRAPPE_SITE": JSON.stringify(FRAPPE_SITE),
+  },
   lint: {
     plugins: ["oxc", "typescript", "unicorn", "react"],
     categories: {
@@ -248,7 +253,21 @@ export default defineConfig({
     proxy: Object.fromEntries(
       FRAPPE_PATHS.map((p) => [
         p,
-        { target: FRAPPE_URL, changeOrigin: true, ws: p === "/socket.io" },
+        {
+          target: FRAPPE_URL,
+          changeOrigin: true,
+          ws: p === "/socket.io",
+          // Frappe validates the site namespace and matching Host/Origin for
+          // polling as well as WebSocket upgrades through the dev proxy.
+          ...(p === "/socket.io" && FRAPPE_URL
+            ? {
+                headers: {
+                  Origin: new URL(FRAPPE_URL).origin,
+                  "X-Frappe-Site-Name": FRAPPE_SITE,
+                },
+              }
+            : {}),
+        },
       ])
     ),
   },
