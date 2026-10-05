@@ -66,6 +66,26 @@ export function useMilestones(project: string) {
   )
 }
 
+/** A milestone as My tasks' Milestone filter offers it, with its Project. */
+export interface MilestoneOption {
+  name: string
+  subject: string
+  project: string
+  project_name: string
+}
+
+/**
+ * Every milestone on the Envision-enabled Projects the user can read, by
+ * Project (setu.api.milestone.list_milestone_options).
+ */
+export function useMilestoneOptions() {
+  return useFrappeGetCall<{ message: MilestoneOption[] }>(
+    "setu.api.milestone.list_milestone_options",
+    undefined,
+    "envision:milestone-options"
+  )
+}
+
 /** A milestone as its detail screen needs it (setu.api.milestone.get_milestone). */
 export interface MilestoneDetail extends Milestone {
   project: string | null

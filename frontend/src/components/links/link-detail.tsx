@@ -31,6 +31,7 @@ import { LinkTypeIcon } from "./link-type-picker"
 // rail, as on the module page (07d).
 
 const LINK_ACTIVITY: ActivitySource = {
+  doctype: "Envision Link",
   method: "setu.api.link.get_link_activity",
   commentMethod: "setu.api.link.add_link_comment",
   key: linkActivityKey,

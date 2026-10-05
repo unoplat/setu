@@ -35,6 +35,7 @@ import {
 } from "./milestone-filters"
 
 const MILESTONE_ACTIVITY: ActivitySource = {
+  doctype: "Task",
   method: "setu.api.milestone.get_milestone_activity",
   commentMethod: "setu.api.milestone.add_milestone_comment",
   key: milestoneActivityKey,

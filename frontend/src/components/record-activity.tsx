@@ -17,7 +17,11 @@ import { RailGroup } from "@/components/record-detail"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Assignee } from "@/lib/assignees"
-import { useActivity, type ActivityEntry } from "@/lib/activity"
+import {
+  useActivity,
+  useActivityRealtime,
+  type ActivityEntry,
+} from "@/lib/activity"
 import {
   useCommand,
   useScope,
@@ -43,6 +47,8 @@ const CommentEditor = React.lazy(
 
 /** Where one kind of record reads its timeline and posts its comments. */
 export interface ActivitySource {
+  /** The backing DocType whose realtime document room we subscribe to. */
+  doctype: string
   /** The whitelisted method that returns the timeline. */
   method: string
   /** The whitelisted method that posts a comment. */
@@ -70,6 +76,9 @@ export function RecordComments({
     record,
     source.key(record)
   )
+  // Subscribe once here; the rail shares this timeline cache. Refreshing it
+  // does not remount the composer or replace its unsent draft.
+  useActivityRealtime(source.doctype, record, mutate)
   const activity = data?.message
 
   // The server sends newest first; comments read oldest first.

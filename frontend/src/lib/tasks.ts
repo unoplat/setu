@@ -1,5 +1,10 @@
 import * as React from "react"
-import { useFrappeGetCall, useFrappeGetDocList } from "frappe-react-sdk"
+import {
+  FrappeContext,
+  useFrappeGetCall,
+  useSWR,
+  type FrappeConfig,
+} from "frappe-react-sdk"
 
 import type {
   KanbanData,
@@ -24,8 +29,9 @@ export interface TaskSummary {
   /** Dates, or datetimes on ERPNext versions that store one. */
   exp_start_date: string | null
   exp_end_date: string | null
-  /** Frappe's assignment list, a JSON array of user ids. */
-  _assign: string | null
+  /** Everyone assigned, first assigned first. From Frappe's ToDo records, so
+   *  a Done Task keeps them (setu.api.milestone.assignees_of). */
+  assignees: string[]
   /** Frappe's document tags: ",tag one,tag two". */
   _user_tags: string | null
   envision_milestone: string | null
@@ -37,34 +43,52 @@ export function projectTasksKey(project: string) {
   return `envision:tasks:${project}`
 }
 
-export function useProjectTasks(project: string) {
-  return useFrappeGetDocList<TaskSummary>(
-    "Task",
-    {
-      fields: [
-        "name",
-        "subject",
-        "status",
-        "priority",
-        "exp_start_date",
-        "exp_end_date",
-        "_assign",
-        "_user_tags",
-        "envision_milestone",
-        "envision_module",
-      ],
-      filters: [
-        ["project", "=", project],
-        // As setu.api.task.LIVE_TASKS, which counts a milestone's progress.
-        ["is_milestone", "=", 0],
-        ["is_template", "=", 0],
-        ["status", "not in", ["Template", "Cancelled"]],
-      ],
-      orderBy: { field: "modified", order: "desc" },
-      limit: 500,
-    },
-    projectTasksKey(project)
+/** A Board's Tasks from `method`, cached under `key` as the bare list. */
+function useTaskList<T>(
+  key: string,
+  method: string,
+  params?: Record<string, string>
+) {
+  const { call } = React.useContext(FrappeContext) as FrappeConfig
+  return useSWR(key, () =>
+    call
+      .get<{ message: T[] }>(method, params)
+      .then((response) => response.message)
   )
+}
+
+/**
+ * From setu.api.task.list_project_tasks, cached as the bare list, so a move
+ * on the Board can show itself in the cache (project-board.tsx).
+ */
+export function useProjectTasks(project: string) {
+  return useTaskList<TaskSummary>(
+    projectTasksKey(project),
+    "setu.api.task.list_project_tasks",
+    { project }
+  )
+}
+
+/**
+ * A Task on My tasks (CONTEXT.md): one assigned to the signed-in user, on any
+ * Envision-enabled Project, with that Project and the names of its Milestone
+ * and Module, which the Card would otherwise look up in the Project's lists.
+ */
+export interface MyTask extends TaskSummary {
+  project: string
+  project_name: string
+  milestone_subject: string | null
+  module_name: string | null
+}
+
+export const MY_TASKS_KEY = "envision:my-tasks"
+
+/**
+ * From setu.api.task.list_my_tasks, Done Tasks included, cached as the bare
+ * list as the Project's are (my-tasks-board.tsx).
+ */
+export function useMyTasks() {
+  return useTaskList<MyTask>(MY_TASKS_KEY, "setu.api.task.list_my_tasks")
 }
 
 /** What ties a Task to the page it is listed on: one of the two. */
@@ -283,7 +307,8 @@ export function useTagUsage(tag: string | null) {
 export function isTasksKey(key: unknown): boolean {
   return Array.isArray(key)
     ? key[0] === taskKey("")[0]
-    : typeof key === "string" && key.startsWith(projectTasksKey(""))
+    : typeof key === "string" &&
+        (key.startsWith(projectTasksKey("")) || key === MY_TASKS_KEY)
 }
 
 /** Column accents from the Paper board's left borders and status markers. */
@@ -323,24 +348,12 @@ export interface TaskCardLookups {
 
 export const TASK_CARD_RENDERER_ID = "task-card"
 
-function firstAssignee(value: string | null): string | null {
-  if (!value) return null
-  try {
-    const users: unknown = JSON.parse(value)
-    return Array.isArray(users) && typeof users[0] === "string"
-      ? users[0]
-      : null
-  } catch {
-    return null
-  }
-}
-
 function isoDay(value: string | null): string | null {
   return value ? value.slice(0, 10) : null
 }
 
 function taskCard(task: TaskSummary, lookups: TaskCardLookups): KanbanItem {
-  const assignee = firstAssignee(task._assign)
+  const assignee = task.assignees[0] ?? null
   const data: TaskCardData = {
     id: task.name,
     title: task.subject,
@@ -426,14 +439,14 @@ export function taskMove(from: BoardPlace, to: BoardPlace): TaskMove | null {
  * The Board's Tasks with `move` applied to one, before the server confirms it.
  * The Task goes first, where the list (newest change first) will have it.
  */
-export function applyTaskMove(
-  tasks: TaskSummary[],
+export function applyTaskMove<T extends TaskSummary>(
+  tasks: T[],
   name: string,
   move: TaskMove
-): TaskSummary[] {
+): T[] {
   const task = tasks.find((t) => t.name === name)
   if (!task) return tasks
-  const moved: TaskSummary = {
+  const moved: T = {
     ...task,
     ...(move.status !== undefined && { status: move.status }),
     ...(move.module !== undefined && { envision_module: move.module || null }),
@@ -479,14 +492,55 @@ export function toBoardData(
   lookups: TaskCardLookups
 ): KanbanData {
   const known = new Set(modules.map((m) => m.name))
-  const swimlanes =
+  return laneBoardData(
+    tasks,
     modules.length === 0
       ? undefined
       : [
           { id: NO_MODULE_SECTION, title: "No module" },
           ...modules.map((m) => ({ id: m.name, title: m.module_name })),
-        ]
+        ],
+    (task) => {
+      const module = task.envision_module
+      return module && known.has(module) ? module : NO_MODULE_SECTION
+    },
+    view,
+    lookups
+  )
+}
 
+/**
+ * My tasks' Board (Paper: My Tasks 05): the same columns, with a row for each
+ * Project in the order given instead of a section for each Module.
+ */
+export function toProjectRowsData(
+  tasks: MyTask[],
+  projects: readonly { name: string; project_name: string }[],
+  view: BoardView,
+  lookups: TaskCardLookups
+): KanbanData {
+  return laneBoardData(
+    tasks,
+    projects.length === 0
+      ? undefined
+      : projects.map((p) => ({ id: p.name, title: p.project_name })),
+    (task) => task.project,
+    view,
+    lookups
+  )
+}
+
+/**
+ * The columns with each Task under its Status and, given `swimlanes`, in the
+ * one `laneOf` names. Each section starts collapsed when empty (BoardView).
+ */
+function laneBoardData<T extends TaskSummary>(
+  tasks: T[],
+  swimlanes: { id: string; title: string }[] | undefined,
+  laneOf: (task: T) => string,
+  view: BoardView,
+  lookups: TaskCardLookups
+): KanbanData {
   return {
     ...(swimlanes && { swimlanes }),
     columns: BOARD_COLUMNS.map((column) => {
@@ -497,12 +551,7 @@ export function toBoardData(
         .map((task) => {
           const card = taskCard(task, lookups)
           if (!swimlanes) return card
-          const module = task.envision_module
-          return {
-            ...card,
-            swimlaneId:
-              module && known.has(module) ? module : NO_MODULE_SECTION,
-          }
+          return { ...card, swimlaneId: laneOf(task) }
         })
       const base = {
         id: column.id,

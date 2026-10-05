@@ -15,7 +15,9 @@ import { Route as AuthenticatedShellIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedShellInboxRouteImport } from './routes/_authenticated/_shell/inbox'
 import { Route as AuthenticatedShellMyTasksRouteImport } from './routes/_authenticated/_shell/my-tasks'
 import { Route as AuthenticatedShellSettingsRouteImport } from './routes/_authenticated/_shell/settings'
+import { Route as AuthenticatedShellMyTasksIndexRouteImport } from './routes/_authenticated/_shell/my-tasks.index'
 import { Route as AuthenticatedShellProjectsNameRouteImport } from './routes/_authenticated/_shell/projects.$name'
+import { Route as AuthenticatedShellMyTasksViewsViewRouteImport } from './routes/_authenticated/_shell/my-tasks.views.$view'
 import { Route as AuthenticatedShellProjectsNameIndexRouteImport } from './routes/_authenticated/_shell/projects.$name.index'
 import { Route as AuthenticatedShellProjectsNameSettingsRouteImport } from './routes/_authenticated/_shell/projects.$name.settings'
 import { Route as AuthenticatedShellProjectsNameLinksIndexRouteImport } from './routes/_authenticated/_shell/projects.$name.links.index'
@@ -57,11 +59,23 @@ const AuthenticatedShellSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedShellRoute,
   } as any)
+const AuthenticatedShellMyTasksIndexRoute =
+  AuthenticatedShellMyTasksIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedShellMyTasksRoute,
+  } as any)
 const AuthenticatedShellProjectsNameRoute =
   AuthenticatedShellProjectsNameRouteImport.update({
     id: '/projects/$name',
     path: '/projects/$name',
     getParentRoute: () => AuthenticatedShellRoute,
+  } as any)
+const AuthenticatedShellMyTasksViewsViewRoute =
+  AuthenticatedShellMyTasksViewsViewRouteImport.update({
+    id: '/views/$view',
+    path: '/views/$view',
+    getParentRoute: () => AuthenticatedShellMyTasksRoute,
   } as any)
 const AuthenticatedShellProjectsNameIndexRoute =
   AuthenticatedShellProjectsNameIndexRouteImport.update({
@@ -127,9 +141,11 @@ const AuthenticatedShellProjectsNameViewsViewRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedShellIndexRoute
   '/inbox': typeof AuthenticatedShellInboxRoute
-  '/my-tasks': typeof AuthenticatedShellMyTasksRoute
+  '/my-tasks': typeof AuthenticatedShellMyTasksRouteWithChildren
   '/settings': typeof AuthenticatedShellSettingsRoute
   '/projects/$name': typeof AuthenticatedShellProjectsNameRouteWithChildren
+  '/my-tasks/': typeof AuthenticatedShellMyTasksIndexRoute
+  '/my-tasks/views/$view': typeof AuthenticatedShellMyTasksViewsViewRoute
   '/projects/$name/settings': typeof AuthenticatedShellProjectsNameSettingsRoute
   '/projects/$name/': typeof AuthenticatedShellProjectsNameIndexRoute
   '/projects/$name/links/$link': typeof AuthenticatedShellProjectsNameLinksLinkRoute
@@ -144,8 +160,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedShellIndexRoute
   '/inbox': typeof AuthenticatedShellInboxRoute
-  '/my-tasks': typeof AuthenticatedShellMyTasksRoute
   '/settings': typeof AuthenticatedShellSettingsRoute
+  '/my-tasks': typeof AuthenticatedShellMyTasksIndexRoute
+  '/my-tasks/views/$view': typeof AuthenticatedShellMyTasksViewsViewRoute
   '/projects/$name/settings': typeof AuthenticatedShellProjectsNameSettingsRoute
   '/projects/$name': typeof AuthenticatedShellProjectsNameIndexRoute
   '/projects/$name/links/$link': typeof AuthenticatedShellProjectsNameLinksLinkRoute
@@ -162,10 +179,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/_shell': typeof AuthenticatedShellRouteWithChildren
   '/_authenticated/_shell/inbox': typeof AuthenticatedShellInboxRoute
-  '/_authenticated/_shell/my-tasks': typeof AuthenticatedShellMyTasksRoute
+  '/_authenticated/_shell/my-tasks': typeof AuthenticatedShellMyTasksRouteWithChildren
   '/_authenticated/_shell/settings': typeof AuthenticatedShellSettingsRoute
   '/_authenticated/_shell/': typeof AuthenticatedShellIndexRoute
   '/_authenticated/_shell/projects/$name': typeof AuthenticatedShellProjectsNameRouteWithChildren
+  '/_authenticated/_shell/my-tasks/': typeof AuthenticatedShellMyTasksIndexRoute
+  '/_authenticated/_shell/my-tasks/views/$view': typeof AuthenticatedShellMyTasksViewsViewRoute
   '/_authenticated/_shell/projects/$name/settings': typeof AuthenticatedShellProjectsNameSettingsRoute
   '/_authenticated/_shell/projects/$name/': typeof AuthenticatedShellProjectsNameIndexRoute
   '/_authenticated/_shell/projects/$name/links/$link': typeof AuthenticatedShellProjectsNameLinksLinkRoute
@@ -185,6 +204,8 @@ export interface FileRouteTypes {
     | '/my-tasks'
     | '/settings'
     | '/projects/$name'
+    | '/my-tasks/'
+    | '/my-tasks/views/$view'
     | '/projects/$name/settings'
     | '/projects/$name/'
     | '/projects/$name/links/$link'
@@ -199,8 +220,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/inbox'
-    | '/my-tasks'
     | '/settings'
+    | '/my-tasks'
+    | '/my-tasks/views/$view'
     | '/projects/$name/settings'
     | '/projects/$name'
     | '/projects/$name/links/$link'
@@ -220,6 +242,8 @@ export interface FileRouteTypes {
     | '/_authenticated/_shell/settings'
     | '/_authenticated/_shell/'
     | '/_authenticated/_shell/projects/$name'
+    | '/_authenticated/_shell/my-tasks/'
+    | '/_authenticated/_shell/my-tasks/views/$view'
     | '/_authenticated/_shell/projects/$name/settings'
     | '/_authenticated/_shell/projects/$name/'
     | '/_authenticated/_shell/projects/$name/links/$link'
@@ -280,12 +304,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedShellSettingsRouteImport
       parentRoute: typeof AuthenticatedShellRoute
     }
+    '/_authenticated/_shell/my-tasks/': {
+      id: '/_authenticated/_shell/my-tasks/'
+      path: '/'
+      fullPath: '/my-tasks/'
+      preLoaderRoute: typeof AuthenticatedShellMyTasksIndexRouteImport
+      parentRoute: typeof AuthenticatedShellMyTasksRoute
+    }
     '/_authenticated/_shell/projects/$name': {
       id: '/_authenticated/_shell/projects/$name'
       path: '/projects/$name'
       fullPath: '/projects/$name'
       preLoaderRoute: typeof AuthenticatedShellProjectsNameRouteImport
       parentRoute: typeof AuthenticatedShellRoute
+    }
+    '/_authenticated/_shell/my-tasks/views/$view': {
+      id: '/_authenticated/_shell/my-tasks/views/$view'
+      path: '/views/$view'
+      fullPath: '/my-tasks/views/$view'
+      preLoaderRoute: typeof AuthenticatedShellMyTasksViewsViewRouteImport
+      parentRoute: typeof AuthenticatedShellMyTasksRoute
     }
     '/_authenticated/_shell/projects/$name/': {
       id: '/_authenticated/_shell/projects/$name/'
@@ -360,6 +398,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedShellMyTasksRouteChildren {
+  AuthenticatedShellMyTasksIndexRoute: typeof AuthenticatedShellMyTasksIndexRoute
+  AuthenticatedShellMyTasksViewsViewRoute: typeof AuthenticatedShellMyTasksViewsViewRoute
+}
+
+const AuthenticatedShellMyTasksRouteChildren: AuthenticatedShellMyTasksRouteChildren =
+  {
+    AuthenticatedShellMyTasksIndexRoute: AuthenticatedShellMyTasksIndexRoute,
+    AuthenticatedShellMyTasksViewsViewRoute:
+      AuthenticatedShellMyTasksViewsViewRoute,
+  }
+
+const AuthenticatedShellMyTasksRouteWithChildren =
+  AuthenticatedShellMyTasksRoute._addFileChildren(
+    AuthenticatedShellMyTasksRouteChildren,
+  )
+
 interface AuthenticatedShellProjectsNameRouteChildren {
   AuthenticatedShellProjectsNameSettingsRoute: typeof AuthenticatedShellProjectsNameSettingsRoute
   AuthenticatedShellProjectsNameIndexRoute: typeof AuthenticatedShellProjectsNameIndexRoute
@@ -404,7 +459,7 @@ const AuthenticatedShellProjectsNameRouteWithChildren =
 
 interface AuthenticatedShellRouteChildren {
   AuthenticatedShellInboxRoute: typeof AuthenticatedShellInboxRoute
-  AuthenticatedShellMyTasksRoute: typeof AuthenticatedShellMyTasksRoute
+  AuthenticatedShellMyTasksRoute: typeof AuthenticatedShellMyTasksRouteWithChildren
   AuthenticatedShellSettingsRoute: typeof AuthenticatedShellSettingsRoute
   AuthenticatedShellIndexRoute: typeof AuthenticatedShellIndexRoute
   AuthenticatedShellProjectsNameRoute: typeof AuthenticatedShellProjectsNameRouteWithChildren
@@ -412,7 +467,7 @@ interface AuthenticatedShellRouteChildren {
 
 const AuthenticatedShellRouteChildren: AuthenticatedShellRouteChildren = {
   AuthenticatedShellInboxRoute: AuthenticatedShellInboxRoute,
-  AuthenticatedShellMyTasksRoute: AuthenticatedShellMyTasksRoute,
+  AuthenticatedShellMyTasksRoute: AuthenticatedShellMyTasksRouteWithChildren,
   AuthenticatedShellSettingsRoute: AuthenticatedShellSettingsRoute,
   AuthenticatedShellIndexRoute: AuthenticatedShellIndexRoute,
   AuthenticatedShellProjectsNameRoute:

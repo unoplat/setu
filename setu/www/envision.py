@@ -26,4 +26,6 @@ def get_context(context):
 	# request transaction handling instead of committing mid-request.
 	frappe.local.flags.commit = True
 	context.csrf_token = csrf_token
+	# Frappe v16 realtime connections use the site name as their namespace.
+	context.frappe_site_name = frappe.local.site
 	return context

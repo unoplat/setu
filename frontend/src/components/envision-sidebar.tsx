@@ -5,6 +5,7 @@ import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSearch } from "@/components/nav-search"
 import { NavUser } from "@/components/nav-user"
+import { NavMyTasksViews } from "@/components/views/nav-views"
 import {
   Sidebar,
   SidebarContent,
@@ -20,7 +21,8 @@ import { useProjects } from "@/lib/projects"
 // Paper: "Projects Sidebar — Empty" (00 — Empty Projects), built on the
 // shadcn sidebar-07 block (collapses to icons).
 // Global navigation is My tasks, Inbox, Settings; Projects lists the
-// Envision-managed projects.
+// Envision-managed projects. My tasks lists its own Views beneath it while it
+// is open (Paper: My Tasks 06), as a Project lists its sections and Views.
 
 const NAV: readonly NavItem[] = [
   {
@@ -28,6 +30,7 @@ const NAV: readonly NavItem[] = [
     to: "/my-tasks",
     icon: <SquareCheckIcon />,
     command: "nav.myTasks",
+    sub: <NavMyTasksViews />,
   },
   { title: "Inbox", to: "/inbox", icon: <BellIcon />, command: "nav.inbox" },
   {

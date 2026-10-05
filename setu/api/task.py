@@ -5,8 +5,16 @@ from frappe.model.delete_doc import get_dynamic_linked_docs, get_linked_docs, ra
 from frappe.utils import getdate, today
 from frappe.utils.nestedset import get_descendants_of
 
-from setu.api.milestone import as_date, first_assignee, replace_assignee
-from setu.api.timeline import comment_on, document_activity, people_details, timestamp
+from setu.api.milestone import (
+	ASSIGNED,
+	as_date,
+	assignee_details,
+	assignees_of,
+	envision_projects,
+	replace_assignee,
+)
+from setu.api.timeline import comment_on, document_activity, timestamp
+from setu.api.view import rename_filter_value
 
 # Envision's Task endpoints (Paper: 03 — Create Task, 04 — Task Created, 09 —
 # Task Detail). A
@@ -255,6 +263,90 @@ LIVE_TASKS = {
 }
 
 
+# What the Board needs of each Task (frontend/src/lib/tasks.ts, TaskSummary).
+TASK_LIST_FIELDS = [
+	"name",
+	"subject",
+	"status",
+	"priority",
+	"exp_start_date",
+	"exp_end_date",
+	"_user_tags",
+	"envision_milestone",
+	"envision_module",
+]
+
+
+@frappe.whitelist()
+def list_project_tasks(project: str) -> list[dict]:
+	"""A project's Tasks as the Board lists them."""
+	frappe.get_doc("Project", project).check_permission("read")
+	return board_tasks({"project": project})
+
+
+@frappe.whitelist()
+def list_my_tasks() -> list[dict]:
+	"""My tasks (CONTEXT.md): the Tasks assigned to the signed-in user on every
+	Envision-enabled Project they can read, as the Board lists them, each also
+	with its project and the titles of its Milestone and Module.
+
+	Assignment is read from ToDo (``ASSIGNED``), not ``_assign``, so a Done
+	Task stays on My tasks.
+	"""
+	frappe.has_permission("Task", "read", throw=True)
+	tasks = frappe.get_all(
+		"ToDo",
+		filters={
+			"reference_type": "Task",
+			"allocated_to": frappe.session.user,
+			"status": ["in", ASSIGNED],
+		},
+		pluck="reference_name",
+		distinct=True,
+	)
+	projects = envision_projects()
+	if not tasks or not projects:
+		return []
+	rows = board_tasks(
+		{"name": ["in", tasks], "project": ["in", list(projects)]}, [*TASK_LIST_FIELDS, "project"]
+	)
+	# The user can read these Tasks, so their Milestone and Module titles too.
+	milestones = titles("Task", "subject", {row.envision_milestone for row in rows})
+	modules = titles("Envision Module", "module_name", {row.envision_module for row in rows})
+	for row in rows:
+		row["project_name"] = projects[row.project]
+		row["milestone_subject"] = milestones.get(row.envision_milestone)
+		row["module_name"] = modules.get(row.envision_module)
+	return rows
+
+
+def board_tasks(filters: dict, fields: list[str] = TASK_LIST_FIELDS) -> list[dict]:
+	"""Tasks as the Board lists them (``LIVE_TASKS``), through Task permissions,
+	latest change first, each with everyone assigned to it (``assignees_of``),
+	so a Done Task keeps its avatar and its place under an Assignee filter."""
+	rows = frappe.get_list(
+		"Task",
+		filters={**filters, **LIVE_TASKS},
+		fields=fields,
+		order_by="modified desc",
+		limit_page_length=500,
+	)
+	assigned = assignees_of([row.name for row in rows])
+	for row in rows:
+		row["assignees"] = assigned[row.name]
+	return rows
+
+
+def titles(doctype: str, field: str, names: set[str | None]) -> dict[str, str]:
+	"""``field`` of each named record, in one query. Blank names are skipped."""
+	names = {name for name in names if name}
+	if not names:
+		return {}
+	return dict(
+		frappe.get_all(doctype, filters={"name": ["in", list(names)]}, fields=["name", field], as_list=True)
+	)
+
+
 def live_task_count(filters: dict) -> int:
 	"""Tasks matching ``filters`` that Envision lists (``LIVE_TASKS``)."""
 	return frappe.db.count("Task", {**filters, **LIVE_TASKS})
@@ -325,7 +417,6 @@ def delete_task(name: str) -> dict:
 
 
 def task_detail(task) -> dict:
-	assignee = first_assignee(task.get("_assign"))
 	return {
 		"name": task.name,
 		"subject": task.subject,
@@ -334,7 +425,7 @@ def task_detail(task) -> dict:
 		"priority": task.priority,
 		"start_date": as_date(task.exp_start_date),
 		"due_date": as_date(task.exp_end_date),
-		"assignee": people_details({assignee}).get(assignee) if assignee else None,
+		"assignee": assignee_details([task.name]).get(task.name),
 		"milestone": task.get("envision_milestone") or None,
 		"module": task.get("envision_module") or None,
 		"tags": task_tags(task),
@@ -426,6 +517,50 @@ def tagged_documents(tag: str) -> list[tuple[str, str]]:
 		if key in {t.casefold() for t in (task._user_tags or "").split(",")}:
 			documents.add(("Task", task.name))
 	return sorted(documents)
+
+
+def rename_tag(doc, method, old: str, new: str, merge: bool) -> None:
+	"""Tag ``after_rename``: carry a renamed (or merged) tag to where it is used.
+
+	Frappe's rename updates Tag Links, which are Link fields, but not each
+	document's ``_user_tags``, which the Board, Task page and tag filter read,
+	nor the tag filters saved in Custom Views.
+	"""
+	retag_documents(old, new)
+	rename_filter_value("tag", old, new)
+
+
+def retag_documents(old: str, new: str) -> None:
+	"""Swap ``old`` for ``new`` in every document's ``_user_tags``.
+
+	By ``after_rename`` the Tag Links already point at ``new``, so they only
+	say which doctypes to search; the old name is found in ``_user_tags``. The
+	other tags keep their place, and a leading comma stays.
+	"""
+	keys = {old.casefold(), new.casefold()}
+	doctypes = set(frappe.get_all("Tag Link", filters={"tag": new}, pluck="document_type", distinct=True))
+	doctypes.add("Task")
+	for doctype in sorted(doctypes):
+		# Frappe adds ``_user_tags`` only once a doctype is first tagged, and a
+		# stale Tag Link can outlive its doctype's table; neither has tags.
+		if not frappe.db.table_exists(doctype) or not frappe.db.has_column(doctype, "_user_tags"):
+			continue
+		# LIKE narrows the rows; the exact match is on the comma-separated tags.
+		for row in frappe.get_all(
+			doctype, filters={"_user_tags": ["like", f"%{old}%"]}, fields=["name", "_user_tags"]
+		):
+			value = row._user_tags or ""
+			tags, placed = [], False
+			for tag in value.split(","):
+				if tag.casefold() not in keys:
+					tags.append(tag)
+				elif not placed:
+					# A merge, or a document that had both, keeps one ``new``.
+					tags.append(new)
+					placed = True
+			retagged = ",".join(tags)
+			if retagged != value:
+				frappe.db.set_value(doctype, row.name, "_user_tags", retagged, update_modified=False)
 
 
 def clean_tags(tags: list[str] | str | None) -> list[str]:

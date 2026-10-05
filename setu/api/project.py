@@ -75,7 +75,9 @@ def delete_project(name: str) -> dict:
 def guard_project_delete(doc, method=None) -> None:
 	"""``on_trash`` hook for Project (hooks.py): only the project's creator or a
 	Projects Manager may delete it, and only once it has no tasks. Its modules,
-	links, board messages and everyone's views of it go with it."""
+	links, board messages and everyone's views of it go with it, and it leaves
+	every My tasks view's project filter (a view filtering on it alone goes
+	too; ``delete_project_views``)."""
 	if not user_may_delete(doc):
 		frappe.throw(
 			_("Only the project creator or a Projects Manager can delete {0}.").format(

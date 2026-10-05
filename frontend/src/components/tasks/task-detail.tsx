@@ -29,6 +29,7 @@ import { TagChip } from "./tags-combobox"
 import { StatusRing } from "./task-selects"
 
 const TASK_ACTIVITY: ActivitySource = {
+  doctype: "Task",
   method: "setu.api.task.get_task_activity",
   commentMethod: "setu.api.task.add_task_comment",
   key: taskActivityKey,

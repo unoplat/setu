@@ -6,7 +6,6 @@ import {
   useSWRConfig,
   type FrappeError,
 } from "frappe-react-sdk"
-import { LockIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -19,9 +18,9 @@ import { ProjectHeader } from "@/components/project-header"
 import { CreateTaskSheet } from "@/components/tasks/create-task-sheet"
 import { TaskDragPreview } from "@/components/tasks/task-card"
 import { taskCardRenderer } from "@/components/tasks/task-card-renderer"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BoardToolbar } from "@/components/views/board-toolbar"
+import { OnlyYouBadge } from "@/components/views/only-you-badge"
 import { useAssignees, type Assignee } from "@/lib/assignees"
 import { useBoardView, useBoardViewActions } from "@/lib/board-view"
 import { frappeErrorMessage } from "@/lib/frappe-error"
@@ -31,7 +30,11 @@ import {
   type Milestone,
 } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
-import { filterTasks, useBoardFilters } from "@/lib/task-filters"
+import {
+  filterTasks,
+  PROJECT_BOARD_FIELDS,
+  useBoardFilters,
+} from "@/lib/task-filters"
 import {
   applyTaskMove,
   boardStatus,
@@ -77,16 +80,6 @@ const NO_MILESTONES: readonly Milestone[] = []
 const NO_PEOPLE: readonly Assignee[] = []
 const NO_TAGS: readonly string[] = []
 
-/** Paper: CV 03, beside the view's name: a view is its creator's alone. */
-function OnlyYouBadge() {
-  return (
-    <Badge variant="outline" className="text-muted-foreground">
-      <LockIcon />
-      Only you
-    </Badge>
-  )
-}
-
 export function ProjectBoard({
   project: name,
   view = null,
@@ -102,7 +95,10 @@ export function ProjectBoard({
   const projectName = project?.project_name ?? name
   const { data: tasks, error, isLoading } = useProjectTasks(name)
   const { views } = useViews(name)
-  const filters = useBoardFilters(view ? view.filters : null)
+  const filters = useBoardFilters(
+    view ? view.filters : null,
+    PROJECT_BOARD_FIELDS
+  )
   const { data: tagList } = useTags()
   const { mutate } = useSWRConfig()
 
