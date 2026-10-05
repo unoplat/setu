@@ -27,14 +27,15 @@ import { viewsKey, type ViewRow } from "@/lib/views"
 
 // Paper: CV 02 — Name the view, CV 03 — View saved and open. The popover asks
 // only for a name; the filters on the Board are what gets saved. The new view
-// opens at once, and the toast offers Rename for a name typed in a hurry.
+// opens at once, and the toast offers Rename for a name typed in a hurry. With
+// no project it is a My tasks view (Paper: My Tasks 06).
 export function SaveViewPopover({
   project,
   filters,
   label,
   variant,
 }: {
-  project: string
+  project: string | null
   filters: TaskFilters
   /** "Save view" on All tasks; "Save as new" beside a view's own Save. */
   label: string
@@ -64,7 +65,7 @@ function SaveViewForm({
   filters,
   onDone,
 }: {
-  project: string
+  project: string | null
   filters: TaskFilters
   onDone: () => void
 }) {
@@ -83,17 +84,23 @@ function SaveViewForm({
     setError(null)
     try {
       const { message: view } = await call({
-        project,
+        // Left out for My tasks: a view with no project is one of its own.
+        ...(project !== null && { project }),
         view_name: name.trim(),
         filters: compactFilters(filters),
       })
       // The list first, so the view's page finds it when it opens.
       await mutate(viewsKey(project))
       onDone()
-      await navigate({
-        to: "/projects/$name/views/$view",
-        params: { name: project, view: view.name },
-      })
+      await (project === null
+        ? navigate({
+            to: "/my-tasks/views/$view",
+            params: { view: view.name },
+          })
+        : navigate({
+            to: "/projects/$name/views/$view",
+            params: { name: project, view: view.name },
+          }))
       toast.success(`Saved “${view.view_name}” to your views`, {
         action: {
           label: "Rename",

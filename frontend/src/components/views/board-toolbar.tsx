@@ -9,13 +9,24 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SaveViewPopover } from "@/components/views/save-view-popover"
-import { TaskFilterBar } from "@/components/views/task-filter-bar"
+import {
+  LockedAssigneeFilter,
+  TaskFilterBar,
+  type MilestoneChoice,
+  type ProjectChoice,
+} from "@/components/views/task-filter-bar"
 import { ViewSwitcher } from "@/components/views/view-switcher"
 import type { Assignee } from "@/lib/assignees"
 import { frappeErrorMessage } from "@/lib/frappe-error"
-import type { Milestone } from "@/lib/milestones"
-import { compactFilters, type BoardFilters } from "@/lib/task-filters"
+import {
+  boardFilterFields,
+  compactFilters,
+  type BoardFilters,
+} from "@/lib/task-filters"
 import { viewsKey, type View } from "@/lib/views"
+
+// A stable empty, so the filter bar's fields keep their identity.
+const NO_PROJECTS: readonly ProjectChoice[] = []
 
 // Paper: "Custom view journey", CV 01 to CV 05. The Board's toolbar: which
 // view is open, the filters, and what can be done with a change to them.
@@ -23,21 +34,28 @@ import { viewsKey, type View } from "@/lib/views"
 // - On All tasks, any filter offers Reset and Save view (CV 01).
 // - On a view, a change marks it Edited and offers Reset, Save as new and
 //   Save view (CV 05). Nothing is saved until one of them is pressed.
+//
+// Paper: My Tasks 06 and 07. My tasks (no project) has the same toolbar, with
+// its locked "Assignee · Me" chip before the filters.
 export function BoardToolbar({
   project,
   view,
   views,
   board,
+  projects = NO_PROJECTS,
   milestones,
   people,
   tags,
 }: {
-  project: string
+  /** The Project whose Board it is; null on My tasks. */
+  project: string | null
   /** The open view; null on All tasks. */
   view: View | null
   views: readonly View[]
   board: BoardFilters
-  milestones: readonly Milestone[]
+  /** My tasks' Project filter. */
+  projects?: readonly ProjectChoice[]
+  milestones: readonly MilestoneChoice[]
   people: readonly Assignee[]
   tags: readonly string[]
 }) {
@@ -66,9 +84,12 @@ export function BoardToolbar({
   return (
     <div className="flex flex-wrap items-center gap-2 px-6 pt-4">
       <ViewSwitcher project={project} views={views} current={view} />
+      {project === null ? <LockedAssigneeFilter /> : null}
       <TaskFilterBar
         filters={filters}
         onFiltersChange={setFilters}
+        offered={boardFilterFields(project)}
+        projects={projects}
         milestones={milestones}
         people={people}
         tags={tags}

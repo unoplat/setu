@@ -1,19 +1,12 @@
 import { Link, useMatchRoute } from "@tanstack/react-router"
 import {
-  useFrappePostCall,
-  useSWRConfig,
-  type FrappeError,
-} from "frappe-react-sdk"
-import {
   ChevronDownIcon,
-  CopyIcon,
   EllipsisIcon,
   PencilIcon,
   SlidersHorizontalIcon,
   Trash2Icon,
 } from "lucide-react"
 import { parseAsBoolean, useQueryState } from "nuqs"
-import { toast } from "sonner"
 
 import {
   Collapsible,
@@ -28,19 +21,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { openDeleteView, openRenameView } from "@/components/views/store"
-import { frappeErrorMessage } from "@/lib/frappe-error"
-import { useViews, viewsKey, type View, type ViewRow } from "@/lib/views"
+import { useViews, type View } from "@/lib/views"
 
 // Paper: "Custom view journey", the sidebar's Views section (CV 03, CV 06).
 // The open Project lists this user's views under its sections; each one opens
-// the Board behind its filters and has a ⋯ menu to rename, duplicate or
-// delete it. A Project with no views yet shows no section: views are made
-// from the Board (set filters, then Save view).
-export function NavViews({ project }: { project: string }) {
+// the Board behind its filters and has a ⋯ menu to rename or delete it. A
+// Project with no views yet shows no section: views are made from the Board
+// (set filters, then Save view).
+//
+// Paper: My Tasks 06 and 07. My tasks (no project) lists its own views the
+// same way, under its nav item.
+export function NavViews({ project }: { project: string | null }) {
   const { views } = useViews(project)
   if (!views?.length) return null
   return (
@@ -70,31 +66,33 @@ export function NavViews({ project }: { project: string }) {
   )
 }
 
-function NavView({ project, view }: { project: string; view: View }) {
+/** My tasks' views, nested under its nav item; nothing until there is one. */
+export function NavMyTasksViews() {
+  const { views } = useViews(null)
+  if (!views?.length) return null
+  return (
+    <SidebarMenuSub>
+      <NavViews project={null} />
+    </SidebarMenuSub>
+  )
+}
+
+function NavView({ project, view }: { project: string | null; view: View }) {
   const matchRoute = useMatchRoute()
-  const params = { name: project, view: view.name }
   const active = Boolean(
-    matchRoute({ to: "/projects/$name/views/$view", params })
+    project === null
+      ? matchRoute({
+          to: "/my-tasks/views/$view",
+          params: { view: view.name },
+        })
+      : matchRoute({
+          to: "/projects/$name/views/$view",
+          params: { name: project, view: view.name },
+        })
   )
   // The Board marks a URL that holds unsaved changes to the open view
   // (lib/task-filters.ts); the dot says so here too (Paper: CV 05).
   const [edited] = useQueryState("edited", parseAsBoolean)
-  const { mutate } = useSWRConfig()
-  const duplicate = useFrappePostCall<{ message: ViewRow }>(
-    "setu.api.view.duplicate_view"
-  )
-
-  async function copy() {
-    try {
-      const { message } = await duplicate.call({ name: view.name })
-      await mutate(viewsKey(project))
-      toast.success(`Duplicated as “${message.view_name}”`)
-    } catch (caught) {
-      toast.error(`“${view.view_name}” could not be duplicated`, {
-        description: frappeErrorMessage(caught as FrappeError),
-      })
-    }
-  }
 
   return (
     <li className="group/view relative">
@@ -102,7 +100,16 @@ function NavView({ project, view }: { project: string; view: View }) {
         size="sm"
         isActive={active}
         className="pe-8"
-        render={<Link to="/projects/$name/views/$view" params={params} />}
+        render={
+          project === null ? (
+            <Link to="/my-tasks/views/$view" params={{ view: view.name }} />
+          ) : (
+            <Link
+              to="/projects/$name/views/$view"
+              params={{ name: project, view: view.name }}
+            />
+          )
+        }
       >
         <span>{view.view_name}</span>
       </SidebarMenuSubButton>
@@ -124,10 +131,6 @@ function NavView({ project, view }: { project: string; view: View }) {
           <DropdownMenuItem onClick={() => openRenameView({ project, view })}>
             <PencilIcon />
             Rename
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void copy()}>
-            <CopyIcon />
-            Duplicate
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

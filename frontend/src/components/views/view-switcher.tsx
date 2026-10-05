@@ -21,21 +21,29 @@ import type { View } from "@/lib/views"
 
 // Paper: CV 04 — Switch views. The Board's first control names what is open,
 // All tasks or a view, and lists the others. Views are made from the Board
-// itself (set filters, then Save view), which the footer says.
+// itself (set filters, then Save view), which the footer says. On My tasks
+// (no project) the Board without a view is "All my tasks" (My Tasks 06).
 export function ViewSwitcher({
   project,
   views,
   current,
 }: {
-  project: string
+  project: string | null
   views: readonly View[]
   current: View | null
 }) {
   const navigate = useNavigate()
   const [open, setOpen] = React.useState(false)
+  const all = project === null ? "All my tasks" : "All tasks"
 
   function go(view: View | null) {
     setOpen(false)
+    if (project === null) {
+      void (view
+        ? navigate({ to: "/my-tasks/views/$view", params: { view: view.name } })
+        : navigate({ to: "/my-tasks" }))
+      return
+    }
     void (view
       ? navigate({
           to: "/projects/$name/views/$view",
@@ -49,7 +57,7 @@ export function ViewSwitcher({
       <PopoverTrigger
         render={<Button variant="outline" className="max-w-64" />}
       >
-        <span className="truncate">{current?.view_name ?? "All tasks"}</span>
+        <span className="truncate">{current?.view_name ?? all}</span>
         <ChevronDownIcon className="text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-70 gap-0 p-0">
@@ -59,12 +67,12 @@ export function ViewSwitcher({
             <CommandEmpty>No view by that name.</CommandEmpty>
             <CommandGroup>
               <CommandItem
-                value="All tasks"
+                value={all}
                 data-checked={current === null}
                 onSelect={() => go(null)}
               >
                 <KanbanIcon />
-                All tasks
+                {all}
               </CommandItem>
             </CommandGroup>
             {views.length ? (

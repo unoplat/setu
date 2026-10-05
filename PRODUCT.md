@@ -24,7 +24,7 @@ Envision keeps project work, personal follow-up, and team communication in one a
 
 ## Operating Context
 
-Teams switch among Envision-enabled Projects from a persistent sidebar. Global navigation provides Home, My tasks, Inbox, and application Settings. Each Project exposes Tasks, Milestones, Modules, Message Board, Todos, Project Settings, and private Views. In the first version the signed-in user's Frappe identity and ERPNext role permissions determine what is available; Envision roles and Project membership arrive in the next version.
+Teams switch among Envision-enabled Projects from a persistent sidebar. Global navigation provides Home, My tasks, Inbox, and application Settings. Each Project exposes Tasks, Milestones, Modules, Message Board, Todos, Project Settings, and private Views; My tasks has private Views of its own. In the first version the signed-in user's Frappe identity and ERPNext role permissions determine what is available; Envision roles and Project membership arrive in the next version.
 
 The primary Project workflow is a Kanban Board. Users scan status columns, filter Tasks, open or move Cards, and add Tasks without leaving the Board. Status belongs to the column; each Card carries the Task information that remains useful when it moves.
 
@@ -35,6 +35,7 @@ The primary Project workflow is a Kanban Board. Users scan status columns, filte
 - Multi-Project navigation with expandable Project sections and visible signed-in identity. The Envision role label arrives with roles in the next version.
 - Global Home, My tasks, Inbox, and application Settings.
 - Project-scoped Tasks, Milestones, Modules, Message Board, Todos, Settings, and private Views.
+- My tasks shows the Tasks assigned to the signed-in user across every Envision-enabled Project, Done Tasks included, with private Views of its own.
 - Search entry point for Tasks and actions, with a keyboard shortcut shown in the interface.
 - The Paper design distinguishes global My tasks from Project-scoped Todos. The exact purpose and ERPNext record basis of Project Todos are still undecided.
 
@@ -45,7 +46,7 @@ The primary Project workflow is a Kanban Board. Users scan status columns, filte
 - Envision does not support cancelling Tasks. Tasks cancelled in ERPNext do not appear on the Board and do not count as completed work or Milestone progress.
 - Tasks can be added from a Board column.
 - Board view selection plus general, Milestone, and Priority filters.
-- Private Custom Views appear within their Project and preserve reusable Board configurations.
+- Private Custom Views appear within their Project, or under My tasks, and preserve reusable Board configurations. My tasks views can also filter by Project and are always limited to the signed-in user's own Tasks.
 
 ### Task Cards
 

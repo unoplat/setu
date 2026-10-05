@@ -15,7 +15,7 @@ Project membership, invitations, and the roles defined under Membership below (E
 ## Work Structure
 
 **Project**:
-The standard ERPNext Project record. When enabled for Envision, it becomes Envision’s top-level collaboration boundary and contains one Kanban Board, Milestones, and Custom Views. In the first version access follows ERPNext’s standard Project role permissions; the Project becomes an access boundary with members in the next version.
+The standard ERPNext Project record. When enabled for Envision, it becomes Envision’s top-level collaboration boundary and contains one Kanban Board, Milestones, and its Custom Views. In the first version access follows ERPNext’s standard Project role permissions; the Project becomes an access boundary with members in the next version.
 _Avoid_: Envision Project, Workspace, standalone board
 
 **Envision-enabled Project**:
@@ -23,7 +23,7 @@ A standard ERPNext Project explicitly opted into Envision’s workflow and inter
 _Avoid_: Envision Project, imported project
 
 **Kanban Board**:
-A Project’s primary operating view, where ERPNext Task records are organized by Status. ERPNext documents status-based Task Kanban views and Status updates through card movement; Envision adds its Project layout, ordering, filters, and private Views.
+A Project’s primary operating view, where ERPNext Task records are organized by Status. ERPNext documents status-based Task Kanban views and Status updates through card movement; Envision adds its Project layout, ordering, filters, and private Custom Views.
 _Avoid_: Project board, task board, standalone Board DocType
 
 **Task**:
@@ -73,7 +73,7 @@ A Frappe document tag attached to a Task and used for filtering and grouping. Fr
 _Avoid_: Project Tag, Label, category
 
 **Custom View**:
-An Envision-owned, private, reusable Kanban configuration that preserves structured Task filters for its creator. It does not preserve Board ordering in the first version. ERPNext provides Task Kanban views, but the documented standard view does not establish Envision's private saved configuration semantics.
+An Envision-owned, private, reusable Kanban configuration that preserves structured Task filters for its creator. A Custom View belongs either to one Project's Kanban Board or to My tasks. A My tasks view may also filter by Project, and never by Assignee, because My tasks always shows the creator's own Tasks. It does not preserve Board ordering in the first version. ERPNext provides Task Kanban views, but the documented standard view does not establish Envision's private saved configuration semantics.
 _Avoid_: Shared view, saved search, filter preset, ERPNext Kanban Board DocType
 
 ## Navigation, Personal Work, and Communication
@@ -83,7 +83,7 @@ The global Envision landing area shown in the Paper navigation. Its content and 
 _Avoid_: Frappe Desk Home, Project Home DocType
 
 **My tasks**:
-A personal, cross-Project view of ERPNext Task records assigned to the signed-in user. Assignment uses Frappe's ToDo-backed Assign To mechanism; My tasks is a view, not a DocType.
+A personal, cross-Project view of ERPNext Task records assigned to the signed-in user, across every Envision-enabled Project. Assignment comes from Frappe's ToDo-backed Assign To mechanism rather than the Task's assignment metadata, so a Done Task stays on My tasks after ERPNext closes its assignments. My tasks is a view, not a DocType, and has its own private Custom Views.
 _Avoid_: Project Todos, Todo Status, standalone personal Task
 
 **Inbox**:
@@ -141,7 +141,7 @@ The Frappe Desk area for Envision setup, configuration, and native records; Envi
 _Avoid_: Workspace, Project, daily operating view
 
 **Envision Interface**:
-The dedicated full-screen application used for daily work. Its Paper navigation includes global Home, My tasks, Inbox, and Settings plus Project-scoped Tasks, Milestones, Modules, Message Board, Project Todos, Settings, and private Views.
+The dedicated full-screen application used for daily work. Its Paper navigation includes global Home, My tasks, Inbox, and Settings plus Project-scoped Tasks, Milestones, Modules, Message Board, Project Todos, Settings, and private Views. My tasks has private Views of its own.
 _Avoid_: Desk Workspace, native Task form
 
 ## Completion and Deletion

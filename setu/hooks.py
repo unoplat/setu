@@ -177,12 +177,22 @@ has_permission = {
 
 # Envision's rules for deleting a Project live in on_trash so Desk and the
 # REST API follow them too (setu.api.project.guard_project_delete).
+# Frappe's rename updates Link fields but not the names saved inside a Custom
+# View's JSON filters, so each rename carries them over (setu.api.view).
 doc_events = {
 	"Project": {
 		"on_trash": "setu.api.project.guard_project_delete",
+		"after_rename": "setu.api.view.rename_project_filters",
 	},
 	"Task": {
 		"validate": "setu.api.task.validate_task_links",
+	},
+	# Frappe's rename leaves the old name in each document's _user_tags.
+	"Tag": {
+		"after_rename": "setu.api.task.rename_tag",
+	},
+	"User": {
+		"after_rename": "setu.api.view.rename_user_filters",
 	},
 }
 

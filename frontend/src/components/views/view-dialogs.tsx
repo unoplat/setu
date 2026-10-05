@@ -35,7 +35,7 @@ import {
 import { plural } from "@/lib/confirm-count"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import { filterTasks } from "@/lib/task-filters"
-import { useProjectTasks } from "@/lib/tasks"
+import { useMyTasks, useProjectTasks, type TaskSummary } from "@/lib/tasks"
 import { useViews, viewsKey } from "@/lib/views"
 
 // Paper: CV 06 — View actions menu, CV 07 — Confirm delete view. The rename
@@ -174,16 +174,24 @@ function DeleteViewDialog({
     await remove.call({ name: view.name })
     // Off the view first, if it is the one open: its page has nothing left
     // to show once the list no longer holds it.
-    const viewing = matchRoute({
-      to: "/projects/$name/views/$view",
-      params: { name: project, view: view.name },
-    })
-    if (viewing) {
-      await navigate({
-        to: "/projects/$name",
-        params: { name: project },
-        replace: true,
+    if (project === null) {
+      const viewing = matchRoute({
+        to: "/my-tasks/views/$view",
+        params: { view: view.name },
       })
+      if (viewing) await navigate({ to: "/my-tasks", replace: true })
+    } else {
+      const viewing = matchRoute({
+        to: "/projects/$name/views/$view",
+        params: { name: project, view: view.name },
+      })
+      if (viewing) {
+        await navigate({
+          to: "/projects/$name",
+          params: { name: project },
+          replace: true,
+        })
+      }
     }
     await mutate(viewsKey(project))
     toast.success(`“${view.view_name}” deleted`, {
@@ -206,8 +214,55 @@ function DeleteViewDialog({
 
 /** Mounted only while the confirm is open, so the count is of the Board now. */
 function DeleteViewBody({ target }: { target: ViewTarget }) {
+  return target.project === null ? (
+    <MyTasksViewBody target={target} />
+  ) : (
+    <ProjectViewBody target={target} project={target.project} />
+  )
+}
+
+function ProjectViewBody({
+  target,
+  project,
+}: {
+  target: ViewTarget
+  project: string
+}) {
+  return (
+    <DeleteViewContent
+      target={target}
+      tasks={useProjectTasks(project)}
+      all="All tasks"
+    />
+  )
+}
+
+function MyTasksViewBody({ target }: { target: ViewTarget }) {
+  return (
+    <DeleteViewContent
+      target={target}
+      tasks={useMyTasks()}
+      all="All my tasks"
+    />
+  )
+}
+
+function DeleteViewContent({
+  target,
+  tasks: { data: tasks, error, mutate },
+  all,
+}: {
+  target: ViewTarget
+  /** The Board's Tasks, as useProjectTasks or useMyTasks has them. */
+  tasks: {
+    data?: TaskSummary[]
+    error?: FrappeError
+    mutate: () => Promise<unknown>
+  }
+  /** What the Board is called without a view. */
+  all: string
+}) {
   const { project, view } = target
-  const { data: tasks, error, mutate } = useProjectTasks(project)
   const { views } = useViews(project)
   const filters = views?.find((v) => v.name === view.name)?.filters
   const shown =
@@ -227,7 +282,7 @@ function DeleteViewBody({ target }: { target: ViewTarget }) {
             ? undefined
             : shown === 0
               ? "It shows no tasks right now"
-              : `The ${plural(shown, "task")} it shows stay on All tasks, untouched`
+              : `The ${plural(shown, "task")} it shows stay on ${all}, untouched`
         }
         error={error ?? undefined}
         onRetry={() => void mutate()}

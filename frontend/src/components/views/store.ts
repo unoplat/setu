@@ -7,7 +7,8 @@ import { create } from "zustand"
  */
 
 export interface ViewTarget {
-  project: string
+  /** The view's Project; null for a My tasks view. */
+  project: string | null
   view: { name: string; view_name: string }
 }
 
