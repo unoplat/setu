@@ -29,6 +29,22 @@ export interface ActivityEntry {
    * plain text, or the labels a change touched. Absent on "created".
    */
   content?: string
+  /** The one comment a reply quotes (Paper: Comments 01 to 04). */
+  quote?: ActivityQuote | null
+}
+
+/**
+ * A copy of the quoted comment, made when the reply was posted, so it keeps
+ * the words that were answered after the original is edited or deleted.
+ */
+export interface ActivityQuote {
+  /** The original comment's id, or null once it is deleted. */
+  id: string | null
+  owner: string
+  /** ISO datetime with its offset. */
+  creation: string
+  /** The original's own HTML, never the quote inside it. */
+  content: string
 }
 
 export interface Activity {

@@ -47,6 +47,54 @@ ENVISION_CUSTOM_FIELDS = {
 			"description": "The part of the project's product this Task belongs to.",
 		},
 	],
+	# A reply quotes one whole comment on the same record; comments stay flat,
+	# never threads. The quote is copied when the reply is posted, so it keeps
+	# the words that were answered after the original is edited or deleted
+	# (setu.api.timeline.validate_quote and release_quotes).
+	"Comment": [
+		{
+			"fieldname": "envision_quote_section",
+			"fieldtype": "Section Break",
+			"label": "Quoted comment",
+			"insert_after": "content",
+			"collapsible": 1,
+		},
+		{
+			"fieldname": "envision_reply_to",
+			"fieldtype": "Link",
+			"label": "Reply To",
+			"options": "Comment",
+			"insert_after": "envision_quote_section",
+			"read_only": 1,
+			"no_copy": 1,
+			"search_index": 1,
+			"description": "The comment this one answers. Cleared when that comment is deleted.",
+		},
+		{
+			"fieldname": "envision_quote_owner",
+			"fieldtype": "Data",
+			"label": "Quoted Author",
+			"insert_after": "envision_reply_to",
+			"read_only": 1,
+			"no_copy": 1,
+		},
+		{
+			"fieldname": "envision_quote_creation",
+			"fieldtype": "Datetime",
+			"label": "Quoted Comment Posted On",
+			"insert_after": "envision_quote_owner",
+			"read_only": 1,
+			"no_copy": 1,
+		},
+		{
+			"fieldname": "envision_quote_content",
+			"fieldtype": "Long Text",
+			"label": "Quoted Comment",
+			"insert_after": "envision_quote_creation",
+			"read_only": 1,
+			"no_copy": 1,
+		},
+	],
 }
 
 

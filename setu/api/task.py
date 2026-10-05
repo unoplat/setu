@@ -235,9 +235,9 @@ def get_task_activity(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def add_task_comment(name: str, content: str) -> dict:
+def add_task_comment(name: str, content: str, reply_to: str | None = None) -> dict:
 	"""Comment on a Task (09: "Comment"), as Desk's timeline does."""
-	return comment_on(task_doc(name, "read"), content)
+	return comment_on(task_doc(name, "read"), content, reply_to)
 
 
 def task_doc(name: str, ptype: str = "read"):

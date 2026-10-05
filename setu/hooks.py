@@ -194,6 +194,12 @@ doc_events = {
 	"User": {
 		"after_rename": "setu.api.view.rename_user_filters",
 	},
+	# A reply's quote is copied from the original when it is posted and kept
+	# when the original goes (setu.api.timeline).
+	"Comment": {
+		"validate": "setu.api.timeline.validate_quote",
+		"on_trash": "setu.api.timeline.release_quotes",
+	},
 }
 
 # Search

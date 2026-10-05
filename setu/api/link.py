@@ -109,9 +109,9 @@ def get_link_activity(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def add_link_comment(name: str, content: str) -> dict:
+def add_link_comment(name: str, content: str, reply_to: str | None = None) -> dict:
 	"""Comment on a link (04a: "Comment"), as Desk's timeline does."""
-	return comment_on(link_doc(name, "read"), content)
+	return comment_on(link_doc(name, "read"), content, reply_to)
 
 
 @frappe.whitelist(methods=["POST"])

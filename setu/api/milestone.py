@@ -172,9 +172,9 @@ def get_milestone_activity(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def add_milestone_comment(name: str, content: str) -> dict:
+def add_milestone_comment(name: str, content: str, reply_to: str | None = None) -> dict:
 	"""Comment on a milestone (06d: "Comment"), as Desk's timeline does."""
-	return comment_on(milestone_doc(name, "read"), content)
+	return comment_on(milestone_doc(name, "read"), content, reply_to)
 
 
 @frappe.whitelist()

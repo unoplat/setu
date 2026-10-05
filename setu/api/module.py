@@ -104,9 +104,9 @@ def get_module_activity(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def add_module_comment(name: str, content: str) -> dict:
+def add_module_comment(name: str, content: str, reply_to: str | None = None) -> dict:
 	"""Comment on a module (07d: "Comment"), as Desk's timeline does."""
-	return comment_on(module_doc(name, "read"), content)
+	return comment_on(module_doc(name, "read"), content, reply_to)
 
 
 @frappe.whitelist()
