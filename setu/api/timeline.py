@@ -150,6 +150,9 @@ def validate_quote(doc, method=None):
 	notify again. An edited original keeps the replies' quotes as they were:
 	answering the new words takes a new reply.
 	"""
+	if not has_quote_fields(doc):
+		return
+
 	if not doc.is_new():
 		# Fixed once posted. release_quotes clears envision_reply_to directly.
 		before = doc.get_doc_before_save()
@@ -158,7 +161,8 @@ def validate_quote(doc, method=None):
 				doc.set(fieldname, before.get(fieldname))
 		return
 
-	if not doc.envision_reply_to:
+	reply_to = doc.get("envision_reply_to")
+	if not reply_to:
 		# A quote only ever comes from the comment it names.
 		for fieldname in QUOTE_FIELDS:
 			doc.set(fieldname, None)
@@ -166,7 +170,7 @@ def validate_quote(doc, method=None):
 
 	original = frappe.db.get_value(
 		"Comment",
-		doc.envision_reply_to,
+		reply_to,
 		["comment_type", "reference_doctype", "reference_name", "owner", "creation", "content"],
 		as_dict=True,
 	)
@@ -190,10 +194,18 @@ def validate_quote(doc, method=None):
 def release_quotes(doc, method=None):
 	"""Comment on_trash hook: replies keep their quote of a deleted comment but
 	no longer point at it, so they save again and drop "Jump to original"."""
-	if doc.comment_type == "Comment":
+	if doc.comment_type == "Comment" and has_quote_fields(doc):
 		frappe.db.set_value(
 			"Comment", {"envision_reply_to": doc.name}, "envision_reply_to", None, update_modified=False
 		)
+
+
+def has_quote_fields(doc) -> bool:
+	"""Whether the quote Custom Fields exist on Comment yet. after_migrate
+	creates them, but migrate saves and deletes Comments before that (deleting
+	a stale Scheduled Job Type logs one), so on the upgrade that adds them the
+	hooks run against a Comment without the fields or their columns."""
+	return doc.meta.has_field("envision_reply_to")
 
 
 def changed_fields(doc, data: str) -> list[str]:
