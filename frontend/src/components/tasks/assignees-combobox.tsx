@@ -128,7 +128,7 @@ export function AssigneesCombobox({
                 ? // A "+" says more can be added, as on the Tags.
                   cn(
                     propertyTriggerClassName,
-                    "h-auto min-h-7 py-0.75 [&>svg:last-child]:hidden"
+                    "py-0.75 [&>svg:last-child]:hidden"
                   )
                 : "h-auto min-h-11 w-full justify-between gap-2 rounded-xl px-3.5 py-2 font-normal"
             }

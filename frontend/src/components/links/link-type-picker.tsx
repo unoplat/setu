@@ -347,7 +347,7 @@ export function LinkTypeProperty({
           icon={selected?.icon}
           className="size-3.5 text-muted-foreground"
         />
-        <span className="truncate">
+        <span className="wrap-anywhere">
           {selected?.type_name ?? "Choose a type"}
         </span>
         <ChevronDownIcon className="text-muted-foreground" />

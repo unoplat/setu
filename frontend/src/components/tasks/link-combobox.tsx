@@ -11,6 +11,7 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox"
 import { propertyTriggerClassName } from "@/lib/style"
+import { cn } from "@/lib/utils"
 
 /** One record the Task can link to, as the picker lists it. */
 export interface LinkOption {
@@ -102,11 +103,12 @@ export function LinkCombobox({
           </span>
         ) : null}
         <span
-          className={
-            selected.value
-              ? "grow truncate text-start"
-              : "grow truncate text-start text-muted-foreground"
-          }
+          className={cn(
+            "grow text-start",
+            // The rail wraps a long name; Create Task's field keeps one line.
+            inline ? "wrap-anywhere" : "truncate",
+            !selected.value && "text-muted-foreground"
+          )}
         >
           {loading ? "Loading…" : selected.label}
         </span>

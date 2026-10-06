@@ -60,7 +60,9 @@ export default function CommentEditor({
   // Built once: the provider's `call` client outlives this editor.
   const [extensions] = React.useState(() =>
     commentExtensions((query) =>
-      frappe ? searchMentions(frappe.call, query) : Promise.resolve([])
+      frappe
+        ? searchMentions(frappe.call, query)
+        : Promise.reject(new Error("No Frappe client to search with"))
     )
   )
 

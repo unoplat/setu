@@ -79,7 +79,7 @@ export function ProjectCombobox({
         {selected ? (
           <span className="flex min-w-0 items-center gap-2">
             <ProjectSwatch />
-            <span className="truncate">
+            <span className={inline ? "wrap-anywhere" : "truncate"}>
               {selected.project_name || selected.name}
             </span>
           </span>
