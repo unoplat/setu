@@ -107,8 +107,8 @@ def get_message_activity(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def add_message_comment(name: str, content: str) -> dict:
-	return comment_on(message_doc(name), content)
+def add_message_comment(name: str, content: str, reply_to: str | None = None) -> dict:
+	return comment_on(message_doc(name), content, reply_to)
 
 
 @frappe.whitelist(methods=["POST"])

@@ -99,7 +99,9 @@ export const milestoneColumns: ColumnDef<DataTableFeatures, Milestone>[] = [
       return (
         <Badge variant="outline">
           {bucket === "in_progress"
-            ? `${Math.round(progress)}%`
+            ? // Kept between 1% and 99%: 1 of 300 is under way, and 299 of
+              // 300 is not done.
+              `${Math.min(99, Math.max(1, Math.round(progress)))}%`
             : PROGRESS_LABELS[bucket]}
         </Badge>
       )

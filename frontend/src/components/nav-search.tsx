@@ -5,6 +5,7 @@ import {
   FlagIcon,
   FolderIcon,
   LayoutGridIcon,
+  LinkIcon,
   SearchIcon,
   SquareCheckIcon,
 } from "lucide-react"
@@ -33,6 +34,7 @@ import {
   useCommand,
   type CommandDefinition,
 } from "@/lib/commands"
+import { displayHost, linkIconElement } from "@/lib/links"
 import { useProjects } from "@/lib/projects"
 import {
   groupResults,
@@ -51,12 +53,13 @@ const RECORD_ICONS: Record<RecordType, React.ReactNode> = {
   task: <SquareCheckIcon />,
   module: <LayoutGridIcon />,
   milestone: <FlagIcon />,
+  link: <LinkIcon />,
 }
 
 /**
  * Sidebar search row and the ⌘K dialog (Paper: search-experience, A).
  *
- * - Typing searches tasks, modules and milestones across projects
+ * - Typing searches tasks, modules, milestones and links across projects
  *   (lib/search), grouped by kind. Projects and every registry command
  *   flagged `inPalette` are matched in the browser, as before.
  * - The server's results arrive after the projects and actions, so cmdk's own
@@ -152,6 +155,11 @@ export function NavSearch() {
         to: "/projects/$name/modules/$module",
         params: { name, module: result.name },
       })
+    } else if (result.type === "link") {
+      void navigate({
+        to: "/projects/$name/links/$link",
+        params: { name, link: result.name },
+      })
     } else {
       void navigate({
         to: "/projects/$name/milestones/$milestone",
@@ -234,7 +242,7 @@ export function NavSearch() {
           open={open}
           onOpenChange={setPalette}
           title="Search"
-          description="Search tasks, modules, milestones, projects and actions"
+          description="Search tasks, modules, milestones, links, projects and actions"
           className="sm:max-w-2xl"
         >
           <Command
@@ -245,7 +253,7 @@ export function NavSearch() {
             <CommandInput
               value={query}
               onValueChange={setQuery}
-              placeholder="Search tasks, modules, milestones & actions…"
+              placeholder="Search tasks, modules, milestones, links & actions…"
             />
             <CommandList className="max-h-[min(28rem,60vh)]">
               <CommandEmpty>
@@ -301,8 +309,8 @@ function emptyMessage({
   return "No results found."
 }
 
-/** One task, module or milestone: its title, where the query matched in its
- * description, and its project. */
+/** One task, module, milestone or link: its title, where the query matched in
+ * its description (a link adds its host), and its project. */
 function RecordItem({
   result,
   onSelect,
@@ -312,8 +320,16 @@ function RecordItem({
 }) {
   return (
     <CommandItem value={recordValue(result)} onSelect={onSelect}>
-      {RECORD_ICONS[result.type]}
+      {/* A link wears its type's icon. */}
+      {result.type === "link"
+        ? linkIconElement(result.icon)
+        : RECORD_ICONS[result.type]}
       <span className="max-w-[45%] shrink-0 truncate">{result.title}</span>
+      {result.type === "link" && result.host ? (
+        <span className="max-w-[30%] shrink-0 truncate font-normal text-muted-foreground">
+          {displayHost(result.host)}
+        </span>
+      ) : null}
       <Excerpt parts={result.excerpt} />
       <CommandShortcut className="max-w-[30%] truncate tracking-normal">
         {result.project_name ?? result.project}

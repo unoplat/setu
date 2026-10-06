@@ -19,6 +19,7 @@ import { moduleActivityKey, type ModuleDetail } from "@/lib/modules"
 import { useRelatedTasks } from "@/lib/tasks"
 
 const MODULE_ACTIVITY: ActivitySource = {
+  doctype: "Envision Module",
   method: "setu.api.module.get_module_activity",
   commentMethod: "setu.api.module.add_module_comment",
   key: moduleActivityKey,

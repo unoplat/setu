@@ -1,6 +1,7 @@
 import {
   FlagIcon,
   LayoutGridIcon,
+  LinkIcon,
   SettingsIcon,
   SquareCheckIcon,
 } from "lucide-react"
@@ -17,6 +18,7 @@ export interface ProjectSection {
     | "/projects/$name"
     | "/projects/$name/milestones"
     | "/projects/$name/modules"
+    | "/projects/$name/links"
     | "/projects/$name/settings"
   icon: React.ReactNode
   /** Tasks is the project's index route, so only an exact match is "in" it. */
@@ -42,6 +44,11 @@ export const PROJECT_SECTIONS: readonly ProjectSection[] = [
     title: "Modules",
     to: "/projects/$name/modules",
     icon: <LayoutGridIcon />,
+  },
+  {
+    title: "Links",
+    to: "/projects/$name/links",
+    icon: <LinkIcon />,
   },
   {
     title: "Settings",

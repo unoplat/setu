@@ -95,14 +95,17 @@ add_to_apps_screen = [
 # ------------
 
 # before_install = "setu.install.before_install"
-# Custom Fields and Property Setters on ERPNext DocTypes (setu/setup/).
+# Custom Fields and Property Setters on ERPNext DocTypes, and the built-in
+# Link Types (setu/setup/).
 after_install = [
 	"setu.setup.custom_fields.create_envision_custom_fields",
 	"setu.setup.property_setters.create_envision_property_setters",
+	"setu.setup.link_types.create_envision_link_types",
 ]
 after_migrate = [
 	"setu.setup.custom_fields.create_envision_custom_fields",
 	"setu.setup.property_setters.create_envision_property_setters",
+	"setu.setup.link_types.create_envision_link_types",
 ]
 
 # Uninstallation
@@ -174,19 +177,36 @@ has_permission = {
 
 # Envision's rules for deleting a Project live in on_trash so Desk and the
 # REST API follow them too (setu.api.project.guard_project_delete).
+# Frappe's rename updates Link fields but not the names saved inside a Custom
+# View's JSON filters, so each rename carries them over (setu.api.view).
 doc_events = {
 	"Project": {
 		"on_trash": "setu.api.project.guard_project_delete",
+		"after_rename": "setu.api.view.rename_project_filters",
 	},
 	"Task": {
 		"validate": "setu.api.task.validate_task_links",
+	},
+	# Frappe's rename leaves the old name in each document's _user_tags.
+	"Tag": {
+		"after_rename": "setu.api.task.rename_tag",
+	},
+	"User": {
+		"after_rename": "setu.api.view.rename_user_filters",
+	},
+	# A reply's quote is copied from the original when it is posted and kept
+	# when the original goes (setu.api.timeline).
+	"Comment": {
+		"validate": "setu.api.timeline.validate_quote",
+		"on_trash": "setu.api.timeline.release_quotes",
 	},
 }
 
 # Search
 # ------
 # The ⌘K search index (setu/search.py). Frappe builds it after migrate,
-# checks it every three hours, and updates it as Tasks and Modules change.
+# checks it every three hours, and updates it as Tasks, Modules and Links
+# change.
 
 sqlite_search = ["setu.search.EnvisionSearch"]
 

@@ -2,7 +2,7 @@
  "actions": [],
  "autoname": "VIEW-.#####",
  "creation": "2026-10-01 12:00:00.000000",
- "description": "A person's own saved set of Task filters for one project's board. Only its creator can see or change it.",
+ "description": "A person's own saved set of Task filters, for one project's board or, with no project, for My tasks. Only its creator can see or change it.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -26,7 +26,6 @@
    "in_standard_filter": 1,
    "label": "Project",
    "options": "Project",
-   "reqd": 1,
    "search_index": 1
   },
   {
@@ -34,7 +33,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "description": "The Task filters the view applies, by field: milestone, priority, assignee and tag.",
+   "description": "The Task filters the view applies, by field: milestone, priority, assignee and tag. A view with no project is a My tasks view: it may also filter by project, and never by assignee.",
    "fieldname": "filters",
    "fieldtype": "JSON",
    "label": "Filters"
@@ -42,7 +41,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-01 12:00:00.000000",
+ "modified": "2026-10-05 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Envision",
  "name": "Envision View",

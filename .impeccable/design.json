@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-25T06:48:52Z",
+  "generatedAt": "2026-10-04T13:09:55Z",
   "title": "Design System: Envision",
   "extensions": {
     "colorMeta": {
@@ -8,48 +8,243 @@
         "role": "primary",
         "displayName": "Signal Blue",
         "canonical": "oklch(0.488 0.243 264.376)",
-        "tonalRamp": ["#172554", "#1E3A8A", "#1E40AF", "#1447E6", "#155DFC", "#2B7FFF", "#DBEAFE", "#EFF6FF"]
+        "tonalRamp": [
+          "oklch(0.282 0.091 267.935)",
+          "oklch(0.379 0.146 265.522)",
+          "oklch(0.424 0.199 265.638)",
+          "oklch(0.488 0.243 264.376)",
+          "oklch(0.546 0.245 262.881)",
+          "oklch(0.707 0.165 254.624)",
+          "oklch(0.882 0.059 254.128)",
+          "oklch(0.97 0.014 254.604)"
+        ]
       },
-      "foreground": {
-        "role": "neutral",
-        "displayName": "Zinc Ink",
-        "canonical": "oklch(0.141 0.005 285.823)",
-        "tonalRamp": ["#09090B", "#18181B", "#27272A", "#3F3F46", "#71717B", "#A1A1AA", "#E4E4E7", "#FAFAFA"]
-      },
-      "muted": {
-        "role": "neutral",
-        "displayName": "Soft Zinc",
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Quiet Zinc",
         "canonical": "oklch(0.967 0.001 286.375)",
-        "tonalRamp": ["#18181B", "#27272A", "#3F3F46", "#71717B", "#A1A1AA", "#D4D4D8", "#F4F4F5", "#FAFAFA"]
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
       },
       "destructive": {
         "role": "tertiary",
         "displayName": "Alert Red",
         "canonical": "oklch(0.577 0.245 27.325)",
-        "tonalRamp": ["#450A0A", "#7F1D1D", "#991B1B", "#E7000B", "#EF4444", "#FF6467", "#FECACA", "#FEF2F2"]
+        "tonalRamp": [
+          "oklch(0.258 0.092 26.042)",
+          "oklch(0.396 0.141 25.723)",
+          "oklch(0.444 0.177 26.899)",
+          "oklch(0.505 0.213 27.518)",
+          "oklch(0.577 0.245 27.325)",
+          "oklch(0.704 0.191 22.216)",
+          "oklch(0.885 0.062 18.334)",
+          "oklch(0.971 0.013 17.38)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Zinc Ink",
+        "canonical": "oklch(0.141 0.005 285.823)",
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Soft Zinc",
+        "canonical": "oklch(0.967 0.001 286.375)",
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Middle Zinc",
+        "canonical": "oklch(0.552 0.016 285.938)",
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline Zinc",
+        "canonical": "oklch(0.92 0.004 286.32)",
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
+      },
+      "dark-background": {
+        "role": "neutral",
+        "displayName": "Night Zinc",
+        "canonical": "oklch(0.141 0.005 285.823)",
+        "tonalRamp": [
+          "oklch(0.141 0.005 285.823)",
+          "oklch(0.21 0.006 285.885)",
+          "oklch(0.274 0.006 286.033)",
+          "oklch(0.37 0.013 285.805)",
+          "oklch(0.442 0.017 285.786)",
+          "oklch(0.705 0.015 286.067)",
+          "oklch(0.92 0.004 286.32)",
+          "oklch(0.985 0 0)"
+        ]
       }
     },
     "typographyMeta": {
-      "display": {"displayName": "Display", "purpose": "Rare top-level statements and major empty states."},
-      "headline": {"displayName": "Headline", "purpose": "Primary page headings."},
-      "title": {"displayName": "Title", "purpose": "Section and panel titles."},
-      "body": {"displayName": "Body", "purpose": "Core reading and important control text."},
-      "body-small": {"displayName": "Body Small", "purpose": "Task cards, navigation, and dense application content."},
-      "button": {"displayName": "Button", "purpose": "Implemented button labels at 14px medium."},
-      "label": {"displayName": "Label", "purpose": "Metadata, badges, summaries, and field labels."},
-      "caption": {"displayName": "Caption", "purpose": "Timestamps and tertiary metadata only."},
-      "metric": {"displayName": "Metric", "purpose": "Compact numeric summaries."}
+      "display": {
+        "displayName": "Display",
+        "purpose": "Rare top-level statements and major empty states."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Primary page headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and panel titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Core reading and important control text."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Task cards, navigation, and dense application content."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Implemented button labels."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata, badges, summaries, and field labels."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Timestamps and tertiary metadata only."
+      },
+      "metric": {
+        "displayName": "Metric",
+        "purpose": "Compact numeric summaries."
+      }
     },
-    "shadows": [],
+    "shadows": [
+      {
+        "name": "shadow-md",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "A Task Card while it is being dragged on the Board. The generic Card primitive also applies it at rest."
+      },
+      {
+        "name": "shadow-lg",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Popovers, select and combobox lists, dropdown and context menus; paired with a 1px foreground/5% ring (foreground/10% in dark)."
+      },
+      {
+        "name": "shadow-xl",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+        "purpose": "Dialogs, alert dialogs, and sheets."
+      },
+      {
+        "name": "shadow-2xl",
+        "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+        "purpose": "The drag overlay that follows the pointer while a Card moves between columns."
+      }
+    ],
     "motion": [
-      {"name": "transition-default", "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default Tailwind transition for button state changes."}
+      {
+        "name": "transition-default",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Buttons, inputs, select triggers, and badges changing color, background, border, or ring."
+      },
+      {
+        "name": "overlay-enter-exit",
+        "value": "100ms ease; fade 0→1 with zoom 95%→100% and a 0.5rem slide from the anchor side",
+        "purpose": "Popovers, menus, select lists, and dialogs opening and closing."
+      },
+      {
+        "name": "sheet-slide",
+        "value": "200ms ease-in-out; opacity with a 2.5rem translate from the sheet's edge",
+        "purpose": "Sheets entering and leaving."
+      },
+      {
+        "name": "accordion",
+        "value": "200ms ease-out",
+        "purpose": "Accordion and collapsible height changes."
+      },
+      {
+        "name": "card-landed",
+        "value": "500ms box-shadow transition",
+        "purpose": "The ring that marks a Card where it was just dropped or created."
+      },
+      {
+        "name": "press",
+        "value": "translateY(1px)",
+        "purpose": "Active buttons that do not open a popup."
+      }
     ],
     "breakpoints": [
-      {"name": "sm", "value": "640px"},
-      {"name": "md", "value": "768px"},
-      {"name": "lg", "value": "1024px"},
-      {"name": "xl", "value": "1280px"},
-      {"name": "2xl", "value": "1536px"}
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
     ]
   },
   "components": [
@@ -57,54 +252,86 @@
       "name": "Default Button",
       "kind": "button",
       "refersTo": "button-default",
-      "description": "The implemented primary action at the default 36px size.",
-      "html": "<button class=\"ds-btn ds-btn-default\">Create task</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-default{background:var(--color-primary);color:var(--color-primary-foreground)}.ds-btn-default:hover{background:color-mix(in oklch,var(--color-primary) 80%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent);outline-offset:0}.ds-btn:disabled{pointer-events:none;opacity:.5}"
+      "description": "The primary action at the default 36px size; Signal Blue that drops to 80% on hover.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-default\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>New task</button>",
+      "css": ".ds-btn{display: inline-flex;align-items: center;justify-content: center;gap: 6px;height: 36px;padding: 0 12px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 2.6);background-clip: padding-box;font: 500 14px/20px \"Inter Variable\", sans-serif;white-space: nowrap;cursor: pointer;outline: none;user-select: none;transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-btn svg{width: 16px;height: 16px;flex-shrink: 0;pointer-events: none;}.ds-btn:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-btn:active:not([aria-haspopup]){transform: translateY(1px);}.ds-btn:disabled{pointer-events: none;opacity: 0.5;}.ds-btn-default{background: var(--primary, oklch(0.488 0.243 264.376));color: var(--primary-foreground, oklch(0.97 0.014 254.604));}.ds-btn-default:hover{background: color-mix(in oklab, var(--primary, oklch(0.488 0.243 264.376)) 80%, transparent);}"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "A supporting action with lower visual priority.",
-      "html": "<button class=\"ds-btn ds-btn-secondary\">Filter</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-secondary{background:var(--color-secondary);color:var(--color-secondary-foreground)}.ds-btn-secondary:hover{background:color-mix(in oklch,var(--color-secondary),var(--color-foreground) 5%)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
+      "description": "A supporting action on Quiet Zinc; hover mixes 5% foreground into the surface.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-secondary\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 5h4\"/><path d=\"M11 5h10\"/><path d=\"M3 12h12\"/><path d=\"M19 12h2\"/><path d=\"M3 19h6\"/><path d=\"M13 19h8\"/><circle cx=\"9\" cy=\"5\" r=\"2\"/><circle cx=\"17\" cy=\"12\" r=\"2\"/><circle cx=\"11\" cy=\"19\" r=\"2\"/></svg>Filter</button>",
+      "css": ".ds-btn{display: inline-flex;align-items: center;justify-content: center;gap: 6px;height: 36px;padding: 0 12px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 2.6);background-clip: padding-box;font: 500 14px/20px \"Inter Variable\", sans-serif;white-space: nowrap;cursor: pointer;outline: none;user-select: none;transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-btn svg{width: 16px;height: 16px;flex-shrink: 0;pointer-events: none;}.ds-btn:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-btn:active:not([aria-haspopup]){transform: translateY(1px);}.ds-btn:disabled{pointer-events: none;opacity: 0.5;}.ds-btn-secondary{background: var(--secondary, oklch(0.967 0.001 286.375));color: var(--secondary-foreground, oklch(0.21 0.006 285.885));}.ds-btn-secondary:hover{background: color-mix(in oklch, var(--secondary, oklch(0.967 0.001 286.375)), var(--foreground, oklch(0.141 0.005 285.823)) 5%);}"
     },
     {
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "A bounded action using the semantic border and background.",
-      "html": "<button class=\"ds-btn ds-btn-outline\">View options</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-outline{border-color:var(--color-border);background:var(--color-background);color:var(--color-foreground)}.ds-btn-outline:hover{background:var(--color-muted)}.dark .ds-btn-outline{background:transparent}.dark .ds-btn-outline:hover{background:color-mix(in oklch,var(--color-input) 30%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
+      "description": "The most-used bounded action: semantic background and hairline border, muted on hover or while its menu is open; transparent in dark mode.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-outline\">View options</button>",
+      "css": ".ds-btn{display: inline-flex;align-items: center;justify-content: center;gap: 6px;height: 36px;padding: 0 12px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 2.6);background-clip: padding-box;font: 500 14px/20px \"Inter Variable\", sans-serif;white-space: nowrap;cursor: pointer;outline: none;user-select: none;transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-btn svg{width: 16px;height: 16px;flex-shrink: 0;pointer-events: none;}.ds-btn:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-btn:active:not([aria-haspopup]){transform: translateY(1px);}.ds-btn:disabled{pointer-events: none;opacity: 0.5;}.ds-btn-outline{border-color: var(--border, oklch(0.92 0.004 286.32));background: var(--background, oklch(1 0 0));color: var(--foreground, oklch(0.141 0.005 285.823));}.ds-btn-outline:hover, .ds-btn-outline[aria-expanded=\"true\"]{background: var(--muted, oklch(0.967 0.001 286.375));color: var(--foreground, oklch(0.141 0.005 285.823));}.dark .ds-btn-outline{background: transparent;}.dark .ds-btn-outline:hover{background: color-mix(in oklab, var(--input, oklch(0.92 0.004 286.32)) 30%, transparent);}"
     },
     {
       "name": "Ghost Button",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "A low-emphasis toolbar or inline action.",
-      "html": "<button class=\"ds-btn ds-btn-ghost\">More</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-ghost{background:transparent;color:var(--color-foreground)}.ds-btn-ghost:hover{background:var(--color-muted)}.dark .ds-btn-ghost:hover{background:color-mix(in oklch,var(--color-muted) 50%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
+      "description": "A transparent toolbar or inline action that shows the muted surface only on hover or while open.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-ghost\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"1\"/><circle cx=\"19\" cy=\"12\" r=\"1\"/><circle cx=\"5\" cy=\"12\" r=\"1\"/></svg>More</button>",
+      "css": ".ds-btn{display: inline-flex;align-items: center;justify-content: center;gap: 6px;height: 36px;padding: 0 12px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 2.6);background-clip: padding-box;font: 500 14px/20px \"Inter Variable\", sans-serif;white-space: nowrap;cursor: pointer;outline: none;user-select: none;transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-btn svg{width: 16px;height: 16px;flex-shrink: 0;pointer-events: none;}.ds-btn:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-btn:active:not([aria-haspopup]){transform: translateY(1px);}.ds-btn:disabled{pointer-events: none;opacity: 0.5;}.ds-btn-ghost{background: transparent;color: var(--foreground, oklch(0.141 0.005 285.823));}.ds-btn-ghost:hover, .ds-btn-ghost[aria-expanded=\"true\"]{background: var(--muted, oklch(0.967 0.001 286.375));color: var(--foreground, oklch(0.141 0.005 285.823));}.dark .ds-btn-ghost:hover{background: color-mix(in oklab, var(--muted, oklch(0.967 0.001 286.375)) 50%, transparent);}"
     },
     {
       "name": "Destructive Button",
       "kind": "button",
       "refersTo": "button-destructive",
-      "description": "A risk action using a translucent red surface rather than a solid fill.",
-      "html": "<button class=\"ds-btn ds-btn-destructive\">Delete task</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-destructive{background:color-mix(in oklch,var(--color-destructive) 10%,transparent);color:var(--color-destructive)}.ds-btn-destructive:hover{background:color-mix(in oklch,var(--color-destructive) 20%,transparent)}.ds-btn-destructive:focus-visible{border-color:color-mix(in oklch,var(--color-destructive) 40%,transparent);outline:3px solid color-mix(in oklch,var(--color-destructive) 20%,transparent)}.dark .ds-btn-destructive{background:color-mix(in oklch,var(--color-destructive) 20%,transparent)}.dark .ds-btn-destructive:hover{background:color-mix(in oklch,var(--color-destructive) 30%,transparent)}.dark .ds-btn-destructive:focus-visible{outline-color:color-mix(in oklch,var(--color-destructive) 40%,transparent)}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:disabled{pointer-events:none;opacity:.5}"
+      "description": "A risk action on a translucent Alert Red surface that deepens on hover, never a solid red fill.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-destructive\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 6h18\"/><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"/><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"/></svg>Delete task</button>",
+      "css": ".ds-btn{display: inline-flex;align-items: center;justify-content: center;gap: 6px;height: 36px;padding: 0 12px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 2.6);background-clip: padding-box;font: 500 14px/20px \"Inter Variable\", sans-serif;white-space: nowrap;cursor: pointer;outline: none;user-select: none;transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-btn svg{width: 16px;height: 16px;flex-shrink: 0;pointer-events: none;}.ds-btn:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-btn:active:not([aria-haspopup]){transform: translateY(1px);}.ds-btn:disabled{pointer-events: none;opacity: 0.5;}.ds-btn-destructive{background: color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 10%, transparent);color: var(--destructive, oklch(0.577 0.245 27.325));}.ds-btn-destructive:hover{background: color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 20%, transparent);}.ds-btn-destructive:focus-visible{border-color: color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 40%, transparent);box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 20%, transparent);}.dark .ds-btn-destructive{background: color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 20%, transparent);}.dark .ds-btn-destructive:hover{background: color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 30%, transparent);}"
     },
     {
-      "name": "Link Button",
-      "kind": "button",
-      "refersTo": "button-link",
-      "description": "An inline action styled as primary text.",
-      "html": "<button class=\"ds-btn ds-btn-link\">Open project</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border:1px solid transparent;border-radius:var(--radius-4xl);font:500 14px/20px 'Inter Variable',sans-serif;white-space:nowrap;cursor:pointer;transition:all 150ms cubic-bezier(.4,0,.2,1)}.ds-btn-link{background:transparent;color:var(--color-primary);text-underline-offset:4px}.ds-btn-link:hover{text-decoration:underline}.ds-btn:active:not([aria-haspopup]){transform:translateY(1px)}.ds-btn:focus-visible{border-color:var(--color-ring);outline:3px solid color-mix(in oklch,var(--color-ring) 30%,transparent);outline-offset:0}.ds-btn:disabled{pointer-events:none;opacity:.5}"
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A filled 36px field on a half-strength input tint with a 22px radius; 16px text on phones, 14px from 768px.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search tasks\" aria-label=\"Search tasks\"><input class=\"ds-input\" type=\"text\" value=\"Fix state management\" aria-label=\"Task title\" aria-invalid=\"true\">",
+      "css": ".ds-input{display: block;box-sizing: border-box;width: 100%;max-width: 320px;height: 36px;margin: 0 0 12px;padding: 4px 12px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 2.2);background: color-mix(in oklab, var(--input, oklch(0.92 0.004 286.32)) 50%, transparent);color: var(--foreground, oklch(0.141 0.005 285.823));font: 400 16px/24px \"Inter Variable\", sans-serif;outline: none;transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);}@media (min-width: 768px){.ds-input{font-size: 14px;line-height: 20px;}}.ds-input::placeholder{color: var(--muted-foreground, oklch(0.552 0.016 285.938));}.ds-input:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-input[aria-invalid=\"true\"]{border-color: var(--destructive, oklch(0.577 0.245 27.325));box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive, oklch(0.577 0.245 27.325)) 20%, transparent);}.ds-input:disabled{pointer-events: none;cursor: not-allowed;opacity: 0.5;}"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "sidebar-menu-button",
+      "description": "Global navigation on the sidebar surface: 36px rows with a 14px radius; the current page carries the accent surface and medium weight.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Global\"><a class=\"ds-nav-item\" href=\"#\" aria-current=\"page\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"/><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/></svg><span>Home</span></a><a class=\"ds-nav-item\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"m9 12 2 2 4-4\"/></svg><span>My tasks</span></a><a class=\"ds-nav-item\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"22 12 16 12 14 15 10 15 8 12 2 12\"/><path d=\"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z\"/></svg><span>Inbox</span></a></nav>",
+      "css": ".ds-nav{display: flex;flex-direction: column;gap: 2px;width: 240px;padding: 8px;border-inline-end: 1px solid var(--border, oklch(0.92 0.004 286.32));background: var(--sidebar, oklch(0.985 0 0));color: var(--sidebar-foreground, oklch(0.141 0.005 285.823));font-family: \"Inter Variable\", sans-serif;}.ds-nav-item{display: flex;align-items: center;gap: 8px;height: 36px;padding: 0 12px;border-radius: calc(var(--radius, 0.625rem) * 1.4);color: inherit;font-size: 14px;line-height: 20px;text-decoration: none;outline: none;overflow: hidden;transition: width 150ms cubic-bezier(0.4, 0, 0.2, 1), height 150ms cubic-bezier(0.4, 0, 0.2, 1), padding 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-nav-item svg{width: 16px;height: 16px;flex-shrink: 0;}.ds-nav-item span{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}.ds-nav-item:hover, .ds-nav-item:active{background: var(--sidebar-accent, oklch(0.967 0.001 286.375));color: var(--sidebar-accent-foreground, oklch(0.21 0.006 285.885));}.ds-nav-item:focus-visible{box-shadow: 0 0 0 2px var(--sidebar-ring, oklch(0.705 0.015 286.067));}.ds-nav-item[aria-current=\"page\"]{background: var(--sidebar-accent, oklch(0.967 0.001 286.375));color: var(--sidebar-accent-foreground, oklch(0.21 0.006 285.885));font-weight: 500;}"
+    },
+    {
+      "name": "Task Card",
+      "kind": "card",
+      "refersTo": "task-card",
+      "description": "The Board's signature Card: ID and priority, the title, a muted box of what the Task belongs to, then dates and assignee. Flat with a border at rest; elevation only while dragging.",
+      "html": "<article class=\"ds-task-card\" tabindex=\"0\" aria-label=\"Split validation per span\"><div class=\"ds-task-card-top\"><span class=\"ds-task-card-id\">TASK-2026-00142</span><span class=\"ds-task-card-priority\" data-priority=\"high\">High</span></div><h3 class=\"ds-task-card-title\">Split validation per span</h3><div class=\"ds-task-card-details\"><div class=\"ds-task-card-row\"><svg class=\"ds-task-card-milestone-icon\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528\"/></svg><span class=\"ds-task-card-label\">Milestone</span><span class=\"ds-task-card-value\">v0.48: Reliable Agent Runs</span></div><div class=\"ds-task-card-row\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z\"/><path d=\"m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65\"/><path d=\"m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65\"/></svg><span class=\"ds-task-card-label\">Module</span><span class=\"ds-task-card-value\">Agent Engine</span></div></div><div class=\"ds-task-card-footer\" data-overdue=\"true\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 2v4\"/><path d=\"M16 2v4\"/><rect width=\"18\" height=\"18\" x=\"3\" y=\"4\" rx=\"2\"/><path d=\"M3 10h18\"/></svg><span class=\"ds-task-card-dates\">Overdue · Sep 21 – Oct 3</span><span class=\"ds-task-card-person\"><span class=\"ds-avatar\">JG</span><span class=\"ds-task-card-name\" title=\"Jay Ghiya\">Jay</span></span></div></article>",
+      "css": ".ds-task-card{display: flex;flex-direction: column;gap: 8px;width: 296px;padding: 12px;border: 1px solid var(--border, oklch(0.92 0.004 286.32));border-radius: calc(var(--radius, 0.625rem) * 1);background: var(--card, oklch(1 0 0));color: var(--card-foreground, oklch(0.141 0.005 285.823));font-family: \"Inter Variable\", sans-serif;outline: none;transition: box-shadow 500ms;}.ds-task-card:hover{cursor: grab;}.ds-task-card:active{cursor: grabbing;}.ds-task-card:focus-visible{box-shadow: 0 0 0 1px var(--background, oklch(1 0 0)), 0 0 0 3px var(--ring, oklch(0.705 0.015 286.067));}.ds-task-card[data-dragging=\"true\"]{box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);}.ds-task-card[data-landed=\"true\"]{box-shadow: 0 0 0 2px color-mix(in oklab, var(--sidebar-primary, oklch(0.546 0.245 262.881)) 70%, transparent);}.ds-task-card-top{display: flex;align-items: center;gap: 12px;}.ds-task-card-id{flex-grow: 1;color: var(--muted-foreground, oklch(0.552 0.016 285.938));font-size: 11px;line-height: 16px;font-weight: 500;font-variant-numeric: tabular-nums;}.ds-task-card-priority{padding: 3px 8px;border-radius: calc(var(--radius, 0.625rem) * 0.6);background: var(--muted, oklch(0.967 0.001 286.375));color: var(--muted-foreground, oklch(0.552 0.016 285.938));font-size: 11px;line-height: 16px;font-weight: 600;white-space: nowrap;}.ds-task-card-priority[data-priority=\"urgent\"]{color: var(--destructive, oklch(0.577 0.245 27.325));}.ds-task-card-priority[data-priority=\"high\"]{color: var(--sidebar-primary, oklch(0.546 0.245 262.881));}.ds-task-card-title{margin: 0;font-size: 15px;line-height: 21px;font-weight: 600;letter-spacing: -0.006em;}.ds-task-card-details{display: flex;flex-direction: column;gap: 5px;padding: 8px;border-radius: calc(var(--radius, 0.625rem) * 0.8);background: var(--muted, oklch(0.967 0.001 286.375));}.ds-task-card-row{display: flex;align-items: center;gap: 7px;min-width: 0;}.ds-task-card-row svg, .ds-task-card-footer svg{width: 14px;height: 14px;flex-shrink: 0;color: var(--muted-foreground, oklch(0.552 0.016 285.938));}.ds-task-card-row .ds-task-card-milestone-icon{color: var(--sidebar-primary, oklch(0.546 0.245 262.881));}.ds-task-card-label{flex-shrink: 0;color: var(--muted-foreground, oklch(0.552 0.016 285.938));font-size: 11px;line-height: 14px;}.ds-task-card-value{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;font-size: 12px;line-height: 16px;font-weight: 600;}.ds-task-card-footer{display: flex;align-items: center;gap: 8px;}.ds-task-card-dates{flex-grow: 1;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;color: var(--muted-foreground, oklch(0.552 0.016 285.938));font-size: 11px;line-height: 16px;}.ds-task-card-footer[data-overdue=\"true\"] svg, .ds-task-card-footer[data-overdue=\"true\"] .ds-task-card-dates{color: var(--destructive, oklch(0.577 0.245 27.325));}.ds-task-card-footer[data-overdue=\"true\"] .ds-task-card-dates{font-weight: 500;}.ds-task-card-person{display: flex;align-items: center;gap: 6px;min-width: 0;}.ds-avatar{display: inline-flex;align-items: center;justify-content: center;width: 24px;height: 24px;flex-shrink: 0;border-radius: 9999px;box-shadow: inset 0 0 0 1px var(--border, oklch(0.92 0.004 286.32));background: var(--muted, oklch(0.967 0.001 286.375));color: var(--foreground, oklch(0.141 0.005 285.823));font-size: 9px;font-weight: 600;}.ds-task-card-name{overflow: hidden;text-overflow: ellipsis;white-space: nowrap;font-size: 11px;line-height: 14px;font-weight: 500;}"
+    },
+    {
+      "name": "Property Row",
+      "kind": "custom",
+      "refersTo": "detail-property",
+      "description": "A record page's properties list (Task, Milestone, Module): a 96px muted label, then a quiet 28px ghost picker that shows its box only on hover, focus, or while open.",
+      "html": "<dl class=\"ds-props\"><div class=\"ds-prop\"><dt>Status</dt><dd><button type=\"button\" class=\"ds-prop-trigger\" aria-haspopup=\"listbox\"><span class=\"ds-status-ring\" style=\"border-color: var(--primary, oklch(0.488 0.243 264.376))\"></span>In Progress<svg class=\"ds-prop-chevron\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button></dd></div><div class=\"ds-prop\"><dt>Priority</dt><dd><button type=\"button\" class=\"ds-prop-trigger\" aria-haspopup=\"listbox\" aria-expanded=\"true\"><svg class=\"ds-prop-flag\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528\"/></svg>High<svg class=\"ds-prop-chevron\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button></dd></div><div class=\"ds-prop\"><dt>Assignee</dt><dd><button type=\"button\" class=\"ds-prop-trigger\" aria-haspopup=\"listbox\"><span class=\"ds-prop-avatar\">JG</span>Jay Ghiya<svg class=\"ds-prop-chevron\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button></dd></div></dl>",
+      "css": ".ds-props{display: flex;flex-direction: column;width: 300px;margin: 0;font-family: \"Inter Variable\", sans-serif;color: var(--foreground, oklch(0.141 0.005 285.823));}.ds-prop{display: flex;align-items: center;min-height: 36px;}.ds-prop dt{width: 96px;flex-shrink: 0;color: var(--muted-foreground, oklch(0.552 0.016 285.938));font-size: 13px;}.ds-prop dd{display: flex;align-items: center;min-width: 0;margin: 0;}.ds-prop-trigger{display: inline-flex;align-items: center;gap: 8px;height: 28px;padding: 0 8px;border: 1px solid transparent;border-radius: calc(var(--radius, 0.625rem) * 0.6);background: transparent;color: inherit;font: 400 14px/20px \"Inter Variable\", sans-serif;white-space: nowrap;cursor: pointer;outline: none;transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);}.ds-prop-trigger:hover, .ds-prop-trigger[aria-expanded=\"true\"]{background: var(--muted, oklch(0.967 0.001 286.375));color: var(--foreground, oklch(0.141 0.005 285.823));}.ds-prop-trigger:focus-visible{border-color: var(--ring, oklch(0.705 0.015 286.067));box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, oklch(0.705 0.015 286.067)) 30%, transparent);}.ds-prop-chevron{width: 12px;height: 12px;flex-shrink: 0;color: var(--muted-foreground, oklch(0.552 0.016 285.938));}.ds-prop-flag{width: 14px;height: 14px;flex-shrink: 0;color: var(--sidebar-primary, oklch(0.546 0.245 262.881));}.ds-status-ring{width: 11px;height: 11px;flex-shrink: 0;box-sizing: border-box;border: 1.5px solid;border-radius: 9999px;}.ds-prop-avatar{display: inline-flex;align-items: center;justify-content: center;width: 24px;height: 24px;border-radius: 9999px;box-shadow: inset 0 0 0 1px var(--border, oklch(0.92 0.004 286.32));background: var(--muted, oklch(0.967 0.001 286.375));font-size: 9px;font-weight: 600;}"
+    },
+    {
+      "name": "Picker Menu",
+      "kind": "custom",
+      "refersTo": "select-content",
+      "description": "The floating list behind every picker: a 22px-radius popover with shadow-lg and a hairline ring, 18px-radius options that take the accent surface when highlighted, and a check on the current value.",
+      "html": "<div class=\"ds-menu\" role=\"listbox\" aria-label=\"Status\"><div class=\"ds-menu-item\" role=\"option\" tabindex=\"-1\"><span class=\"ds-dot\" style=\"background: var(--muted-foreground, oklch(0.552 0.016 285.938))\"></span>Todo</div><div class=\"ds-menu-item\" role=\"option\" tabindex=\"0\" aria-selected=\"true\"><span class=\"ds-dot\" style=\"background: var(--primary, oklch(0.488 0.243 264.376))\"></span>In Progress<svg class=\"ds-menu-check\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg></div><div class=\"ds-menu-item\" role=\"option\" tabindex=\"-1\"><span class=\"ds-dot\" style=\"background: var(--chart-3, oklch(0.588 0.158 241.966))\"></span>Review</div><div class=\"ds-menu-item\" role=\"option\" tabindex=\"-1\"><span class=\"ds-dot\" style=\"background: var(--destructive, oklch(0.577 0.245 27.325))\"></span>Blocked</div><div class=\"ds-menu-item\" role=\"option\" tabindex=\"-1\"><span class=\"ds-dot\" style=\"background: var(--success, oklch(0.723 0.193 149.579))\"></span>Done</div></div>",
+      "css": ".ds-menu{display: flex;flex-direction: column;width: 200px;padding: 6px;border-radius: calc(var(--radius, 0.625rem) * 2.2);background: var(--popover, oklch(1 0 0));color: var(--popover-foreground, oklch(0.141 0.005 285.823));font-family: \"Inter Variable\", sans-serif;box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground, oklch(0.141 0.005 285.823)) 5%, transparent), 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);}.dark .ds-menu{box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground, oklch(0.141 0.005 285.823)) 10%, transparent), 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);}.ds-menu-item{position: relative;display: flex;align-items: center;gap: 10px;padding: 8px 32px 8px 12px;border-radius: calc(var(--radius, 0.625rem) * 1.8);font-size: 14px;line-height: 20px;font-weight: 500;cursor: default;outline: none;user-select: none;}.ds-menu-item:hover, .ds-menu-item:focus, .ds-menu-item:focus-visible{background: var(--accent, oklch(0.967 0.001 286.375));color: var(--accent-foreground, oklch(0.21 0.006 285.885));}.ds-dot{width: 8px;height: 8px;flex-shrink: 0;border-radius: 9999px;}.ds-menu-check{position: absolute;inset-inline-end: 8px;width: 16px;height: 16px;pointer-events: none;}"
     }
   ],
   "narrative": {
     "northStar": "The Calm Operations Desk",
-    "overview": "Envision is a restrained shadcn-style interface built from the semantic Tailwind v4 theme in frontend/src/index.css. Neutral zinc surfaces carry most of the interface. A concentrated blue marks action and selection, while borders and state changes provide structure without visual noise.\n\nLight and dark themes use the same semantic roles. Components bind to those roles rather than fixed light-mode values, so project information remains legible in either theme.",
+    "overview": "Envision is a restrained shadcn-style interface built from the semantic Tailwind v4 theme in `frontend/src/index.css`. Neutral zinc surfaces carry most of the interface. A concentrated blue marks action and selection, while borders and state changes provide structure without visual noise.\n\nLight and dark themes use the same semantic roles. Components bind to those roles rather than fixed light-mode values, so project information remains legible in either theme.",
     "keyCharacteristics": [
       "Semantic light and dark color roles authored in OKLCH.",
       "Inter Variable throughout the product.",
@@ -113,17 +340,45 @@
       "Blue reserved for primary action, active navigation, and meaningful emphasis."
     ],
     "rules": [
-      {"name": "The Blue Signal Rule", "body": "Blue marks a meaningful action, selected location, or emphasized datum. It is not ambient decoration.", "section": "colors"},
-      {"name": "The Semantic Pairing Rule", "body": "Every surface uses its matching foreground role, including cards, popovers, sidebars, controls, and their dark equivalents.", "section": "colors"},
-      {"name": "The Source Rule", "body": "frontend/src/index.css is the normative color and radius source. Keep this document and Paper tokens aligned when that file changes.", "section": "colors"},
-      {"name": "The Single-Family Rule", "body": "Use Inter Variable for every role. Size and weight carry hierarchy.", "section": "typography"},
-      {"name": "The Tightening Rule", "body": "Keep tracking neutral through 18px, then tighten it gradually for larger roles.", "section": "typography"},
-      {"name": "The Border-First Rule", "body": "If a border or tonal shift explains the layer, do not add a shadow.", "section": "elevation"},
-      {"name": "The Radius-by-Component Rule", "body": "Use the exact radius token chosen by the component implementation. Do not substitute the older 12px-control and 14px-card convention.", "section": "shapes"}
+      {
+        "name": "The Blue Signal Rule",
+        "body": "Blue marks a meaningful action, selected location, or emphasized datum. It is not ambient decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Pairing Rule",
+        "body": "Every surface uses its matching foreground role, including cards, popovers, sidebars, controls, and their dark equivalents.",
+        "section": "colors"
+      },
+      {
+        "name": "The Source Rule",
+        "body": "`frontend/src/index.css` is the normative color and radius source. Keep this document and Paper tokens aligned when that file changes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Single-Family Rule",
+        "body": "Use Inter Variable for every role. Size and weight carry hierarchy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tightening Rule",
+        "body": "Keep tracking neutral through 18px, then tighten it gradually for larger roles.",
+        "section": "typography"
+      },
+      {
+        "name": "The Border-First Rule",
+        "body": "If a border or tonal shift explains the layer, do not add a shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Radius-by-Component Rule",
+        "body": "Use the exact radius token chosen by the component implementation. Do not substitute the older 12px-control and 14px-card convention.",
+        "section": "shapes"
+      }
     ],
     "dos": [
       "Do bind component colors to semantic Tailwind tokens so light and dark themes stay synchronized.",
-      "Do preserve the 4px spacing base and the computed radius scale from --radius: 0.625rem.",
+      "Do preserve the 4px spacing base and the computed radius scale from `--radius: 0.625rem`.",
       "Do reserve blue for action, selection, focus-adjacent emphasis, and ordered chart data.",
       "Do use zinc surfaces and borders before adding elevation.",
       "Do match implemented component sizes and states before documenting new variants."
@@ -133,7 +388,7 @@
       "Don't describe buttons as 12px-radius, 40px controls by default; the implementation is 26px and 36px.",
       "Don't hard-code light colors into components that support dark mode.",
       "Don't use Alert Red for ordinary priority or decoration.",
-      "Don't document components as implemented until they exist in frontend/."
+      "Don't document components as implemented until they exist in `frontend/`."
     ]
   }
 }

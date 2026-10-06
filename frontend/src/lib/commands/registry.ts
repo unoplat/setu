@@ -23,6 +23,9 @@ export type CommandScope =
   | "create-module"
   | "module"
   | "module-comment"
+  | "create-link"
+  | "link"
+  | "link-comment"
   | "create-task"
   | "task"
   | "task-comment"
@@ -41,6 +44,9 @@ export const SCOPES: Record<CommandScope, { label: string; modal: boolean }> = {
   "create-module": { label: "Create module panel", modal: true },
   module: { label: "Module", modal: false },
   "module-comment": { label: "Module comment box", modal: false },
+  "create-link": { label: "Add link dialog", modal: true },
+  link: { label: "Link", modal: false },
+  "link-comment": { label: "Link comment box", modal: false },
   "create-task": { label: "Create task panel", modal: true },
   task: { label: "Task", modal: false },
   "task-comment": { label: "Task comment box", modal: false },
@@ -74,6 +80,8 @@ export type CommandGroup =
   | "Milestone"
   | "Create module"
   | "Module"
+  | "Add link"
+  | "Link"
   | "Create task"
   | "Task"
   | "General"
@@ -87,6 +95,8 @@ export const COMMAND_GROUPS: readonly CommandGroup[] = [
   "Milestone",
   "Create module",
   "Module",
+  "Add link",
+  "Link",
   "Create task",
   "Task",
   "General",
@@ -111,7 +121,8 @@ interface CommandSpec {
 export const COMMANDS = {
   "palette.open": {
     title: "Search",
-    description: "Search tasks, modules, milestones, projects and actions.",
+    description:
+      "Search tasks, modules, milestones, links, projects and actions.",
     group: "General",
     scope: "global",
     defaultBinding: hotkey("Mod+K"),
@@ -317,6 +328,61 @@ export const COMMANDS = {
     description: "Post the comment you are writing on a module.",
     group: "Module",
     scope: "module-comment",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "createLink.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the link description between the field and the full editor.",
+    group: "Add link",
+    scope: "create-link",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "createLink.collapseDescription": {
+    title: "Return to the form",
+    description: "Leave the full description editor, keeping the draft.",
+    group: "Add link",
+    scope: "create-link",
+    defaultBinding: hotkey("Escape"),
+  },
+  "createLink.submit": {
+    title: "Add link",
+    description: "Submit the Add link form from any field.",
+    group: "Add link",
+    scope: "create-link",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "link.toggleDescription": {
+    title: "Expand or collapse description",
+    description:
+      "Switch the link description between the field and the full editor.",
+    group: "Link",
+    scope: "link",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
+  },
+  "link.collapseDescription": {
+    title: "Return to the link",
+    description: "Leave the full description editor, keeping the edits.",
+    group: "Link",
+    scope: "link",
+    defaultBinding: hotkey("Escape"),
+  },
+  "link.save": {
+    title: "Save now",
+    description:
+      "Save the link's edits right away instead of waiting for autosave.",
+    group: "Link",
+    scope: "link",
+    defaultBinding: hotkey("Mod+Enter"),
+    ignoreInputs: false,
+  },
+  "link.comment": {
+    title: "Post comment",
+    description: "Post the comment you are writing on a link.",
+    group: "Link",
+    scope: "link-comment",
     defaultBinding: hotkey("Mod+Enter"),
     ignoreInputs: false,
   },

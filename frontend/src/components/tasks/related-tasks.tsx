@@ -5,7 +5,7 @@ import { PlusIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatShortDay, milestonesKey } from "@/lib/milestones"
+import { formatShortDay, isMilestoneProgressKey } from "@/lib/milestones"
 import {
   BOARD_COLUMNS,
   BOARD_PALETTE,
@@ -140,7 +140,7 @@ export function RelatedTasks({
           onCreated={() =>
             Promise.all([
               mutate(projectTasksKey(project)),
-              mutate(milestonesKey(project)),
+              mutate(isMilestoneProgressKey),
             ])
           }
         />

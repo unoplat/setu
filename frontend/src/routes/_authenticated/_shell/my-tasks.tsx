@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 
-import { PagePlaceholder } from "@/components/page-placeholder"
-
-// Global, cross-Project view of Tasks assigned to the signed-in user.
+// Layout for My tasks, the global, cross-Project view of the Tasks assigned to
+// the signed-in user: All my tasks is its index and each of its Custom Views a
+// child route, as a Project's are (projects.$name.tsx).
 export const Route = createFileRoute("/_authenticated/_shell/my-tasks")({
-  component: () => <PagePlaceholder title="My tasks" />,
+  component: Outlet,
 })

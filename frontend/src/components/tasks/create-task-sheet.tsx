@@ -79,7 +79,8 @@ export function CreateTaskSheet({
         due_date: value.due_date || undefined,
         status: value.status,
         priority: value.priority,
-        assignee: value.assignee || undefined,
+        // Everyone picked; the older single `assignee` is never sent with it.
+        assignees: value.assignees.length ? value.assignees : undefined,
         milestone: value.milestone || undefined,
         module: value.module || undefined,
         tags: value.tags,

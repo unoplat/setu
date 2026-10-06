@@ -29,7 +29,14 @@ export interface Milestone {
   start_date: string | null
   due_date: string | null
   status: string
+  /**
+   * 0–100, from the linked Tasks the user can read: Completed ones out of
+   * those that are neither Cancelled nor templates. Not ERPNext's stored
+   * progress, which nothing updates.
+   */
   progress: number
+  done_tasks: number
+  total_tasks: number
   assignee: MilestoneAssignee | null
 }
 
@@ -38,11 +45,44 @@ export function milestonesKey(project: string) {
   return ["envision:milestones", project]
 }
 
+/**
+ * Whether an SWR key holds milestones (a project's list or one milestone),
+ * whose progress follows their Tasks: every Task create, save, move or delete
+ * revalidates these, since it can change any milestone's count, the one the
+ * Task left included.
+ */
+export function isMilestoneProgressKey(key: unknown): boolean {
+  return (
+    Array.isArray(key) &&
+    (key[0] === milestonesKey("")[0] || key[0] === milestoneKey("")[0])
+  )
+}
+
 export function useMilestones(project: string) {
   return useFrappeGetCall<{ message: Milestone[] }>(
     "setu.api.milestone.list_milestones",
     { project },
     milestonesKey(project)
+  )
+}
+
+/** A milestone as My tasks' Milestone filter offers it, with its Project. */
+export interface MilestoneOption {
+  name: string
+  subject: string
+  project: string
+  project_name: string
+}
+
+/**
+ * Every milestone on the Envision-enabled Projects the user can read, by
+ * Project (setu.api.milestone.list_milestone_options).
+ */
+export function useMilestoneOptions() {
+  return useFrappeGetCall<{ message: MilestoneOption[] }>(
+    "setu.api.milestone.list_milestone_options",
+    undefined,
+    "envision:milestone-options"
   )
 }
 

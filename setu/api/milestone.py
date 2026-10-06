@@ -1,5 +1,3 @@
-import json
-
 import frappe
 from frappe import _
 from frappe.desk.form.assign_to import add as assign_to
@@ -21,8 +19,6 @@ MILESTONE_FIELDS = [
 	"exp_start_date",
 	"exp_end_date",
 	"status",
-	"progress",
-	"_assign",
 ]
 
 
@@ -37,8 +33,53 @@ def list_milestones(project: str) -> list[dict]:
 		order_by="exp_end_date asc, creation asc",
 		limit_page_length=0,
 	)
-	people = assignee_details(rows)
-	return [milestone_summary(row, people) for row in rows]
+	names = [row.name for row in rows]
+	assignees = assignee_details(names)
+	counts = linked_task_counts(names)
+	return [milestone_summary(row, assignees.get(row.name), counts[row.name]) for row in rows]
+
+
+@frappe.whitelist()
+def list_milestone_options() -> list[dict]:
+	"""Every milestone on the Envision-enabled Projects the user can read, for
+	My tasks' Milestone filter: by project, then due date. Titles only; the
+	progress counts are the milestone page's."""
+	projects = envision_projects()
+	if not projects:
+		return []
+	rows = frappe.get_list(
+		"Task",
+		filters={"project": ["in", list(projects)], "is_milestone": 1},
+		fields=["name", "subject", "project"],
+		order_by="exp_end_date asc, creation asc",
+		limit_page_length=0,
+	)
+	options = [
+		{
+			"name": row.name,
+			"subject": row.subject,
+			"project": row.project,
+			"project_name": projects[row.project],
+		}
+		for row in rows
+	]
+	# Stable, so each project's milestones keep their due-date order.
+	options.sort(key=lambda option: (option["project_name"] or "").casefold())
+	return options
+
+
+def envision_projects() -> dict[str, str]:
+	"""Title of each Envision-enabled Project (CONTEXT.md) the user can read,
+	open or not, by name. My tasks spans all of them."""
+	return dict(
+		frappe.get_list(
+			"Project",
+			filters={"envision_enabled": 1},
+			fields=["name", "project_name"],
+			limit_page_length=0,
+			as_list=True,
+		)
+	)
 
 
 @frappe.whitelist()
@@ -107,10 +148,11 @@ def replace_assignee(task, assignee: str) -> None:
 	the old one is removed, so a refused assignment (document sharing off and
 	no access) leaves the old one in place.
 	"""
-	current = first_assignee(task.get("_assign"))
+	assigned = assignees_of([task.name])[task.name]
+	current = assigned[0] if assigned else None
 	if assignee == (current or ""):
 		return
-	if assignee and assignee not in json.loads(task.get("_assign") or "[]"):
+	if assignee and assignee not in assigned:
 		assign_to(
 			{
 				"doctype": "Task",
@@ -130,16 +172,15 @@ def get_milestone_activity(name: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def add_milestone_comment(name: str, content: str) -> dict:
+def add_milestone_comment(name: str, content: str, reply_to: str | None = None) -> dict:
 	"""Comment on a milestone (06d: "Comment"), as Desk's timeline does."""
-	return comment_on(milestone_doc(name, "read"), content)
+	return comment_on(milestone_doc(name, "read"), content, reply_to)
 
 
 @frappe.whitelist()
 def count_linked_tasks(name: str) -> dict:
 	"""How many Tasks a delete would leave with no milestone (Paper: Milestone
-	Delete 02). Counted as the milestone page lists them: neither Cancelled
-	nor templates."""
+	Delete 02). Counted as the milestone page lists them (``LIVE_TASKS``)."""
 	from setu.api.task import live_task_count
 
 	milestone_doc(name)
@@ -182,9 +223,12 @@ def milestone_doc(name: str, ptype: str = "read"):
 
 
 def milestone_detail(task) -> dict:
-	row = task_row(task)
 	return {
-		**milestone_summary(row, assignee_details([row])),
+		**milestone_summary(
+			task.as_dict(),
+			assignee_details([task.name]).get(task.name),
+			linked_task_counts([task.name])[task.name],
+		),
 		"project": task.project,
 		"project_name": frappe.db.get_value("Project", task.project, "project_name")
 		if task.project
@@ -195,13 +239,6 @@ def milestone_detail(task) -> dict:
 		# Read-only viewers see the screen without Save or the editor.
 		"can_write": bool(task.has_permission("write")),
 	}
-
-
-def task_row(task) -> dict:
-	"""The Task as a dict, with its assignees. ``as_dict`` leaves out
-	``_assign`` (one of Frappe's optional columns) even though the document
-	loaded it, and the assignee comes from there."""
-	return {**task.as_dict(), "_assign": task.get("_assign")}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -253,12 +290,40 @@ def create_milestone(
 		)
 		task.reload()
 
-	row = task_row(task)
-	return milestone_summary(row, assignee_details([row]))
+	# A new milestone has no Tasks yet.
+	return milestone_summary(task.as_dict(), assignee_details([task.name]).get(task.name), (0, 0))
 
 
-def milestone_summary(row: dict, people: dict[str, dict]) -> dict:
-	user = people.get(first_assignee(row.get("_assign")) or "")
+def linked_task_counts(milestones: list[str]) -> dict[str, tuple[int, int]]:
+	"""Done and total Tasks linked to each milestone, in one query.
+
+	A milestone's progress comes from its Tasks (Paper 06d: "Status updates
+	itself as linked tasks move to Done"), not ERPNext's ``progress``, which
+	nothing here sets. Counted as the milestone page lists them
+	(``LIVE_TASKS``), Completed being done, and only the Tasks the user can
+	read, so the list and the milestone page agree for everyone.
+	"""
+	from setu.api.task import LIVE_TASKS
+
+	counts = dict.fromkeys(milestones, (0, 0))
+	if not milestones:
+		return counts
+	rows = frappe.get_list(
+		"Task",
+		filters={**LIVE_TASKS, "envision_milestone": ["in", milestones]},
+		fields=["envision_milestone", "status", {"COUNT": "*", "as": "tasks"}],
+		group_by="envision_milestone, status",
+		limit_page_length=0,
+	)
+	for row in rows:
+		done, total = counts[row.envision_milestone]
+		completed = row.tasks if row.status == "Completed" else 0
+		counts[row.envision_milestone] = (done + completed, total + row.tasks)
+	return counts
+
+
+def milestone_summary(row: dict, assignee: dict | None, tasks: tuple[int, int]) -> dict:
+	done, total = tasks
 	return {
 		"name": row["name"],
 		"subject": row["subject"],
@@ -266,22 +331,52 @@ def milestone_summary(row: dict, people: dict[str, dict]) -> dict:
 		"start_date": as_date(row.get("exp_start_date")),
 		"due_date": as_date(row.get("exp_end_date")),
 		"status": row.get("status") or "Open",
-		"progress": row.get("progress") or 0,
-		"assignee": user,
+		"progress": done / total * 100 if total else 0,
+		"done_tasks": done,
+		"total_tasks": total,
+		"assignee": assignee,
 	}
 
 
-def first_assignee(value) -> str | None:
-	"""``_assign`` holds a JSON list; the screens show a single assignee."""
-	if not value:
-		return None
-	users = value if isinstance(value, list) else json.loads(value)
-	return users[0] if users else None
+# Who is assigned to a Task comes from Frappe's ToDo records, not ``_assign``.
+# Frappe keeps ``_assign`` to the Open assignments, and ERPNext closes every
+# assignment of a Task as it is Completed, so ``_assign`` forgets who did a
+# Done Task. Closed still means assigned; Cancelled is how Frappe unassigns.
+ASSIGNED = ("Open", "Closed")
 
 
-def assignee_details(rows: list[dict]) -> dict[str, dict]:
-	"""Name and avatar of everyone assigned across these rows, in one query."""
-	return people_details({assignee for row in rows if (assignee := first_assignee(row.get("_assign")))})
+def assignees_of(tasks: list[str]) -> dict[str, list[str]]:
+	"""Everyone assigned to each Task, first assigned first, in one query.
+
+	Read without permission checks: callers pass Tasks the user can read.
+	"""
+	assigned: dict[str, list[str]] = {task: [] for task in tasks}
+	if not tasks:
+		return assigned
+	rows = frappe.get_all(
+		"ToDo",
+		filters={
+			"reference_type": "Task",
+			"reference_name": ["in", tasks],
+			"status": ["in", ASSIGNED],
+			"allocated_to": ["is", "set"],
+		},
+		fields=["reference_name", "allocated_to"],
+		order_by="creation asc",
+	)
+	for row in rows:
+		users = assigned[row.reference_name]
+		if row.allocated_to not in users:
+			users.append(row.allocated_to)
+	return assigned
+
+
+def assignee_details(tasks: list[str]) -> dict[str, dict]:
+	"""Name and avatar of each Task's assignee (the screens show one), in one
+	query for the people. Tasks with nobody assigned are left out."""
+	first = {task: users[0] for task, users in assignees_of(tasks).items() if users}
+	people = people_details(set(first.values()))
+	return {task: people[user] for task, user in first.items() if user in people}
 
 
 def as_date(value) -> str | None:

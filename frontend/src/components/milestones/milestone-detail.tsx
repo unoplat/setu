@@ -27,7 +27,6 @@ import {
   milestoneActivityKey,
   type MilestoneDetail,
 } from "@/lib/milestones"
-import { useRelatedTasks } from "@/lib/tasks"
 
 import {
   PROGRESS_LABELS,
@@ -36,6 +35,7 @@ import {
 } from "./milestone-filters"
 
 const MILESTONE_ACTIVITY: ActivitySource = {
+  doctype: "Task",
   method: "setu.api.milestone.get_milestone_activity",
   commentMethod: "setu.api.milestone.add_milestone_comment",
   key: milestoneActivityKey,
@@ -120,23 +120,21 @@ export function MilestoneStatus({ progress }: { progress: number }) {
   )
 }
 
-/** The rail's progress block, counted from the linked Tasks. */
+/**
+ * The rail's progress block. The server's count, as the Status above it and
+ * the milestones list use, so the three never disagree.
+ */
 export function MilestoneProgress({
-  project,
   milestone,
 }: {
-  project: string
   milestone: MilestoneDetail
 }) {
-  const { done, total, loading } = useRelatedTasks(project, {
-    milestone: milestone.name,
-  })
   return (
     <RailGroup className="gap-2.5">
       <ProgressSummary
-        done={done}
-        total={total}
-        loading={loading}
+        done={milestone.done_tasks}
+        total={milestone.total_tasks}
+        loading={false}
         note="Status updates itself as linked tasks move to Done."
       />
     </RailGroup>
@@ -146,14 +144,11 @@ export function MilestoneProgress({
 /** 06d for someone who may read the milestone but not edit it. */
 export function MilestoneReadOnly({
   milestone,
-  project,
   projectName,
   footer,
   activity,
 }: {
   milestone: MilestoneDetail
-  /** The Project's name (its id). */
-  project: string
   projectName: string
   /** What follows the description: linked tasks, then the comments. */
   footer: React.ReactNode
@@ -200,7 +195,7 @@ export function MilestoneReadOnly({
               <ProjectProperty projectName={projectName} />
             </dl>
           </RailGroup>
-          <MilestoneProgress project={project} milestone={milestone} />
+          <MilestoneProgress milestone={milestone} />
           {activity}
         </>
       }

@@ -29,6 +29,7 @@ import { TagChip } from "./tags-combobox"
 import { StatusRing } from "./task-selects"
 
 const TASK_ACTIVITY: ActivitySource = {
+  doctype: "Task",
   method: "setu.api.task.get_task_activity",
   commentMethod: "setu.api.task.add_task_comment",
   key: taskActivityKey,
@@ -150,8 +151,21 @@ export function TaskReadOnly({
                   notSet
                 )}
               </Property>
-              <Property label="Assignee" plain>
-                <PersonValue person={task.assignee} emptyLabel="Unassigned" />
+              <Property label="Assignees" plain>
+                {task.assignees.length ? (
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 py-1.5">
+                    {task.assignees.map((person) => (
+                      <span
+                        key={person.name}
+                        className="flex min-w-0 items-center gap-2"
+                      >
+                        <PersonValue person={person} emptyLabel="Unassigned" />
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <PersonValue person={null} emptyLabel="Unassigned" />
+                )}
               </Property>
             </dl>
           </RailGroup>

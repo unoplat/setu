@@ -36,10 +36,20 @@ const editorProps = {
   attributes: { "aria-label": "Comment" },
 }
 
+/** Lets the comment box be focused from outside, as Reply does. */
+export interface CommentEditorHandle {
+  focus: () => void
+}
+
 export default function CommentEditor({
+  ref,
+  header,
   onChange,
   onFocusChange,
 }: {
+  ref?: React.Ref<CommentEditorHandle>
+  /** Shown inside the box above the text, as a reply's quote is. */
+  header?: React.ReactNode
   /** The comment's HTML, or "" while it is empty. */
   onChange: (html: string) => void
   onFocusChange: (focused: boolean) => void
@@ -70,6 +80,12 @@ export default function CommentEditor({
   // Leaving the page while the box has focus never fires `onBlur`.
   React.useEffect(() => () => onFocusChange(false), [onFocusChange])
 
+  React.useImperativeHandle(
+    ref,
+    () => ({ focus: () => editor?.commands.focus("end") }),
+    [editor]
+  )
+
   if (!editor) return null
 
   return (
@@ -77,6 +93,7 @@ export default function CommentEditor({
       className="envision-rte rounded-lg border border-input bg-card transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"
       data-layout="comment"
     >
+      {header}
       <RichTextProvider editor={editor}>
         <EditorContent editor={editor} className="envision-rte-content" />
         <RichTextBubbleText buttonBubble={selectionControls} />
