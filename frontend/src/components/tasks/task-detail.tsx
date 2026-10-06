@@ -86,7 +86,7 @@ function LinkValue({
       <span className="flex shrink-0 text-muted-foreground [&_svg]:size-3.5">
         {icon}
       </span>
-      <span className="truncate">{label}</span>
+      <span className="wrap-anywhere">{label}</span>
     </>
   ) : (
     <span className="text-muted-foreground">{emptyLabel}</span>

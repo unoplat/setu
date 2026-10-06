@@ -108,7 +108,7 @@ export function ProjectProperty({ projectName }: { projectName: string }) {
   return (
     <Property label="Project" plain>
       <span className="size-3.5 shrink-0 rounded-sm bg-primary" />
-      <span className="truncate">{projectName}</span>
+      <span className="wrap-anywhere">{projectName}</span>
     </Property>
   )
 }
@@ -125,7 +125,7 @@ export function PersonValue({
   return person ? (
     <>
       <AssigneeAvatar person={person} />
-      <span className="truncate">{person.full_name || person.name}</span>
+      <span className="wrap-anywhere">{person.full_name || person.name}</span>
     </>
   ) : (
     <span className="text-muted-foreground">{emptyLabel}</span>

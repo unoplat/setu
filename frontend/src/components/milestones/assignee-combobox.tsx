@@ -81,7 +81,7 @@ export function AssigneeCombobox({
         {selected ? (
           <span className="flex min-w-0 items-center gap-2">
             <AssigneeAvatar person={selected} />
-            <span className="truncate">
+            <span className={inline ? "wrap-anywhere" : "truncate"}>
               {selected.full_name || selected.name}
             </span>
           </span>

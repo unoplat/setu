@@ -193,7 +193,7 @@ export function LinkReadOnly({
                   icon={link.link_type?.icon}
                   className="size-3.5 text-muted-foreground"
                 />
-                <span className="truncate">
+                <span className="wrap-anywhere">
                   {link.link_type?.type_name ?? "No type"}
                 </span>
               </Property>
