@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.desk.form.assign_to import add as assign_to
+from frappe.desk.form.assign_to import set_status as set_assignment_status
 from frappe.model.delete_doc import get_dynamic_linked_docs, get_linked_docs, raise_link_exists_exception
 from frappe.utils import getdate, today
 from frappe.utils.nestedset import get_descendants_of
@@ -13,7 +14,7 @@ from setu.api.milestone import (
 	envision_projects,
 	replace_assignee,
 )
-from setu.api.timeline import comment_on, document_activity, timestamp
+from setu.api.timeline import comment_on, document_activity, people_details, timestamp
 from setu.api.view import rename_filter_value
 
 # Envision's Task endpoints (Paper: 03 — Create Task, 04 — Task Created, 09 —
@@ -72,17 +73,23 @@ def create_task(
 	milestone: str | None = None,
 	module: str | None = None,
 	tags: list[str] | str | None = None,
+	assignees: list[str] | str | None = None,
 ) -> dict:
 	"""Create a Task on a project (Paper: 03 — Create Task).
 
 	- Opened from a Board column's "+", so the status is that column's.
 	- The description arrives as HTML from Envision's rich text editor; Frappe
 	  sanitizes it on save like any Text Editor value.
-	- The assignee becomes a standard Frappe assignment and the tags standard
+	- Each assignee becomes a standard Frappe assignment and the tags standard
 	  Frappe document tags, so Desk, notifications and filters all see them.
+	  ``assignees`` is the list of users; the older ``assignee`` (one user)
+	  still works, and a request may send one or the other, not both.
 	- POST only: the method writes, and Frappe commits after a successful POST.
 	"""
 	frappe.get_doc("Project", project).check_permission("read")
+	check_one_assignee_field(assignee, assignees)
+	if assignees is not None:
+		assignees = clean_assignees(assignees, [])
 
 	subject = (subject or "").strip()
 	if not subject:
@@ -113,7 +120,9 @@ def create_task(
 
 	for tag in clean_tags(tags):
 		task.add_tag(tag)
-	if assignee:
+	if assignees:
+		set_assignees(task, assignees)
+	elif assignee:
 		assign_to(
 			{
 				"doctype": "Task",
@@ -122,8 +131,14 @@ def create_task(
 				"description": subject,
 			}
 		)
+		close_new_assignments(task, [assignee])
 
-	return {"name": task.name, "subject": task.subject, "status": task.status}
+	return {
+		"name": task.name,
+		"subject": task.subject,
+		"status": task.status,
+		"assignees": assignee_people(task.name),
+	}
 
 
 @frappe.whitelist()
@@ -145,6 +160,7 @@ def update_task(
 	milestone: str | None = None,
 	module: str | None = None,
 	tags: list[str] | str | None = None,
+	assignees: list[str] | str | None = None,
 ) -> dict:
 	"""Save what changed on the Task (09: one "Save changes" for all).
 
@@ -154,8 +170,17 @@ def update_task(
 	Milestone and Module checks (validate_task_links), Frappe's write
 	permission check and its HTML sanitising all run as they do in Desk. It is
 	all one request, so if any part fails Frappe rolls back the rest.
+
+	``assignees`` is everyone assigned (set_assignees): ``[]`` unassigns
+	everyone, Desk's assignments included. The older ``assignee`` replaces
+	only the first person (replace_assignee). A request sends one or the other.
 	"""
 	task = task_doc(name, "write")
+	check_one_assignee_field(assignee, assignees)
+	if assignees is not None:
+		# Checked before anything is saved; people already assigned may stay
+		# even if they cannot be assigned anew.
+		assignees = clean_assignees(assignees, assignees_of([task.name])[task.name])
 
 	if subject is not None:
 		subject = subject.strip()
@@ -198,11 +223,144 @@ def update_task(
 		task.save()
 	if tags is not None:
 		replace_tags(task, clean_tags(tags))
-	if assignee is not None:
+	if assignees is not None:
+		set_assignees(task, assignees)
+	elif assignee is not None:
+		assigned = assignees_of([task.name])[task.name]
 		replace_assignee(task, assignee)
-	if tags is not None or assignee is not None:
+		if assignee and assignee not in assigned:
+			close_new_assignments(task, [assignee])
+	if tags is not None or assignee is not None or assignees is not None:
 		task.reload()
 	return task_detail(task)
+
+
+def check_one_assignee_field(assignee: str | None, assignees) -> None:
+	"""``assignee`` (one) and ``assignees`` (all) would disagree: one or the
+	other per request, ``""`` and ``[]`` included."""
+	if assignee is not None and assignees is not None:
+		frappe.throw(_("Send either assignee or assignees, not both."))
+
+
+def clean_assignees(assignees: list[str] | str, assigned: list[str]) -> list[str]:
+	"""The users in ``assignees``, trimmed, without repeats, in the order sent.
+
+	A list, or one sent as JSON. Users not already ``assigned`` must be ones
+	the picker offers (setu.api.user.list_assignees): enabled System Users.
+	Someone already assigned may stay after being disabled, so keeping the
+	same people never fails.
+	"""
+	values = assignees
+	if isinstance(assignees, str):
+		try:
+			values = frappe.parse_json(assignees)
+		except ValueError:
+			values = None
+	if not isinstance(values, list | tuple):
+		frappe.throw(_("Assignees must be a list of users."))
+	users: dict[str, None] = {}
+	for user in values:
+		if not isinstance(user, str) or not user.strip():
+			frappe.throw(_("Each assignee must be a user."))
+		users[user.strip()] = None
+
+	# User names compare without case in the database; use the stored name.
+	found = (
+		{
+			row.name.casefold(): row
+			for row in frappe.get_all(
+				"User",
+				filters={"name": ["in", list(users)]},
+				fields=["name", "enabled", "user_type"],
+			)
+		}
+		if users
+		else {}
+	)
+	kept = {user.casefold(): user for user in assigned}
+	cleaned: dict[str, None] = {}
+	for user in users:
+		key = user.casefold()
+		if key in kept:
+			cleaned[kept[key]] = None
+			continue
+		row = found.get(key)
+		if not row:
+			frappe.throw(_("User {0} does not exist.").format(user))
+		if not row.enabled:
+			frappe.throw(_("User {0} is disabled.").format(row.name))
+		if row.user_type != "System User":
+			frappe.throw(_("User {0} cannot be assigned to tasks.").format(row.name))
+		cleaned[row.name] = None
+	return list(cleaned)
+
+
+def set_assignees(task, users: list[str]) -> None:
+	"""Make ``users`` everyone assigned to the Task, through Frappe's own
+	assignment API as Desk's "Assign To" does.
+
+	Only the difference changes: people who stay keep their assignment (Open,
+	or Closed on a Done Task) and their place, so sending the same people
+	again does nothing. New people are added before anyone is removed, so a
+	refused assignment (document sharing off and no access) fails the request
+	first. A removed person's every assignment is cancelled, not only one.
+	"""
+	assigned = assignees_of([task.name])[task.name]
+	added = [user for user in users if user not in assigned]
+	removed = [user for user in assigned if user not in users]
+	if added:
+		assign_to(
+			{
+				"doctype": "Task",
+				"name": task.name,
+				"assign_to": added,
+				"description": task.subject,
+			}
+		)
+	if removed:
+		for todo in frappe.get_all(
+			"ToDo",
+			filters={
+				"reference_type": "Task",
+				"reference_name": task.name,
+				"allocated_to": ["in", removed],
+				"status": ["in", ASSIGNED],
+			},
+			fields=["name", "allocated_to"],
+		):
+			set_assignment_status(
+				"Task", task.name, todo=todo.name, assign_to=todo.allocated_to, status="Cancelled"
+			)
+	close_new_assignments(task, added)
+
+
+def close_new_assignments(task, users: list[str]) -> None:
+	"""Close the assignments just given to ``users`` on a Done Task.
+
+	ERPNext closes a Task's assignments as it is Completed, but one added
+	afterwards would stay Open, on the person's to-do list for finished work.
+	Only these people's Open assignments are closed: anyone else keeps theirs.
+	"""
+	if task.status != "Completed" or not users:
+		return
+	for todo in frappe.get_all(
+		"ToDo",
+		filters={
+			"reference_type": "Task",
+			"reference_name": task.name,
+			"allocated_to": ["in", users],
+			"status": "Open",
+		},
+		fields=["name", "allocated_to"],
+	):
+		set_assignment_status("Task", task.name, todo=todo.name, assign_to=todo.allocated_to, status="Closed")
+
+
+def assignee_people(task: str) -> list[dict]:
+	"""Name and avatar of everyone assigned to the Task, first assigned first."""
+	users = assignees_of([task])[task]
+	people = people_details(set(users))
+	return [people[user] for user in users if user in people]
 
 
 def replace_tags(task, tags: list[str]) -> None:
@@ -425,7 +583,9 @@ def task_detail(task) -> dict:
 		"priority": task.priority,
 		"start_date": as_date(task.exp_start_date),
 		"due_date": as_date(task.exp_end_date),
+		# The first assignee, for screens that show one, and everyone.
 		"assignee": assignee_details([task.name]).get(task.name),
+		"assignees": assignee_people(task.name),
 		"milestone": task.get("envision_milestone") or None,
 		"module": task.get("envision_module") or None,
 		"tags": task_tags(task),

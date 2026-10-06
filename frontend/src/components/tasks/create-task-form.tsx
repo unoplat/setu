@@ -3,7 +3,6 @@ import { useSelector } from "@tanstack/react-form"
 import { FlagIcon, LayoutGridIcon, XIcon } from "lucide-react"
 
 import { HotkeyText } from "@/components/hotkey-hint"
-import { AssigneeCombobox } from "@/components/milestones/assignee-combobox"
 import { DatePicker } from "@/components/milestones/date-picker"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,6 +27,7 @@ import {
   visibleError,
   withForm,
 } from "./form"
+import { AssigneesCombobox } from "./assignees-combobox"
 import { LinkCombobox } from "./link-combobox"
 import { PrioritySelect, StatusSelect } from "./task-selects"
 import { TagsCombobox } from "./tags-combobox"
@@ -272,12 +272,12 @@ export const CreateTaskForm = withForm({
               )}
             </form.Field>
 
-            <form.Field name="assignee">
+            <form.Field name="assignees">
               {(field) => (
                 <Field className="gap-2">
-                  <FieldLabel htmlFor="task-assignee">Assignee</FieldLabel>
-                  <AssigneeCombobox
-                    id="task-assignee"
+                  <FieldLabel htmlFor="task-assignees">Assignees</FieldLabel>
+                  <AssigneesCombobox
+                    id="task-assignees"
                     value={field.state.value}
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}

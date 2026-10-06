@@ -196,7 +196,11 @@ export interface TaskDetail {
   /** ISO days, not the Task's datetimes. */
   start_date: string | null
   due_date: string | null
+  /** The first assignee. Task screens use `assignees`. */
   assignee: Assignee | null
+  /** Everyone assigned, first assigned first; closed assignments included,
+   *  so a Done Task keeps them (setu.api.task.task_detail). */
+  assignees: Assignee[]
   /** The linked milestone's and module's names (ids). */
   milestone: string | null
   module: string | null

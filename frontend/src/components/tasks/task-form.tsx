@@ -3,7 +3,6 @@ import { useStore } from "@tanstack/react-form"
 import { FlagIcon, LayoutGridIcon } from "lucide-react"
 
 import { DatesProperty, Property } from "@/components/detail-properties"
-import { AssigneeCombobox } from "@/components/milestones/assignee-combobox"
 import { DatePicker } from "@/components/milestones/date-picker"
 import {
   DescriptionField,
@@ -28,6 +27,7 @@ import {
   visibleError,
   withForm,
 } from "./form"
+import { AssigneesCombobox } from "./assignees-combobox"
 import { LinkCombobox } from "./link-combobox"
 import { OverdueNote, TaskKind } from "./task-detail"
 import { PrioritySelect, StatusSelect } from "./task-selects"
@@ -145,16 +145,16 @@ export const TaskForm = withForm({
                     )}
                   </form.Field>
                 </Property>
-                <Property label="Assignee" htmlFor="task-assignee">
-                  <form.Field name="assignee" listeners={listeners.picked}>
+                <Property label="Assignees" htmlFor="task-assignees">
+                  <form.Field name="assignees" listeners={listeners.picked}>
                     {(field) => (
-                      <AssigneeCombobox
-                        id="task-assignee"
+                      <AssigneesCombobox
+                        id="task-assignees"
                         variant="inline"
                         value={field.state.value}
                         onChange={field.handleChange}
                         onBlur={field.handleBlur}
-                        current={task.assignee}
+                        current={task.assignees}
                       />
                     )}
                   </form.Field>

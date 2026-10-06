@@ -26,8 +26,11 @@ export interface TaskValues {
   due_date: string
   status: CreateStatus
   priority: TaskPriority
-  /** A Frappe user id, or "" for nobody. */
-  assignee: string
+  /**
+   * Frappe user ids, [] for nobody. Kept sorted where it is saved and
+   * compared (sortedAssignees), so the order never reads as an edit.
+   */
+  assignees: string[]
   /** A milestone Task's name, or "" for none. */
   milestone: string
   /** An Envision Module's name, or "" for none. */
@@ -43,7 +46,7 @@ export const EMPTY_TASK: TaskValues = {
   status: "Open",
   // ERPNext's own default for a new Task.
   priority: "Medium",
-  assignee: "",
+  assignees: [],
   milestone: "",
   module: "",
   tags: [],
@@ -96,14 +99,27 @@ export function taskValues(task: TaskDetail): TaskValues {
     due_date: task.due_date ?? "",
     status: boardStatus(task.status) ?? "Open",
     priority: TASK_PRIORITIES.find((p) => p === task.priority) ?? "Medium",
-    assignee: task.assignee?.name ?? "",
+    assignees: sortedAssignees(task.assignees.map((person) => person.name)),
     milestone: task.milestone ?? "",
     module: task.module ?? "",
     tags: task.tags,
   }
 }
 
-/** A Task's values as they are saved and compared: the title trimmed. */
+/**
+ * A Task's values as they are saved and compared: the title trimmed, and the
+ * assignees as a set. update_task takes `assignees` as everyone assigned, so
+ * it is sent only when someone was added or removed.
+ */
 export function prepareTask(values: TaskValues): TaskValues {
-  return { ...values, subject: values.subject.trim() }
+  return {
+    ...values,
+    subject: values.subject.trim(),
+    assignees: sortedAssignees(values.assignees),
+  }
+}
+
+/** Assignees in one fixed order, so two lists of the same people are equal. */
+function sortedAssignees(assignees: string[]): string[] {
+  return [...assignees].sort()
 }

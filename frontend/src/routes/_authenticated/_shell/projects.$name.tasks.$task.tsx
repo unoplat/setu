@@ -22,6 +22,7 @@ import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
 import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
+  MY_TASKS_KEY,
   TAGS_KEY,
   boardStatus,
   projectTasksKey,
@@ -114,11 +115,12 @@ function TaskScreen({
       await replaceTask(response.message)
       // The Board shows every property; a milestone's progress follows its
       // Tasks' Statuses; the timeline logs the change; a new tag joins the
-      // site's list.
+      // site's list; My tasks lists the Tasks assigned to the signed-in user.
       void revalidate(projectTasksKey(project))
       void revalidate(isMilestoneProgressKey)
       void revalidate(taskActivityKey(task.name))
       if (changes.tags) void revalidate(TAGS_KEY)
+      if (changes.assignees) void revalidate(MY_TASKS_KEY)
       return taskValues(response.message)
     },
   })
