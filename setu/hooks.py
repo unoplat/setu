@@ -179,14 +179,28 @@ has_permission = {
 # REST API follow them too (setu.api.project.guard_project_delete).
 # Frappe's rename updates Link fields but not the names saved inside a Custom
 # View's JSON filters, so each rename carries them over (setu.api.view).
+# The search_maintenance hooks keep the ⌘K index in step; see Search below.
+# (A leading underscore keeps the shared events out of the app's hooks.)
+_search_index_events = {
+	"on_change": "setu.search_maintenance.on_change",
+	"after_delete": "setu.search_maintenance.after_delete",
+	"after_rename": "setu.search_maintenance.after_rename",
+}
 doc_events = {
 	"Project": {
 		"on_trash": "setu.api.project.guard_project_delete",
-		"after_rename": "setu.api.view.rename_project_filters",
+		"on_change": "setu.search_maintenance.on_project_change",
+		"after_rename": [
+			"setu.api.view.rename_project_filters",
+			"setu.search_maintenance.on_project_rename",
+		],
 	},
 	"Task": {
 		"validate": "setu.api.task.validate_task_links",
+		**_search_index_events,
 	},
+	"Envision Module": _search_index_events,
+	"Envision Link": _search_index_events,
 	# Frappe's rename leaves the old name in each document's _user_tags.
 	"Tag": {
 		"after_rename": "setu.api.task.rename_tag",
@@ -204,9 +218,15 @@ doc_events = {
 
 # Search
 # ------
-# The ⌘K search index (setu/search.py). Frappe builds it after migrate,
-# checks it every three hours, and updates it as Tasks, Modules and Links
-# change.
+# The ⌘K search index (setu/search.py). Registered so Frappe builds it after
+# migrate when missing and resumes an unfinished build every three hours.
+# Registering also enrols it in Frappe's own on_update/on_trash index hooks,
+# but those stop at the first registered class that is disabled or has no
+# index (ERPNext's ItemSearch is off by default) and write before the commit.
+# So Envision does not rely on them: the doc_events above (setu.search_maintenance)
+# reindex or remove each record after its transaction commits, whatever the
+# class order. When Frappe's hooks do reach this class they write the same row
+# again earlier; the after-commit write, or the re-sync after a rollback, wins.
 
 sqlite_search = ["setu.search.EnvisionSearch"]
 
