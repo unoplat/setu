@@ -70,6 +70,7 @@ project. It changes only the search index, never the database or an index file.
 import time
 
 import frappe
+from frappe import _
 from frappe.utils import cint, get_datetime
 
 from setu.search import EnvisionSearch
@@ -300,13 +301,13 @@ def reconcile_index(
 	- ``dry_run``: report what would be reconciled, change nothing.
 	"""
 	if frappe.session.user != "Administrator":
-		frappe.throw("Run reconcile_index with bench execute.", frappe.PermissionError)
+		frappe.throw(_("Run reconcile_index with bench execute."), frappe.PermissionError)
 	if doctype not in INDEXED_DOCTYPES:
 		frappe.throw(f"doctype must be one of {', '.join(INDEXED_DOCTYPES)}")
 	if isinstance(names, str):
 		names = [names]
 	if not (names or project or modified_since):
-		frappe.throw("Give names, a project or modified_since.")
+		frappe.throw(_("Give names, a project or modified_since."))
 	limit = min(cint(limit) or RECONCILE_LIMIT, MAX_RECONCILE_LIMIT)
 
 	engine = EnvisionSearch()
