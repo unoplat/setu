@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { defaultFilter } from "cmdk"
+import { useSWRConfig } from "frappe-react-sdk"
 import {
   FlagIcon,
   FolderIcon,
@@ -39,6 +40,7 @@ import { useProjects } from "@/lib/projects"
 import {
   groupResults,
   isSearchable,
+  isSearchKey,
   nameLeads,
   useRecordSearch,
   type ExcerptPart,
@@ -68,6 +70,9 @@ const RECORD_ICONS: Record<RecordType, React.ReactNode> = {
  *   matching records do.
  * - Shortcuts shown next to actions come from the bindings store, so they
  *   follow the user's customisations.
+ * - Each opening forgets earlier search answers and shows none of them, so
+ *   its searches ask the server again rather than reuse what an earlier
+ *   opening was told.
  */
 export function NavSearch() {
   const [open, setOpen] = React.useState(false)
@@ -76,18 +81,28 @@ export function NavSearch() {
   const navigate = useNavigate()
   const actions = useCommandActions()
   const { data: projects } = useProjects()
+  // Counts openings, so an answer kept from an earlier one is never shown.
+  const [opening, setOpening] = React.useState(0)
   const settled = useDebounce(query, SEARCH_DELAY_MS)
-  const search = useRecordSearch(settled)
+  const search = useRecordSearch(settled, opening)
+  const { mutate } = useSWRConfig()
 
-  // Every open and close starts with an empty query.
+  // Every open and close starts with an empty query. Opening also forgets
+  // every search answer: the cached data, and any request still in flight or
+  // held for deduping, so the first search of this opening is a new request
+  // and a late answer from before cannot land. `revalidate` refetches only a
+  // key still in use: none once the last closing's empty query has settled
+  // (SEARCH_DELAY_MS). The mutate runs synchronously, ahead of any search
+  // this opening makes.
   function setPalette(next: boolean) {
+    if (next && !open) {
+      setOpening((count) => count + 1)
+      void mutate(isSearchKey, undefined, { revalidate: true })
+    }
     setOpen(next)
     setQuery("")
   }
-  useCommand("palette.open", () => {
-    setOpen((value) => !value)
-    setQuery("")
-  })
+  useCommand("palette.open", () => setPalette(!open))
 
   const text = query.trim()
   const shows = (value: string, keywords?: string[]) =>
@@ -109,7 +124,7 @@ export function NavSearch() {
   const searching = isSearchable(text)
   // Only the current query's answer counts once it is long enough; below
   // that, the last answer (kept between keystrokes) is not shown.
-  const response = searching ? search.data?.message : undefined
+  const response = searching ? search.response : undefined
   const recordGroups = groupResults(response?.results ?? [])
   const pending = searching && (settled.trim() !== text || search.isLoading)
   const namesLead =

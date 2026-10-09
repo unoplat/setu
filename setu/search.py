@@ -6,12 +6,15 @@ from frappe.model.document import Document
 from frappe.search.sqlite_search import SQLiteSearch
 
 # The full-text index behind the ⌘K search (Paper: search-experience, A).
-# Frappe's SQLiteSearch keeps an FTS5 index in the site folder: registered in
-# hooks.py (``sqlite_search``), it is built after ``bench migrate``, checked
-# every three hours, and updated whenever an indexed record is saved or
-# deleted. It finds candidates only: setu.api.search reads each one back
-# through the permission-checked database before showing it, since the index
-# may be stale and does not know about Cancelled Tasks or record-level permissions.
+# Frappe's SQLiteSearch keeps an FTS5 index in the site folder. Registered in
+# hooks.py (``sqlite_search``), Frappe builds it after ``bench migrate`` when it
+# is missing, and every three hours resumes an unfinished build or starts one
+# for a missing index. It does not repair an index that exists but is stale.
+# Envision keeps it in step itself: setu.search_maintenance reindexes or
+# removes each Task, Module and Link after its change commits. The index only
+# finds candidates: setu.api.search reads each one back through the
+# permission-checked database before showing it, since the index may still lag
+# and does not know about record-level permissions.
 
 
 class EnvisionSearch(SQLiteSearch):
@@ -34,8 +37,12 @@ class EnvisionSearch(SQLiteSearch):
 				"project",
 				"is_milestone",
 				"modified",
+				# Read for is_indexable, and watched for changes like the rest.
+				"is_template",
+				"status",
 			],
-			"filters": {"is_template": 0},
+			# Narrows what a build reads; is_indexable is the rule.
+			"filters": {"is_template": 0, "status": ["!=", "Cancelled"]},
 		},
 		"Envision Module": {
 			"fields": ["name", {"title": "module_name"}, {"content": "description"}, "project", "modified"],
@@ -71,11 +78,31 @@ class EnvisionSearch(SQLiteSearch):
 		)
 		return {row.name: row.project_name or row.name for row in rows}
 
+	@cached_property
+	def envision_projects(self) -> frozenset[str]:
+		"""Every Envision project, whoever is asking: what may be indexed."""
+		return frozenset(frappe.get_all("Project", filters={"envision_enabled": 1}, pluck="name"))
+
+	def is_indexable(self, doc) -> bool:
+		"""Whether a record belongs in the index, as setu.api.search would list
+		it: in an Envision project and, for a Task, neither a template nor
+		Cancelled. Builds and setu.search_maintenance both go by this, so a
+		record that stops qualifying is taken out rather than left behind."""
+		if doc.doctype not in self.INDEXABLE_DOCTYPES:
+			return False
+		if doc.doctype == "Task" and (doc.get("is_template") or doc.get("status") == "Cancelled"):
+			return False
+		return doc.get("project") in self.envision_projects
+
 	def get_search_filters(self) -> dict:
 		# An empty list matches nothing, so a user with no projects finds nothing.
 		return {"project": list(self.readable_projects)}
 
 	def prepare_document(self, doc):
+		# None leaves the record out. The framework never removes a row on its
+		# own, so setu.search_maintenance does that for a record that drops out.
+		if not self.is_indexable(doc):
+			return None
 		# The framework skips a record whose content is None, and many Tasks
 		# have no description: index them with an empty one so their titles
 		# are still found. A copy, so a Task being saved is left as it is.

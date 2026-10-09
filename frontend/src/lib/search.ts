@@ -1,3 +1,4 @@
+import * as React from "react"
 import { useFrappeGetCall, type SWRConfiguration } from "frappe-react-sdk"
 
 /**
@@ -75,22 +76,68 @@ export function nameLeads(title: string, query: string): boolean {
   return name.split(/\s+/).some((word) => word.startsWith(needle))
 }
 
-// A search is asked for once per query: no refetch on focus, and the last
-// results stay on screen while the next query loads, so the list does not
-// flash empty between keystrokes.
-const SEARCH: SWRConfiguration = {
-  keepPreviousData: true,
-  revalidateOnFocus: false,
+// While the index is being built, the dialog asks again this often.
+const INDEXING_RETRY_MS = 5000
+
+// Within one opening of the dialog a query is asked for once, so typing back
+// to it reuses the answer; the dialog forgets every answer as it opens
+// (isSearchKey). A query on screen is asked again when the window regains
+// focus (at most every few seconds), so edits made meanwhile can show up.
+// SWR's keepPreviousData is not used: its kept answer outlives openings and
+// would stand in for the current query's own (see useRecordSearch).
+const SEARCH: SWRConfiguration<{ message: SearchResponse }> = {
+  revalidateOnFocus: true,
   revalidateIfStale: false,
 }
 
-export function useRecordSearch(query: string) {
+const SEARCH_KEY = "envision:search"
+
+/** Matches every cached search answer, for `mutate`. */
+export function isSearchKey(key: unknown): boolean {
+  return Array.isArray(key) && key[0] === SEARCH_KEY
+}
+
+/**
+ * The answer for `query`, asked once typing has settled.
+ *
+ * - The last answer stays on screen while the next query loads, so the list
+ *   does not flash empty between keystrokes, but only within the opening it
+ *   arrived in: `opening` changes each time the dialog opens.
+ * - An "indexing" answer is asked again every INDEXING_RETRY_MS until the
+ *   index is ready. The interval is a number taken from this query's own
+ *   answer: the SDK's SWR reads a function interval only when it sets its
+ *   timer, before an uncached answer has arrived, so it would never start.
+ *   SWR skips these retries while the tab is hidden or offline.
+ */
+export function useRecordSearch(query: string, opening: number) {
   const text = query.trim()
-  return useFrappeGetCall<{ message: SearchResponse }>(
+  const [indexing, setIndexing] = React.useState(false)
+  const search = useFrappeGetCall<{ message: SearchResponse }>(
     "setu.api.search.search",
     { text },
     // A null key fetches nothing, below the second letter.
-    isSearchable(text) ? ["envision:search", text] : null,
-    SEARCH
+    isSearchable(text) ? [SEARCH_KEY, text] : null,
+    { ...SEARCH, refreshInterval: indexing ? INDEXING_RETRY_MS : 0 }
   )
+  // This key's own answer: without keepPreviousData, never another query's.
+  const answer = search.data?.message
+
+  // Both follow the answer during render, so the interval and the kept answer
+  // committed with it always belong to the current key and opening.
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const answerIndexing = answer?.indexing ?? false
+  if (answerIndexing !== indexing) setIndexing(answerIndexing)
+  const [kept, setKept] = React.useState<{
+    opening: number
+    answer: SearchResponse
+  }>()
+  if (answer && (kept?.answer !== answer || kept.opening !== opening)) {
+    setKept({ opening, answer })
+  }
+
+  return {
+    response: answer ?? (kept?.opening === opening ? kept.answer : undefined),
+    isLoading: search.isLoading,
+    error: search.error,
+  }
 }
