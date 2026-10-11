@@ -2,7 +2,8 @@ import * as React from "react"
 import { useSelector } from "@tanstack/react-form"
 
 import { DiscardDraftDialog } from "@/components/milestones/discard-draft-dialog"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { CreateDialogContent } from "@/components/app-ui/editor-panel"
+import { Dialog } from "@/components/ui/dialog"
 import { bindingKey, getBinding, useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import {
@@ -11,7 +12,6 @@ import {
   useLinkTypes,
   type LinkSummary,
 } from "@/lib/links"
-import { cn } from "@/lib/utils"
 
 import { CreateLinkForm, effectiveLinkType } from "./create-link-form"
 import {
@@ -194,16 +194,7 @@ export function CreateLinkDialog({
         requestClose()
       }}
     >
-      <DialogContent
-        ref={popup}
-        showCloseButton={false}
-        className={cn(
-          "gap-0 rounded-3xl",
-          expanded
-            ? "flex h-[min(856px,calc(100dvh-3rem))] flex-col overflow-hidden p-0 sm:max-w-[1120px]"
-            : "p-6 sm:max-w-[520px]"
-        )}
-      >
+      <CreateDialogContent ref={popup} expanded={expanded}>
         <CreateLinkForm
           form={form}
           projectName={projectName}
@@ -221,7 +212,7 @@ export function CreateLinkDialog({
           record="link"
           draft="address, name and description"
         />
-      </DialogContent>
+      </CreateDialogContent>
     </Dialog>
   )
 }

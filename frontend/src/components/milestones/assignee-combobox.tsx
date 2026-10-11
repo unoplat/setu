@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
+import { PickerTrigger } from "@/components/app-ui/field-controls"
+import { PickerContent } from "@/components/app-ui/picker-content"
 import {
   Combobox,
-  ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
@@ -9,7 +9,6 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox"
 import { useAssignees, type Assignee } from "@/lib/assignees"
-import { propertyTriggerClassName } from "@/lib/style"
 
 import { AssigneeAvatar } from "./assignee-avatar"
 
@@ -64,17 +63,12 @@ export function AssigneeCombobox({
     >
       <ComboboxTrigger
         render={
-          <Button
+          // ComboboxTrigger draws its own chevron; inline, it is 06d's 12px.
+          <PickerTrigger
             id={id}
             type="button"
-            variant={inline ? "ghost" : "outline"}
+            appearance={inline ? "inline" : "field"}
             disabled={isLoading}
-            className={
-              inline
-                ? // ComboboxTrigger draws its own chevron; 06d's is 12px.
-                  `${propertyTriggerClassName} gap-2 [&>svg:last-child]:size-3`
-                : "h-11 w-full justify-between gap-2 rounded-xl px-3.5 font-normal"
-            }
           />
         }
       >
@@ -91,7 +85,7 @@ export function AssigneeCombobox({
           </span>
         )}
       </ComboboxTrigger>
-      <ComboboxContent>
+      <PickerContent>
         <ComboboxInput
           showTrigger={false}
           showClear={selected !== null}
@@ -108,7 +102,7 @@ export function AssigneeCombobox({
             </ComboboxItem>
           )}
         </ComboboxList>
-      </ComboboxContent>
+      </PickerContent>
     </Combobox>
   )
 }

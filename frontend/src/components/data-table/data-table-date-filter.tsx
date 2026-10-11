@@ -3,9 +3,9 @@ import { format, isSameYear } from "date-fns"
 import { PlusCircleIcon, XIcon } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
+import { FilterValueBadge } from "@/components/app-ui/filter-value-badge"
 import { DateRangePickerContent } from "@/components/custom/date-picker-with-range"
 import { useDataTable } from "@/components/data-table/data-table-provider"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -69,9 +69,9 @@ export function DataTableDateFilter<TData>({
         {date?.from ? (
           <>
             <Separator orientation="vertical" className="mx-0.5 h-4" />
-            <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+            <FilterValueBadge>
               {formatRange(date.from, date.to)}
-            </Badge>
+            </FilterValueBadge>
           </>
         ) : null}
       </PopoverTrigger>

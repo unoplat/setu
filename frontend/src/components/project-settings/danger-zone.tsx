@@ -1,6 +1,6 @@
 import { Trash2Icon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
 
 // Paper: "Danger Zone Section" of 05 — Project Settings. Only rendered for
 // users the server says may delete (the creator or a Projects Manager);
@@ -30,14 +30,16 @@ export function DangerZone({
             {projectName}, and only once it has no tasks.
           </p>
         </div>
-        <Button
+        <ActionButton
           type="button"
-          className="h-9.5 shrink-0 gap-2 bg-destructive px-4 font-semibold text-background hover:bg-destructive/90"
+          tone="destructive"
+          size="md"
+          className="shrink-0 gap-2"
           onClick={onDelete}
         >
           <Trash2Icon className="size-3.5" />
           Delete project
-        </Button>
+        </ActionButton>
       </div>
     </section>
   )

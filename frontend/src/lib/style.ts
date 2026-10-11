@@ -73,12 +73,3 @@ export const boxSurfaceClassName = [
  */
 export const toolbarButtonClassName =
   "h-8 gap-1.5 rounded-md border-input px-2.5 text-[13px] [&_svg:not([class*='size-'])]:size-3.5"
-
-/**
- * Paper 06d: a property's value on the milestone page, a quiet 28px ghost
- * button (value and a small chevron) that only shows its box on hover or
- * while its picker is open, so the rows read as details rather than a form.
- * A long value wraps onto more lines rather than widening the rail.
- */
-export const propertyTriggerClassName =
-  "h-auto min-h-7 w-auto min-w-0 shrink gap-1.5 rounded-sm px-2 py-1 text-start font-normal whitespace-normal"

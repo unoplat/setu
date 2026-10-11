@@ -3,11 +3,11 @@ import { useSelector } from "@tanstack/react-form"
 import { useFrappePostCall } from "frappe-react-sdk"
 import { toast } from "sonner"
 
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { CreateSheetContent } from "@/components/app-ui/editor-panel"
+import { Sheet } from "@/components/ui/sheet"
 import { bindingKey, getBinding, useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import type { Milestone } from "@/lib/milestones"
-import { cn } from "@/lib/utils"
 
 import { CreateMilestoneForm } from "./create-milestone-form"
 import { DATE_PICKER_POPUP } from "./date-picker"
@@ -24,15 +24,8 @@ function isEditorPopup(target: EventTarget | null): boolean {
   return target instanceof Element && !!target.closest("[data-richtext-portal]")
 }
 
-// The panel's two layouts are one shadcn Sheet popup, restyled: a 520px panel
-// on the right (06a), or the centred 1120 × 856 writing surface (06b), which
-// pins all four edges and centres with auto margins. The `data-[side=right]:`
-// prefixes match SheetContent's own classes so they replace them rather than
-// compete with them.
-const COMPACT_LAYOUT =
-  "gap-0 p-7 data-[side=right]:w-full data-[side=right]:sm:max-w-[520px]"
-const EXPANDED_LAYOUT =
-  "gap-0 overflow-hidden rounded-3xl p-0 ring-1 ring-foreground/5 data-[side=right]:left-0 data-[side=right]:m-auto data-[side=right]:h-[min(856px,calc(100dvh-3rem))] data-[side=right]:w-full data-[side=right]:max-w-[calc(100%-2rem)] data-[side=right]:border-s-0 data-[side=right]:sm:max-w-[1120px]"
+// The panel's two layouts, a 520px panel on the right (06a) or the centred
+// 1120 × 856 writing surface (06b), are CreateSheetContent's.
 
 /**
  * Create Milestone panel (Paper screen 06a), opened from the Milestones page,
@@ -201,12 +194,7 @@ export function CreateMilestoneSheet({
         requestClose()
       }}
     >
-      <SheetContent
-        ref={popup}
-        side="right"
-        showCloseButton={false}
-        className={cn(expanded ? EXPANDED_LAYOUT : COMPACT_LAYOUT)}
-      >
+      <CreateSheetContent ref={popup} expanded={expanded}>
         <CreateMilestoneForm
           form={form}
           projectName={projectName}
@@ -220,7 +208,7 @@ export function CreateMilestoneSheet({
           onKeepEditing={() => setConfirmingDiscard(false)}
           onDiscard={close}
         />
-      </SheetContent>
+      </CreateSheetContent>
     </Sheet>
   )
 }

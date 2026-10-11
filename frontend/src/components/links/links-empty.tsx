@@ -1,21 +1,20 @@
 import { ActivityIcon, BookOpenIcon, LinkIcon, PlusIcon } from "lucide-react"
 
-import { IconTile } from "@/components/reui/icon-tile"
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+  PageEmptyActions,
+  PageEmptyDescription,
+  PageEmptyHeader,
+  PageEmptyTitle,
+} from "@/components/app-ui/page-empty"
+import { IconTile } from "@/components/reui/icon-tile"
+import { Empty, EmptyMedia } from "@/components/ui/empty"
 
 // Paper: Links 01 — Empty Links page.
 export function LinksEmpty({ onAdd }: { onAdd: () => void }) {
   return (
     <Empty className="min-h-105 border">
-      <EmptyHeader className="max-w-110 gap-1.5">
+      <PageEmptyHeader className="max-w-110">
         <EmptyMedia className="mb-3 gap-2">
           <IconTile variant="soft" className="text-muted-foreground">
             <BookOpenIcon />
@@ -27,18 +26,18 @@ export function LinksEmpty({ onAdd }: { onAdd: () => void }) {
             <ActivityIcon />
           </IconTile>
         </EmptyMedia>
-        <EmptyTitle className="text-xl font-semibold">No links yet</EmptyTitle>
-        <EmptyDescription className="leading-5.5">
+        <PageEmptyTitle>No links yet</PageEmptyTitle>
+        <PageEmptyDescription>
           Add the docs, videos, dashboards and chat channels this project uses,
           so nobody has to dig for them.
-        </EmptyDescription>
-      </EmptyHeader>
-      <EmptyContent className="pt-2">
-        <Button className="h-9.5 px-4 font-semibold" onClick={onAdd}>
+        </PageEmptyDescription>
+      </PageEmptyHeader>
+      <PageEmptyActions>
+        <ActionButton size="md" onClick={onAdd}>
           <PlusIcon data-icon="inline-start" />
           Add link
-        </Button>
-      </EmptyContent>
+        </ActionButton>
+      </PageEmptyActions>
     </Empty>
   )
 }

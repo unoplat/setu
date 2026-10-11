@@ -8,7 +8,7 @@ import { CreateModuleSheet } from "@/components/modules/create-module-sheet"
 import { ModuleTable } from "@/components/modules/module-table"
 import { ModulesEmpty } from "@/components/modules/modules-empty"
 import { ProjectHeader } from "@/components/project-header"
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import { modulesKey, useModules, type Module } from "@/lib/modules"
@@ -66,13 +66,10 @@ function ModulesPage() {
   return (
     <>
       <ProjectHeader name={name} projectName={projectName} section="Modules">
-        <Button
-          className="h-9 px-3.5 font-semibold"
-          onClick={() => setCreating(true)}
-        >
+        <ActionButton onClick={() => setCreating(true)}>
           <PlusIcon data-icon="inline-start" />
           New module
-        </Button>
+        </ActionButton>
       </ProjectHeader>
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {isLoading || (!modules && !error) ? (

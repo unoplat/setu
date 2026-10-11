@@ -1,20 +1,27 @@
 import * as React from "react"
 import { useSelector } from "@tanstack/react-form"
-import { CheckIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react"
+import { XIcon } from "lucide-react"
 
+import { ActionButton } from "@/components/app-ui/action-button"
+import {
+  EditorCollapseButton,
+  EditorDoneButton,
+  EditorExpandButton,
+  PanelCloseButton,
+  PanelTitle,
+} from "@/components/app-ui/editor-panel"
+import { CompactField, FieldInput } from "@/components/app-ui/field-controls"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { AssigneeCombobox } from "@/components/milestones/assignee-combobox"
 import { ProjectCombobox } from "@/components/project-combobox"
 import { Button } from "@/components/ui/button"
 import {
-  Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { SheetClose, SheetDescription, SheetTitle } from "@/components/ui/sheet"
+import { SheetClose, SheetDescription } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjects } from "@/lib/projects"
 import { cn } from "@/lib/utils"
@@ -99,48 +106,26 @@ export const CreateModuleForm = withForm({
         {expanded ? (
           <header className="flex shrink-0 items-center justify-between gap-4 border-b px-8 py-6">
             <div className="flex flex-col gap-1.5">
-              <SheetTitle className="text-2xl font-semibold tracking-tight">
-                Module description
-              </SheetTitle>
+              <PanelTitle surface="sheet">Module description</PanelTitle>
               <SheetDescription>
                 {moduleName.trim() || "Untitled module"} · Create module
               </SheetDescription>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9.5 gap-2 rounded-full px-3"
+            <EditorCollapseButton
+              command="createModule.toggleDescription"
               onClick={onCollapse}
-            >
-              <Minimize2Icon />
-              Collapse
-              <HotkeyText
-                command="createModule.toggleDescription"
-                className="text-xs font-normal text-muted-foreground"
-              />
-            </Button>
+            />
           </header>
         ) : (
           <div className="flex shrink-0 items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
-              <SheetTitle className="text-2xl font-semibold tracking-tight">
-                Create module
-              </SheetTitle>
+              <PanelTitle surface="sheet">Create module</PanelTitle>
               <SheetDescription>
                 Name a lasting part of the product, choose who leads it, and
                 describe what belongs inside.
               </SheetDescription>
             </div>
-            <SheetClose
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="-me-1 -mt-1 bg-secondary"
-                />
-              }
-              disabled={submitting}
-            >
+            <SheetClose render={<PanelCloseButton />} disabled={submitting}>
               <XIcon />
               <span className="sr-only">Close</span>
             </SheetClose>
@@ -164,15 +149,15 @@ export const CreateModuleForm = withForm({
             {(field) => {
               const fieldError = visibleError(field.state.meta)
               return (
-                <Field
-                  className={cn("gap-2", expanded && "hidden")}
+                <CompactField
+                  className={expanded ? "hidden" : undefined}
                   data-invalid={fieldError ? true : undefined}
                 >
                   <FieldLabel htmlFor="module-name">
                     Module name
                     {requiredMark}
                   </FieldLabel>
-                  <Input
+                  <FieldInput
                     id="module-name"
                     name="module_name"
                     placeholder="Payments"
@@ -182,17 +167,16 @@ export const CreateModuleForm = withForm({
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     aria-invalid={fieldError ? true : undefined}
-                    className="h-11 rounded-xl"
                   />
                   <FieldError>{fieldError}</FieldError>
-                </Field>
+                </CompactField>
               )
             }}
           </form.Field>
 
           <form.Field name="description">
             {(field) => (
-              <Field className={expanded ? "min-h-0 flex-1 gap-0" : "gap-2"}>
+              <CompactField className={expanded ? "min-h-0 flex-1" : undefined}>
                 {expanded ? null : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -203,21 +187,11 @@ export const CreateModuleForm = withForm({
                         Optional
                       </span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="xs"
-                      className="h-7 gap-1.5 rounded-md px-2"
+                    <EditorExpandButton
+                      command="createModule.toggleDescription"
                       disabled={submitting}
                       onClick={onExpand}
-                    >
-                      <Maximize2Icon className="size-3.5" />
-                      Expand
-                      <HotkeyText
-                        command="createModule.toggleDescription"
-                        className="font-normal text-muted-foreground"
-                      />
-                    </Button>
+                    />
                   </div>
                 )}
                 <React.Suspense
@@ -241,13 +215,13 @@ export const CreateModuleForm = withForm({
                     label="Module description"
                   />
                 </React.Suspense>
-              </Field>
+              </CompactField>
             )}
           </form.Field>
 
           <form.Field name="lead">
             {(field) => (
-              <Field className={cn("gap-2", expanded && "hidden")}>
+              <CompactField className={expanded ? "hidden" : undefined}>
                 <FieldLabel htmlFor="module-lead">Lead</FieldLabel>
                 <AssigneeCombobox
                   id="module-lead"
@@ -259,13 +233,13 @@ export const CreateModuleForm = withForm({
                 <FieldDescription className="text-[13px]">
                   Who the team goes to about this area. Optional.
                 </FieldDescription>
-              </Field>
+              </CompactField>
             )}
           </form.Field>
 
           <form.Field name="project">
             {(field) => (
-              <Field className={cn("gap-2", expanded && "hidden")}>
+              <CompactField className={expanded ? "hidden" : undefined}>
                 <FieldLabel htmlFor="module-project">
                   Project
                   {requiredMark}
@@ -280,7 +254,7 @@ export const CreateModuleForm = withForm({
                 <FieldDescription className="text-[13px]">
                   The product this module is a part of.
                 </FieldDescription>
-              </Field>
+              </CompactField>
             )}
           </form.Field>
 
@@ -296,15 +270,7 @@ export const CreateModuleForm = withForm({
                 return to the form · Your module isn’t created yet
               </span>
             </div>
-            <Button
-              type="button"
-              size="lg"
-              className="gap-3 px-5 font-semibold"
-              onClick={onCollapse}
-            >
-              Done
-              <CheckIcon />
-            </Button>
+            <EditorDoneButton onClick={onCollapse} />
           </footer>
         ) : (
           <footer className="flex shrink-0 flex-wrap items-center gap-2.5 border-t pt-6">
@@ -325,14 +291,9 @@ export const CreateModuleForm = withForm({
             >
               Cancel
             </SheetClose>
-            <Button
-              type="submit"
-              size="lg"
-              className="px-4.5 font-semibold"
-              disabled={state !== "ready"}
-            >
+            <ActionButton type="submit" size="lg" disabled={state !== "ready"}>
               {submitting ? "Creating…" : "Create module"}
-            </Button>
+            </ActionButton>
           </footer>
         )}
       </form>

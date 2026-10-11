@@ -3,11 +3,11 @@ import { useSelector } from "@tanstack/react-form"
 import { useFrappePostCall } from "frappe-react-sdk"
 
 import { DiscardDraftDialog } from "@/components/milestones/discard-draft-dialog"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { CreateSheetContent } from "@/components/app-ui/editor-panel"
+import { Sheet } from "@/components/ui/sheet"
 import { bindingKey, getBinding, useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import type { Module } from "@/lib/modules"
-import { cn } from "@/lib/utils"
 
 import { CreateModuleForm } from "./create-module-form"
 import {
@@ -23,13 +23,8 @@ function isEditorPopup(target: EventTarget | null): boolean {
   return target instanceof Element && !!target.closest("[data-richtext-portal]")
 }
 
-// The panel's two layouts are one shadcn Sheet popup, restyled, as on the
-// Create Milestone panel: a 520px panel on the right (07a), or the centred
-// 1120 × 856 writing surface (07b).
-const COMPACT_LAYOUT =
-  "gap-0 p-7 data-[side=right]:w-full data-[side=right]:sm:max-w-[520px]"
-const EXPANDED_LAYOUT =
-  "gap-0 overflow-hidden rounded-3xl p-0 ring-1 ring-foreground/5 data-[side=right]:left-0 data-[side=right]:m-auto data-[side=right]:h-[min(856px,calc(100dvh-3rem))] data-[side=right]:w-full data-[side=right]:max-w-[calc(100%-2rem)] data-[side=right]:border-s-0 data-[side=right]:sm:max-w-[1120px]"
+// The panel's two layouts, a 520px panel on the right (07a) or the centred
+// 1120 × 856 writing surface (07b), are CreateSheetContent's.
 
 /**
  * Create Module panel (Paper screen 07a), opened from the Modules page, which
@@ -189,12 +184,7 @@ export function CreateModuleSheet({
         requestClose()
       }}
     >
-      <SheetContent
-        ref={popup}
-        side="right"
-        showCloseButton={false}
-        className={cn(expanded ? EXPANDED_LAYOUT : COMPACT_LAYOUT)}
-      >
+      <CreateSheetContent ref={popup} expanded={expanded}>
         <CreateModuleForm
           form={form}
           project={project}
@@ -211,7 +201,7 @@ export function CreateModuleSheet({
           record="module"
           draft="name and description"
         />
-      </SheetContent>
+      </CreateSheetContent>
     </Sheet>
   )
 }

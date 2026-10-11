@@ -4,11 +4,11 @@ import { useFrappeGetDoc } from "frappe-react-sdk"
 import { PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { ActionButton } from "@/components/app-ui/action-button"
 import { CreateLinkDialog } from "@/components/links/create-link-dialog"
 import { AddLinkCard, LinkCard } from "@/components/links/link-card"
 import { LinksEmpty } from "@/components/links/links-empty"
 import { ProjectHeader } from "@/components/project-header"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import { useLinks, type LinkSummary } from "@/lib/links"
@@ -67,10 +67,10 @@ function LinksPage() {
               </p>
             </div>
             {links?.length ? (
-              <Button className="h-9 px-3.5 font-semibold" onClick={add}>
+              <ActionButton onClick={add}>
                 <PlusIcon data-icon="inline-start" />
                 Add link
-              </Button>
+              </ActionButton>
             ) : null}
           </div>
 
