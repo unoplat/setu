@@ -1,7 +1,14 @@
 import * as React from "react"
 import { useSelector } from "@tanstack/react-form"
-import { CheckIcon, Maximize2Icon, Minimize2Icon } from "lucide-react"
 
+import { ActionButton } from "@/components/app-ui/action-button"
+import {
+  EditorCollapseButton,
+  EditorDoneButton,
+  EditorExpandButton,
+  PanelTitle,
+} from "@/components/app-ui/editor-panel"
+import { CompactField, FieldInput } from "@/components/app-ui/field-controls"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,13 +16,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   displayHost,
@@ -25,7 +26,6 @@ import {
   useLinkTypes,
   type LinkType,
 } from "@/lib/links"
-import { cn } from "@/lib/utils"
 
 import {
   createLinkFormOptions,
@@ -124,26 +124,15 @@ export const CreateLinkForm = withForm({
         {expanded ? (
           <header className="flex shrink-0 items-center justify-between gap-4 border-b px-8 py-6">
             <div className="flex flex-col gap-1.5">
-              <DialogTitle className="text-2xl font-semibold tracking-tight">
-                Link description
-              </DialogTitle>
+              <PanelTitle surface="dialog">Link description</PanelTitle>
               <DialogDescription>
                 {linkName.trim() || "Untitled link"} · Add link
               </DialogDescription>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9.5 gap-2 rounded-full px-3"
+            <EditorCollapseButton
+              command="createLink.toggleDescription"
               onClick={onCollapse}
-            >
-              <Minimize2Icon />
-              Collapse
-              <HotkeyText
-                command="createLink.toggleDescription"
-                className="text-xs font-normal text-muted-foreground"
-              />
-            </Button>
+            />
           </header>
         ) : (
           <div className="flex flex-col gap-1">
@@ -164,12 +153,12 @@ export const CreateLinkForm = withForm({
             {(field) => {
               const fieldError = visibleError(field.state.meta)
               return (
-                <Field
-                  className={cn("gap-2", expanded && "hidden")}
+                <CompactField
+                  className={expanded ? "hidden" : undefined}
                   data-invalid={fieldError ? true : undefined}
                 >
                   <FieldLabel htmlFor="link-url">Web address</FieldLabel>
-                  <Input
+                  <FieldInput
                     id="link-url"
                     name="url"
                     type="url"
@@ -187,10 +176,10 @@ export const CreateLinkForm = withForm({
                       field.handleBlur()
                     }}
                     aria-invalid={fieldError ? true : undefined}
-                    className="h-10 rounded-xl"
+                    className="h-10"
                   />
                   <FieldError>{fieldError}</FieldError>
-                </Field>
+                </CompactField>
               )
             }}
           </form.Field>
@@ -202,12 +191,12 @@ export const CreateLinkForm = withForm({
             {(field) => {
               const fieldError = visibleError(field.state.meta)
               return (
-                <Field
-                  className={cn("gap-2", expanded && "hidden")}
+                <CompactField
+                  className={expanded ? "hidden" : undefined}
                   data-invalid={fieldError ? true : undefined}
                 >
                   <FieldLabel htmlFor="link-name">Name</FieldLabel>
-                  <Input
+                  <FieldInput
                     id="link-name"
                     name="link_name"
                     placeholder="Onboarding walkthrough"
@@ -216,17 +205,17 @@ export const CreateLinkForm = withForm({
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     aria-invalid={fieldError ? true : undefined}
-                    className="h-10 rounded-xl"
+                    className="h-10"
                   />
                   <FieldError>{fieldError}</FieldError>
-                </Field>
+                </CompactField>
               )
             }}
           </form.Field>
 
           <form.Field name="description">
             {(field) => (
-              <Field className={expanded ? "min-h-0 flex-1 gap-0" : "gap-2"}>
+              <CompactField className={expanded ? "min-h-0 flex-1" : undefined}>
                 {expanded ? null : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -237,21 +226,11 @@ export const CreateLinkForm = withForm({
                         Optional
                       </span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="xs"
-                      className="h-7 gap-1.5 rounded-md px-2"
+                    <EditorExpandButton
+                      command="createLink.toggleDescription"
                       disabled={submitting}
                       onClick={onExpand}
-                    >
-                      <Maximize2Icon className="size-3.5" />
-                      Expand
-                      <HotkeyText
-                        command="createLink.toggleDescription"
-                        className="font-normal text-muted-foreground"
-                      />
-                    </Button>
+                    />
                   </div>
                 )}
                 <React.Suspense
@@ -275,13 +254,13 @@ export const CreateLinkForm = withForm({
                     label="Link description"
                   />
                 </React.Suspense>
-              </Field>
+              </CompactField>
             )}
           </form.Field>
 
           <form.Field name="link_type">
             {(field) => (
-              <Field className={cn("gap-2", expanded && "hidden")}>
+              <CompactField className={expanded ? "hidden" : undefined}>
                 <div className="flex items-center justify-between gap-4">
                   <FieldLabel htmlFor="link-type">Type</FieldLabel>
                   {typeHint ? (
@@ -319,7 +298,7 @@ export const CreateLinkForm = withForm({
                 {types.error ? (
                   <FieldError>Types could not be loaded.</FieldError>
                 ) : null}
-              </Field>
+              </CompactField>
             )}
           </form.Field>
 
@@ -335,15 +314,7 @@ export const CreateLinkForm = withForm({
                 return to the form · Your link isn’t added yet
               </span>
             </div>
-            <Button
-              type="button"
-              size="lg"
-              className="gap-3 px-5 font-semibold"
-              onClick={onCollapse}
-            >
-              Done
-              <CheckIcon />
-            </Button>
+            <EditorDoneButton onClick={onCollapse} />
           </footer>
         ) : (
           <footer className="flex flex-wrap items-center justify-end gap-2.5">
@@ -365,14 +336,13 @@ export const CreateLinkForm = withForm({
             >
               Cancel
             </DialogClose>
-            <Button
+            <ActionButton
               type="submit"
               size="lg"
-              className="px-4.5 font-semibold"
               disabled={state !== "ready" || creatingType}
             >
               {submitting ? "Adding…" : "Add link"}
-            </Button>
+            </ActionButton>
           </footer>
         )}
       </form>

@@ -1,21 +1,19 @@
 import * as React from "react"
-import {
-  CheckIcon,
-  LoaderCircleIcon,
-  Maximize2Icon,
-  Minimize2Icon,
-} from "lucide-react"
+import { CheckIcon, LoaderCircleIcon, Maximize2Icon } from "lucide-react"
 
+import { ActionButton } from "@/components/app-ui/action-button"
+import {
+  EditorCollapseButton,
+  EditorDoneButton,
+} from "@/components/app-ui/editor-panel"
+import {
+  PromptDialogContent,
+  PromptDialogFooter,
+  PromptDialogHeader,
+} from "@/components/app-ui/prompt-dialog"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog } from "@/components/ui/dialog"
 import { FieldError } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { AutosaveStatus, ConflictChoice } from "@/lib/autosave"
@@ -333,19 +331,7 @@ export function DescriptionField({
             <h2 className="text-2xl font-semibold tracking-tight">{label}</h2>
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-9.5 gap-2 rounded-full px-3"
-            onClick={onCollapse}
-          >
-            <Minimize2Icon />
-            Collapse
-            <HotkeyText
-              command={toggleCommand}
-              className="text-xs font-normal text-muted-foreground"
-            />
-          </Button>
+          <EditorCollapseButton command={toggleCommand} onClick={onCollapse} />
         </header>
       ) : (
         // Named like the Comments below it, with Expand always in reach.
@@ -421,15 +407,7 @@ export function DescriptionField({
               you write
             </span>
           </div>
-          <Button
-            type="button"
-            size="lg"
-            className="gap-3 px-5 font-semibold"
-            onClick={onCollapse}
-          >
-            Done
-            <CheckIcon />
-          </Button>
+          <EditorDoneButton onClick={onCollapse} />
         </footer>
       ) : null}
     </section>
@@ -472,22 +450,17 @@ export function UnsavedEditsDialog({
         leaving?.stay()
       }}
     >
-      <DialogContent
-        showCloseButton={false}
-        className="gap-6 rounded-3xl p-7 sm:max-w-[480px]"
-      >
-        <DialogHeader className="gap-2">
-          <DialogTitle className="text-[22px] leading-7.5 font-semibold tracking-tight">
-            Your last edits to {record} aren’t saved
-          </DialogTitle>
-          <DialogDescription className="leading-5.5">
-            {conflict
+      <PromptDialogContent>
+        <PromptDialogHeader
+          title={<>Your last edits to {record} aren’t saved</>}
+          description={
+            conflict
               ? "Someone changed the same fields elsewhere while you were editing. Keep editing to choose which version to keep, or leave without yours."
               : (reason ??
-                "A field needs fixing before they can be saved. Keep editing to fix it, or leave without them.")}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-2.5 pt-1">
+                "A field needs fixing before they can be saved. Keep editing to fix it, or leave without them.")
+          }
+        />
+        <PromptDialogFooter>
           <Button
             type="button"
             variant="ghost"
@@ -508,18 +481,17 @@ export function UnsavedEditsDialog({
             Leave without saving
           </Button>
           {reason ? (
-            <Button
+            <ActionButton
               type="button"
               size="lg"
-              className="px-4.5 font-semibold"
               disabled={saving}
               onClick={() => void leaving?.retry()}
             >
               {saving ? "Saving…" : "Try again"}
-            </Button>
+            </ActionButton>
           ) : null}
-        </DialogFooter>
-      </DialogContent>
+        </PromptDialogFooter>
+      </PromptDialogContent>
     </Dialog>
   )
 }

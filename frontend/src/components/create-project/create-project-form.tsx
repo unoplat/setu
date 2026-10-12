@@ -1,7 +1,16 @@
 import * as React from "react"
 import { useStore } from "@tanstack/react-form"
-import { CheckIcon, Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react"
+import { XIcon } from "lucide-react"
 
+import { ActionButton } from "@/components/app-ui/action-button"
+import {
+  EditorCollapseButton,
+  EditorDoneButton,
+  EditorExpandButton,
+  PanelCloseButton,
+  PanelTitle,
+} from "@/components/app-ui/editor-panel"
+import { CompactField, FieldInput } from "@/components/app-ui/field-controls"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,18 +18,10 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCommand } from "@/lib/commands"
-import { cn } from "@/lib/utils"
 
 import {
   createProjectFormOptions,
@@ -81,47 +82,25 @@ export const CreateProjectForm = withForm({
         {expanded ? (
           <header className="flex shrink-0 items-center justify-between gap-4 border-b px-8 py-6">
             <div className="flex flex-col gap-1.5">
-              <DialogTitle className="text-2xl font-semibold tracking-tight">
-                Project description
-              </DialogTitle>
+              <PanelTitle surface="dialog">Project description</PanelTitle>
               <DialogDescription>
                 {projectName.trim() || "Untitled project"} · Create a project
               </DialogDescription>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9.5 gap-2 rounded-full px-3"
+            <EditorCollapseButton
+              command="createProject.toggleDescription"
               onClick={onCollapse}
-            >
-              <Minimize2Icon />
-              Collapse
-              <HotkeyText
-                command="createProject.toggleDescription"
-                className="text-xs font-normal text-muted-foreground"
-              />
-            </Button>
+            />
           </header>
         ) : (
           <div className="flex items-start justify-between gap-4">
             <DialogHeader className="gap-2">
-              <DialogTitle className="text-2xl font-semibold tracking-tight">
-                Create a project
-              </DialogTitle>
+              <PanelTitle surface="dialog">Create a project</PanelTitle>
               <DialogDescription>
                 Name the work and add enough context to get started.
               </DialogDescription>
             </DialogHeader>
-            <DialogClose
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="-me-1 -mt-1 bg-secondary"
-                />
-              }
-              disabled={submitting}
-            >
+            <DialogClose render={<PanelCloseButton />} disabled={submitting}>
               <XIcon />
               <span className="sr-only">Close</span>
             </DialogClose>
@@ -140,8 +119,8 @@ export const CreateProjectForm = withForm({
                 (item): item is string => typeof item === "string"
               )
               return (
-                <Field
-                  className={cn("gap-2", expanded && "hidden")}
+                <CompactField
+                  className={expanded ? "hidden" : undefined}
                   data-invalid={error ? true : undefined}
                 >
                   <FieldLabel htmlFor="project-name">
@@ -150,7 +129,7 @@ export const CreateProjectForm = withForm({
                       *
                     </span>
                   </FieldLabel>
-                  <Input
+                  <FieldInput
                     id="project-name"
                     name="project_name"
                     placeholder="Mobile App"
@@ -160,17 +139,16 @@ export const CreateProjectForm = withForm({
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     aria-invalid={error ? true : undefined}
-                    className="h-11 rounded-xl"
                   />
                   <FieldError>{error}</FieldError>
-                </Field>
+                </CompactField>
               )
             }}
           </form.Field>
 
           <form.Field name="description">
             {(field) => (
-              <Field className={expanded ? "min-h-0 flex-1 gap-0" : "gap-2"}>
+              <CompactField className={expanded ? "min-h-0 flex-1" : undefined}>
                 {expanded ? null : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -181,21 +159,11 @@ export const CreateProjectForm = withForm({
                         Optional
                       </span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="xs"
-                      className="h-7 gap-1.5 rounded-md px-2"
+                    <EditorExpandButton
+                      command="createProject.toggleDescription"
                       disabled={submitting}
                       onClick={onExpand}
-                    >
-                      <Maximize2Icon className="size-3.5" />
-                      Expand
-                      <HotkeyText
-                        command="createProject.toggleDescription"
-                        className="font-normal text-muted-foreground"
-                      />
-                    </Button>
+                    />
                   </div>
                 )}
                 <React.Suspense
@@ -218,7 +186,7 @@ export const CreateProjectForm = withForm({
                     expanded={expanded}
                   />
                 </React.Suspense>
-              </Field>
+              </CompactField>
             )}
           </form.Field>
           {error && !expanded ? <FieldError>{error}</FieldError> : null}
@@ -235,15 +203,7 @@ export const CreateProjectForm = withForm({
                 return to the form · Your project isn’t created yet
               </span>
             </div>
-            <Button
-              type="button"
-              size="lg"
-              className="gap-3 px-5 font-semibold"
-              onClick={onCollapse}
-            >
-              Done
-              <CheckIcon />
-            </Button>
+            <EditorDoneButton onClick={onCollapse} />
           </footer>
         ) : (
           <DialogFooter className="gap-2.5">
@@ -253,14 +213,9 @@ export const CreateProjectForm = withForm({
             >
               Cancel
             </DialogClose>
-            <Button
-              type="submit"
-              size="lg"
-              className="px-4.5 font-semibold"
-              disabled={submitting}
-            >
+            <ActionButton type="submit" size="lg" disabled={submitting}>
               Create project
-            </Button>
+            </ActionButton>
           </DialogFooter>
         )}
       </form>

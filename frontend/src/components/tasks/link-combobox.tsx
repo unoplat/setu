@@ -1,16 +1,15 @@
 import * as React from "react"
 
-import { Button } from "@/components/ui/button"
+import { PickerTrigger } from "@/components/app-ui/field-controls"
+import { PickerContent } from "@/components/app-ui/picker-content"
 import {
   Combobox,
-  ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox"
-import { propertyTriggerClassName } from "@/lib/style"
 import { cn } from "@/lib/utils"
 
 /** One record the Task can link to, as the picker lists it. */
@@ -83,17 +82,12 @@ export function LinkCombobox({
     >
       <ComboboxTrigger
         render={
-          <Button
+          // ComboboxTrigger draws its own chevron; inline, it is 09's 12px.
+          <PickerTrigger
             id={id}
             type="button"
-            variant={inline ? "ghost" : "outline"}
+            appearance={inline ? "inline" : "field"}
             disabled={loading}
-            className={
-              inline
-                ? // ComboboxTrigger draws its own chevron; 09's is 12px.
-                  `${propertyTriggerClassName} gap-2 [&>svg:last-child]:size-3`
-                : "h-11 w-full justify-between gap-2 rounded-xl px-3.5 font-normal"
-            }
           />
         }
       >
@@ -113,7 +107,7 @@ export function LinkCombobox({
           {loading ? "Loading…" : selected.label}
         </span>
       </ComboboxTrigger>
-      <ComboboxContent>
+      <PickerContent>
         <ComboboxInput showTrigger={false} placeholder={searchPlaceholder} />
         <ComboboxEmpty>{emptyText}</ComboboxEmpty>
         <ComboboxList>
@@ -136,7 +130,7 @@ export function LinkCombobox({
         <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
           {footer}
         </p>
-      </ComboboxContent>
+      </PickerContent>
     </Combobox>
   )
 }

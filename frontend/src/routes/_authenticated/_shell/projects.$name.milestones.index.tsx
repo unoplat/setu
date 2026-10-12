@@ -7,7 +7,7 @@ import { CreateMilestoneSheet } from "@/components/milestones/create-milestone-s
 import { MilestoneTable } from "@/components/milestones/milestone-table"
 import { MilestonesEmpty } from "@/components/milestones/milestones-empty"
 import { ProjectHeader } from "@/components/project-header"
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import { useMilestones } from "@/lib/milestones"
@@ -34,13 +34,10 @@ function MilestonesPage() {
   return (
     <>
       <ProjectHeader name={name} projectName={projectName} section="Milestones">
-        <Button
-          className="h-9 px-3.5 font-semibold"
-          onClick={() => setCreating(true)}
-        >
+        <ActionButton onClick={() => setCreating(true)}>
           <PlusIcon data-icon="inline-start" />
           New milestone
-        </Button>
+        </ActionButton>
       </ProjectHeader>
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {isLoading || (!milestones && !error) ? (

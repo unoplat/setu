@@ -5,7 +5,8 @@ import { toast } from "sonner"
 
 import { DATE_PICKER_POPUP } from "@/components/milestones/date-picker"
 import { DiscardDraftDialog } from "@/components/milestones/discard-draft-dialog"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { CreateSheetContent } from "@/components/app-ui/editor-panel"
+import { Sheet } from "@/components/ui/sheet"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import type { CreateStatus } from "@/lib/tasks"
@@ -171,12 +172,7 @@ export function CreateTaskSheet({
         requestClose()
       }}
     >
-      <SheetContent
-        ref={popup}
-        side="right"
-        showCloseButton={false}
-        className="gap-0 p-7 data-[side=right]:w-full data-[side=right]:sm:max-w-[520px]"
-      >
+      <CreateSheetContent ref={popup}>
         <CreateTaskForm
           form={form}
           project={project}
@@ -189,7 +185,7 @@ export function CreateTaskSheet({
           onDiscard={close}
           record="task"
         />
-      </SheetContent>
+      </CreateSheetContent>
     </Sheet>
   )
 }

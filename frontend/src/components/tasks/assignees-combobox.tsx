@@ -2,11 +2,11 @@ import * as React from "react"
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 import { PlusIcon } from "lucide-react"
 
+import { PickerTrigger } from "@/components/app-ui/field-controls"
+import { PickerContent } from "@/components/app-ui/picker-content"
 import { AssigneeAvatar } from "@/components/milestones/assignee-avatar"
-import { Button } from "@/components/ui/button"
 import {
   Combobox,
-  ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
@@ -15,8 +15,6 @@ import {
 } from "@/components/ui/combobox"
 import { useAssignees, type Assignee } from "@/lib/assignees"
 import { frappeErrorMessage } from "@/lib/frappe-error"
-import { propertyTriggerClassName } from "@/lib/style"
-import { cn } from "@/lib/utils"
 
 // A Task's Assignees (CONTEXT.md, Assignee): everyone Frappe's Assign To has
 // on it, picked like the Tags (03, 09): the field shows the people, the
@@ -117,21 +115,15 @@ export function AssigneesCombobox({
     >
       <ComboboxTrigger
         render={
-          <Button
+          // Inline, a "+" says more can be added, as on the Tags, so the
+          // trigger's chevron is hidden.
+          <PickerTrigger
             id={id}
             type="button"
-            variant={inline ? "ghost" : "outline"}
+            appearance={inline ? "inline" : "field"}
+            multiple
             // Loading only blocks the field when it has nobody to show.
             disabled={isLoading && selected.length === 0}
-            className={
-              inline
-                ? // A "+" says more can be added, as on the Tags.
-                  cn(
-                    propertyTriggerClassName,
-                    "py-0.75 [&>svg:last-child]:hidden"
-                  )
-                : "h-auto min-h-11 w-full justify-between gap-2 rounded-xl px-3.5 py-2 font-normal"
-            }
           />
         }
       >
@@ -151,8 +143,7 @@ export function AssigneesCombobox({
           </span>
         )}
       </ComboboxTrigger>
-      {/* The trigger can be a narrow rail value; names need more room. */}
-      <ComboboxContent className="min-w-72">
+      <PickerContent>
         <ComboboxInput showTrigger={false} placeholder="Search people" />
         {error ? (
           <p className="px-4.5 pt-2.5 text-xs text-destructive" role="alert">
@@ -170,7 +161,7 @@ export function AssigneesCombobox({
             </ComboboxItem>
           )}
         </ComboboxList>
-      </ComboboxContent>
+      </PickerContent>
     </Combobox>
   )
 }

@@ -3,11 +3,11 @@ import { useStore } from "@tanstack/react-form"
 import { useNavigate } from "@tanstack/react-router"
 import { useFrappePostCall } from "frappe-react-sdk"
 
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { CreateDialogContent } from "@/components/app-ui/editor-panel"
+import { Dialog } from "@/components/ui/dialog"
 import { bindingKey, getBinding, useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import { useProjects, type ProjectSummary } from "@/lib/projects"
-import { cn } from "@/lib/utils"
 
 import { CreateProjectForm } from "./create-project-form"
 import { createProjectFormOptions, useAppForm } from "./form"
@@ -154,15 +154,10 @@ export function CreateProjectDialog() {
         close()
       }}
     >
-      <DialogContent
+      <CreateDialogContent
         ref={popup}
-        showCloseButton={false}
-        className={cn(
-          "gap-0 rounded-3xl p-7",
-          expanded
-            ? "flex h-[min(856px,calc(100dvh-3rem))] flex-col overflow-hidden p-0 sm:max-w-[1120px]"
-            : "sm:max-w-[520px]"
-        )}
+        expanded={expanded}
+        className={expanded ? undefined : "p-7"}
       >
         <CreateProjectForm
           form={form}
@@ -171,7 +166,7 @@ export function CreateProjectDialog() {
           onExpand={expand}
           onCollapse={collapse}
         />
-      </DialogContent>
+      </CreateDialogContent>
     </Dialog>
   )
 }

@@ -1,14 +1,14 @@
 import { LayoutGridIcon, PlusIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+  PageEmptyActions,
+  PageEmptyDescription,
+  PageEmptyHeader,
+  PageEmptyIcon,
+  PageEmptyTitle,
+} from "@/components/app-ui/page-empty"
+import { Empty } from "@/components/ui/empty"
 
 // Paper: "Modules Empty State" on 07 — Empty Modules.
 export function ModulesEmpty({
@@ -20,27 +20,22 @@ export function ModulesEmpty({
 }) {
   return (
     <Empty className="pb-24">
-      <EmptyHeader className="max-w-105 gap-1.5">
-        <EmptyMedia
-          variant="icon"
-          className="mb-2.5 size-12 text-sidebar-primary [&_svg:not([class*='size-'])]:size-5.5"
-        >
+      <PageEmptyHeader className="max-w-105">
+        <PageEmptyIcon>
           <LayoutGridIcon />
-        </EmptyMedia>
-        <EmptyTitle className="text-xl font-semibold">
-          No modules yet
-        </EmptyTitle>
-        <EmptyDescription className="leading-5.5">
+        </PageEmptyIcon>
+        <PageEmptyTitle>No modules yet</PageEmptyTitle>
+        <PageEmptyDescription>
           Modules are the lasting parts of {projectName}, like Payments or
           Onboarding. Give each one a lead and describe what belongs inside.
-        </EmptyDescription>
-      </EmptyHeader>
-      <EmptyContent className="pt-2">
-        <Button className="h-9.5 px-4 font-semibold" onClick={onCreate}>
+        </PageEmptyDescription>
+      </PageEmptyHeader>
+      <PageEmptyActions>
+        <ActionButton size="md" onClick={onCreate}>
           <PlusIcon data-icon="inline-start" />
           Create module
-        </Button>
-      </EmptyContent>
+        </ActionButton>
+      </PageEmptyActions>
     </Empty>
   )
 }

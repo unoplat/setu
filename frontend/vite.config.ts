@@ -191,6 +191,16 @@ export default defineConfig({
         },
       },
       {
+        // App-owned design-system parts: the one place Envision's shared
+        // variants restyle the vendored primitives, as src/components/ui/
+        // does for the registry. A className their consumers pass is still
+        // held to the wrapped primitive's no-restyle contract.
+        files: ["src/components/app-ui/**"],
+        rules: {
+          "shadcn/no-restyle": "off",
+        },
+      },
+      {
         files: ["vite.config.ts"],
         env: {
           node: true,
@@ -210,6 +220,14 @@ export default defineConfig({
     ],
     rules: {
       "vite-plus/prefer-vite-plus-imports": "error",
+      // Audit existing design-system usage without blocking unrelated work.
+      // Layout belongs to consumers; component styling belongs to variants.
+      "shadcn/no-restyle": ["warn", { allow: ["layout"] }],
+      "shadcn/no-raw-colors": "warn",
+      "shadcn/no-arbitrary-values": "warn",
+      "shadcn/no-inline-styles": "warn",
+      "shadcn/require-static-classes": "warn",
+      "shadcn/no-unknown-classes": "warn",
     },
   },
   fmt: {

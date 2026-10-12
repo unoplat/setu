@@ -1,18 +1,17 @@
 import * as React from "react"
 import { Trash2Icon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
+import { CompactField, FieldInput } from "@/components/app-ui/field-controls"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+  PromptDialogContent,
+  PromptDialogFooter,
+  PromptDialogHeader,
+  PromptDialogIcon,
+} from "@/components/app-ui/prompt-dialog"
+import { Button } from "@/components/ui/button"
+import { Dialog } from "@/components/ui/dialog"
+import { FieldError, FieldLabel } from "@/components/ui/field"
 
 import { confirmsDeletion } from "./form"
 
@@ -53,10 +52,7 @@ export function DeleteProjectDialog({
         onCancel()
       }}
     >
-      <DialogContent
-        showCloseButton={false}
-        className="gap-6 rounded-3xl p-7 sm:max-w-[480px]"
-      >
+      <PromptDialogContent>
         {kind === "refused" ? (
           <RefusedBody
             projectName={projectName}
@@ -72,23 +68,16 @@ export function DeleteProjectDialog({
             onConfirm={onConfirm}
           />
         )}
-      </DialogContent>
+      </PromptDialogContent>
     </Dialog>
   )
 }
 
 function DialogIcon({ tone }: { tone: "destructive" | "muted" }) {
   return (
-    <div
-      className={cn(
-        "flex size-10 items-center justify-center rounded-[12px]",
-        tone === "destructive"
-          ? "bg-destructive/12 text-destructive"
-          : "bg-foreground/6 text-muted-foreground"
-      )}
-    >
-      <Trash2Icon className="size-4.5" strokeWidth={1.8} />
-    </div>
+    <PromptDialogIcon tone={tone}>
+      <Trash2Icon strokeWidth={1.8} />
+    </PromptDialogIcon>
   )
 }
 
@@ -115,34 +104,32 @@ function ConfirmBody({
         if (confirmed && !deleting) onConfirm()
       }}
     >
-      <DialogHeader className="gap-3.5">
-        <DialogIcon tone="destructive" />
-        <div className="flex flex-col gap-2">
-          <DialogTitle className="text-[22px] leading-7.5 font-semibold tracking-tight">
-            Delete {projectName}?
-          </DialogTitle>
-          <DialogDescription className="leading-5.5">
+      <PromptDialogHeader
+        icon={<DialogIcon tone="destructive" />}
+        title={<>Delete {projectName}?</>}
+        description={
+          <>
             This permanently deletes {projectName} for everyone. It cannot be
             undone.
-          </DialogDescription>
-        </div>
-      </DialogHeader>
-      <Field className="gap-2" data-invalid={error ? true : undefined}>
+          </>
+        }
+      />
+      <CompactField data-invalid={error ? true : undefined}>
         <FieldLabel htmlFor="delete-project-confirm">
           Type “{projectName}” to confirm
         </FieldLabel>
-        <Input
+        <FieldInput
           id="delete-project-confirm"
           autoComplete="off"
           autoFocus
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
           disabled={deleting}
-          className="h-11 rounded-xl bg-background focus-visible:border-destructive focus-visible:ring-destructive/15"
+          className="bg-background focus-visible:border-destructive focus-visible:ring-destructive/15"
         />
         <FieldError>{error}</FieldError>
-      </Field>
-      <DialogFooter className="gap-2.5 pt-1">
+      </CompactField>
+      <PromptDialogFooter>
         <Button
           type="button"
           variant="outline"
@@ -152,15 +139,15 @@ function ConfirmBody({
         >
           Cancel
         </Button>
-        <Button
+        <ActionButton
           type="submit"
+          tone="destructive"
           size="lg"
-          className="bg-destructive px-4.5 font-semibold text-background hover:bg-destructive/90"
           disabled={!confirmed || deleting}
         >
           Delete project
-        </Button>
-      </DialogFooter>
+        </ActionButton>
+      </PromptDialogFooter>
     </form>
   )
 }
@@ -176,31 +163,19 @@ function RefusedBody({
 }) {
   return (
     <>
-      <DialogHeader className="gap-3.5">
-        <DialogIcon tone="muted" />
-        <div className="flex flex-col gap-2">
-          <DialogTitle className="text-[22px] leading-7.5 font-semibold tracking-tight">
-            Can’t delete {projectName} yet
-          </DialogTitle>
-          <DialogDescription className="leading-5.5">
-            This project still has tasks and subtasks. Move or delete them, then
-            try again.
-          </DialogDescription>
-        </div>
-      </DialogHeader>
-      <DialogFooter className="gap-2.5 pt-1">
+      <PromptDialogHeader
+        icon={<DialogIcon tone="muted" />}
+        title={<>Can’t delete {projectName} yet</>}
+        description="This project still has tasks and subtasks. Move or delete them, then try again."
+      />
+      <PromptDialogFooter>
         <Button type="button" variant="outline" size="lg" onClick={onClose}>
           Close
         </Button>
-        <Button
-          type="button"
-          size="lg"
-          className="px-4.5 font-semibold"
-          onClick={onOpenTasks}
-        >
+        <ActionButton type="button" size="lg" onClick={onOpenTasks}>
           Open tasks
-        </Button>
-      </DialogFooter>
+        </ActionButton>
+      </PromptDialogFooter>
     </>
   )
 }

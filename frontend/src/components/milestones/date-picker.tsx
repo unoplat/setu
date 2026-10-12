@@ -2,9 +2,8 @@ import * as React from "react"
 import { CalendarIcon, ChevronDownIcon } from "lucide-react"
 import { DatePicker as DatePickerParts } from "react-date-range-picker-tailwind4"
 
-import { Button } from "@/components/ui/button"
+import { PickerTrigger } from "@/components/app-ui/field-controls"
 import { formatDay, formatShortDay } from "@/lib/milestones"
-import { propertyTriggerClassName } from "@/lib/style"
 
 import { fromIsoDay, toIsoDay } from "./form"
 
@@ -123,21 +122,19 @@ export function DatePicker({
       >
         <DatePickerParts.Trigger>
           {({ isOpen, onToggle, triggerRef }) => (
-            <Button
+            <PickerTrigger
               ref={triggerRef}
               id={id}
               type="button"
-              variant={inline ? "ghost" : "outline"}
+              appearance={inline ? "inline" : "field"}
               aria-haspopup="dialog"
               aria-expanded={isOpen}
               aria-label={label}
               aria-invalid={invalid || undefined}
               onClick={onToggle}
-              className={
-                inline
-                  ? propertyTriggerClassName
-                  : "h-11 w-full justify-between rounded-xl px-3.5 font-normal"
-              }
+              // The Button's own 6px gap, not the pickers' 8px; the inline
+              // chevron below is already 12px.
+              className="gap-1.5"
             >
               {value ? (
                 range ? (
@@ -155,7 +152,7 @@ export function DatePicker({
               ) : (
                 <CalendarIcon className="text-muted-foreground" />
               )}
-            </Button>
+            </PickerTrigger>
           )}
         </DatePickerParts.Trigger>
         {/* `undefined`, not null: null renders nothing at all. */}

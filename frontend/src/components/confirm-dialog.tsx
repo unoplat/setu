@@ -2,21 +2,19 @@ import * as React from "react"
 import { useStore } from "@tanstack/react-form"
 import type { FrappeError } from "frappe-react-sdk"
 
-import { Button } from "@/components/ui/button"
+import { ActionButton } from "@/components/app-ui/action-button"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  PromptDialogContent,
+  PromptDialogFooter,
+  PromptDialogHeader,
+  PromptDialogIcon,
+} from "@/components/app-ui/prompt-dialog"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogClose } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import { submitOnce, useAppForm } from "@/lib/form"
-import { cn } from "@/lib/utils"
 
 /**
  * One confirm for deleting a milestone, module, project or Task:
@@ -115,15 +113,13 @@ export function ConfirmDialog({
         if (!next) setError(null)
       }}
     >
-      <DialogContent
-        showCloseButton={false}
+      <PromptDialogContent
         // The action has focus, so Enter confirms, as in the Paper frames.
         initialFocus={confirmRef}
         finalFocus={finalFocus}
-        className="gap-6 rounded-3xl p-7 sm:max-w-[480px]"
       >
         <ConfirmContext value={state}>{children}</ConfirmContext>
-      </DialogContent>
+      </PromptDialogContent>
     </Dialog>
   )
 }
@@ -140,26 +136,11 @@ export function ConfirmHeader({
   description: string
 }) {
   return (
-    <DialogHeader className="gap-3.5">
-      <div
-        className={cn(
-          "flex size-10 items-center justify-center rounded-[12px] [&_svg]:size-4.5",
-          tone === "destructive"
-            ? "bg-destructive/12 text-destructive"
-            : "bg-muted text-foreground"
-        )}
-      >
-        {icon}
-      </div>
-      <div className="flex flex-col gap-2">
-        <DialogTitle className="text-[22px] leading-7.5 font-semibold tracking-tight wrap-anywhere">
-          {title}
-        </DialogTitle>
-        <DialogDescription className="leading-5.5">
-          {description}
-        </DialogDescription>
-      </div>
-    </DialogHeader>
+    <PromptDialogHeader
+      icon={<PromptDialogIcon tone={tone}>{icon}</PromptDialogIcon>}
+      title={title}
+      description={description}
+    />
   )
 }
 
@@ -231,7 +212,7 @@ export function ConfirmFooter({
           {error}
         </p>
       ) : null}
-      <DialogFooter className="gap-2.5 pt-1">
+      <PromptDialogFooter>
         <DialogClose
           disabled={submitting}
           render={<Button type="button" variant="outline" size="lg" />}
@@ -239,24 +220,20 @@ export function ConfirmFooter({
           Cancel
           <span className="text-xs font-normal text-muted-foreground">Esc</span>
         </DialogClose>
-        <Button
+        <ActionButton
           ref={confirmRef}
           type="button"
+          tone={tone === "destructive" ? "destructive" : "inverse"}
           size="lg"
           // Still focusable while waiting, so Enter works once the count is in.
           disabled={!ready || submitting}
           focusableWhenDisabled
           onClick={submit}
-          className={cn(
-            "px-4.5 font-semibold text-background data-disabled:opacity-60",
-            tone === "destructive"
-              ? "bg-destructive hover:bg-destructive/90 focus-visible:border-destructive focus-visible:ring-destructive/30"
-              : "bg-foreground hover:bg-foreground/90 focus-visible:border-foreground focus-visible:ring-foreground/20"
-          )}
+          className="data-disabled:opacity-60"
         >
           {submitting ? pendingLabel : label}
-        </Button>
-      </DialogFooter>
+        </ActionButton>
+      </PromptDialogFooter>
     </>
   )
 }

@@ -2,17 +2,14 @@ import * as React from "react"
 import { useSelector } from "@tanstack/react-form"
 import { FlagIcon, LayoutGridIcon, XIcon } from "lucide-react"
 
+import { ActionButton } from "@/components/app-ui/action-button"
+import { PanelCloseButton, PanelTitle } from "@/components/app-ui/editor-panel"
+import { CompactField, FieldInput } from "@/components/app-ui/field-controls"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { DatePicker } from "@/components/milestones/date-picker"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { SheetClose, SheetDescription, SheetTitle } from "@/components/ui/sheet"
+import { FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { SheetClose, SheetDescription } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDay, useMilestones } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
@@ -104,23 +101,12 @@ export const CreateTaskForm = withForm({
       >
         <div className="flex shrink-0 items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <SheetTitle className="text-2xl font-semibold tracking-tight">
-              Create task
-            </SheetTitle>
+            <PanelTitle surface="sheet">Create task</PanelTitle>
             <SheetDescription>
               Capture the outcome, owner, and dates the team needs to begin.
             </SheetDescription>
           </div>
-          <SheetClose
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="-me-1 -mt-1 bg-secondary"
-              />
-            }
-            disabled={submitting}
-          >
+          <SheetClose render={<PanelCloseButton />} disabled={submitting}>
             <XIcon />
             <span className="sr-only">Close</span>
           </SheetClose>
@@ -137,15 +123,12 @@ export const CreateTaskForm = withForm({
             {(field) => {
               const fieldError = visibleError(field.state.meta)
               return (
-                <Field
-                  className="gap-2"
-                  data-invalid={fieldError ? true : undefined}
-                >
+                <CompactField data-invalid={fieldError ? true : undefined}>
                   <FieldLabel htmlFor="task-subject">
                     Task title
                     {requiredMark}
                   </FieldLabel>
-                  <Input
+                  <FieldInput
                     id="task-subject"
                     name="subject"
                     placeholder="Prepare release checklist"
@@ -155,17 +138,16 @@ export const CreateTaskForm = withForm({
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
                     aria-invalid={fieldError ? true : undefined}
-                    className="h-11 rounded-xl"
                   />
                   <FieldError>{fieldError}</FieldError>
-                </Field>
+                </CompactField>
               )
             }}
           </form.Field>
 
           <form.Field name="description">
             {(field) => (
-              <Field className="gap-2">
+              <CompactField>
                 <div className="flex items-center gap-2">
                   <FieldLabel id="task-description-label">
                     Description
@@ -185,7 +167,7 @@ export const CreateTaskForm = withForm({
                     label="Task description"
                   />
                 </React.Suspense>
-              </Field>
+              </CompactField>
             )}
           </form.Field>
 
@@ -206,10 +188,7 @@ export const CreateTaskForm = withForm({
               {(field) => {
                 const fieldError = visibleError(field.state.meta)
                 return (
-                  <Field
-                    className="gap-2"
-                    data-invalid={fieldError ? true : undefined}
-                  >
+                  <CompactField data-invalid={fieldError ? true : undefined}>
                     <FieldLabel htmlFor="task-start-date">
                       Start date
                     </FieldLabel>
@@ -223,14 +202,14 @@ export const CreateTaskForm = withForm({
                       maxDate={dueDate}
                     />
                     <FieldError>{fieldError}</FieldError>
-                  </Field>
+                  </CompactField>
                 )
               }}
             </form.Field>
 
             <form.Field name="due_date">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-due-date">Due date</FieldLabel>
                   <DatePicker
                     id="task-due-date"
@@ -240,13 +219,13 @@ export const CreateTaskForm = withForm({
                     defaultMonth={startDate}
                     minDate={startDate}
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
 
             <form.Field name="status">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-status">Status</FieldLabel>
                   <StatusSelect
                     id="task-status"
@@ -254,13 +233,13 @@ export const CreateTaskForm = withForm({
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
 
             <form.Field name="priority">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-priority">Priority</FieldLabel>
                   <PrioritySelect
                     id="task-priority"
@@ -268,13 +247,13 @@ export const CreateTaskForm = withForm({
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
 
             <form.Field name="assignees">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-assignees">Assignees</FieldLabel>
                   <AssigneesCombobox
                     id="task-assignees"
@@ -282,13 +261,13 @@ export const CreateTaskForm = withForm({
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
 
             <form.Field name="milestone">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-milestone">Milestone</FieldLabel>
                   <LinkCombobox
                     id="task-milestone"
@@ -303,13 +282,13 @@ export const CreateTaskForm = withForm({
                     emptyText="No milestone matches."
                     footer="New milestones are made from the Milestones page."
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
 
             <form.Field name="tags">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-tags">Tags</FieldLabel>
                   <TagsCombobox
                     id="task-tags"
@@ -317,13 +296,13 @@ export const CreateTaskForm = withForm({
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
 
             <form.Field name="module">
               {(field) => (
-                <Field className="gap-2">
+                <CompactField>
                   <FieldLabel htmlFor="task-module">Module</FieldLabel>
                   <LinkCombobox
                     id="task-module"
@@ -338,7 +317,7 @@ export const CreateTaskForm = withForm({
                     emptyText="No module matches."
                     footer="New modules are made from the Modules page."
                   />
-                </Field>
+                </CompactField>
               )}
             </form.Field>
           </div>
@@ -361,14 +340,9 @@ export const CreateTaskForm = withForm({
           >
             Cancel
           </SheetClose>
-          <Button
-            type="submit"
-            size="lg"
-            className="px-4.5 font-semibold"
-            disabled={state !== "ready"}
-          >
+          <ActionButton type="submit" size="lg" disabled={state !== "ready"}>
             {submitting ? "Creating…" : "Create task"}
-          </Button>
+          </ActionButton>
         </footer>
       </form>
     )

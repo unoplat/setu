@@ -3,6 +3,7 @@ import { useSelector } from "@tanstack/react-form"
 import { useSWRConfig } from "frappe-react-sdk"
 import { ChevronDownIcon, PlusIcon } from "lucide-react"
 
+import { PickerTrigger } from "@/components/app-ui/field-controls"
 import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -24,7 +25,6 @@ import {
   type IconKey,
   type LinkType,
 } from "@/lib/links"
-import { propertyTriggerClassName } from "@/lib/style"
 import { cn } from "@/lib/utils"
 
 import { submitOnce, useAppForm, validateTypeName, visibleError } from "./form"
@@ -334,14 +334,7 @@ export function LinkTypeProperty({
       }}
     >
       <PopoverTrigger
-        render={
-          <Button
-            id={id}
-            type="button"
-            variant="ghost"
-            className={`${propertyTriggerClassName} gap-2 [&>svg:last-child]:size-3`}
-          />
-        }
+        render={<PickerTrigger id={id} type="button" appearance="inline" />}
       >
         <LinkTypeIcon
           icon={selected?.icon}

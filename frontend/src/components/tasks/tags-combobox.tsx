@@ -10,11 +10,13 @@ import {
   Trash2Icon,
 } from "lucide-react"
 
+import { ActionButton } from "@/components/app-ui/action-button"
+import { PickerTrigger } from "@/components/app-ui/field-controls"
+import { PickerContent } from "@/components/app-ui/picker-content"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Combobox,
-  ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
@@ -29,7 +31,6 @@ import {
 } from "@/components/ui/tooltip"
 import { formatBinding, hotkey } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
-import { propertyTriggerClassName } from "@/lib/style"
 import {
   TAGS_KEY,
   isTasksKey,
@@ -37,7 +38,6 @@ import {
   useTags,
   type TagUsage,
 } from "@/lib/tasks"
-import { cn } from "@/lib/utils"
 
 // Paper 03e: the highlighted tag's own key, alongside Enter (pick) and Escape
 // (close). Local to the picker's search box, so it is not a rebindable command.
@@ -159,21 +159,14 @@ export function TagsCombobox({
     >
       <ComboboxTrigger
         render={
-          <Button
+          // Inline, a "+" says more can be added; the trigger's own chevron
+          // is not 09's, so it is hidden.
+          <PickerTrigger
             id={id}
             type="button"
-            variant={inline ? "ghost" : "outline"}
+            appearance={inline ? "inline" : "field"}
+            multiple
             disabled={isLoading}
-            className={
-              inline
-                ? // A "+" says more can be added; the trigger's own chevron
-                  // is not 09's.
-                  cn(
-                    propertyTriggerClassName,
-                    "h-auto min-h-7 py-0.75 [&>svg:last-child]:hidden"
-                  )
-                : "h-auto min-h-11 w-full justify-between gap-2 rounded-xl px-3.5 py-2 font-normal"
-            }
           />
         }
       >
@@ -204,8 +197,7 @@ export function TagsCombobox({
           </span>
         )}
       </ComboboxTrigger>
-      {/* The trigger is half a form column; tag names need more room. */}
-      <ComboboxContent className="min-w-72">
+      <PickerContent>
         {/* The confirm hides the search and the list rather than unmounting
             them, so Cancel returns to the same query and highlighted tag. */}
         <ComboboxInput
@@ -293,7 +285,7 @@ export function TagsCombobox({
             ) : null}
           </div>
         ) : null}
-      </ComboboxContent>
+      </PickerContent>
     </Combobox>
   )
 }
@@ -429,18 +421,19 @@ function DeleteTagConfirm({
             Esc
           </span>
         </Button>
-        <Button
+        <ActionButton
           type="button"
+          tone="destructive"
           // Focused, so Enter deletes. Never disabled: a disabled button
           // drops focus, and the picker would close.
           autoFocus
           aria-disabled={deleting || undefined}
-          className="h-8.5 gap-2 bg-destructive px-4 text-[13px] font-semibold text-background hover:bg-destructive/90 focus-visible:border-destructive focus-visible:ring-destructive/30 aria-disabled:opacity-60"
+          className="h-8.5 gap-2 px-4 text-[13px] aria-disabled:opacity-60"
           onClick={() => void confirm()}
         >
           {deleting ? "Deleting…" : "Delete tag"}
           <CornerDownLeftIcon className="size-3 opacity-60" />
-        </Button>
+        </ActionButton>
       </div>
     </div>
   )

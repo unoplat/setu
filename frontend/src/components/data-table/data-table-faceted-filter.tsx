@@ -1,7 +1,7 @@
 import { PlusCircleIcon } from "lucide-react"
 
+import { FilterValueBadge } from "@/components/app-ui/filter-value-badge"
 import { useDataTable } from "@/components/data-table/data-table-provider"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -66,31 +66,19 @@ export function DataTableFacetedFilter<TData>({
         {selected.size > 0 ? (
           <>
             <Separator orientation="vertical" className="mx-0.5 h-4" />
-            <Badge
-              variant="secondary"
-              className="rounded-sm px-1 font-normal lg:hidden"
-            >
+            <FilterValueBadge className="lg:hidden">
               {selected.size}
-            </Badge>
+            </FilterValueBadge>
             <span className="hidden gap-1 lg:flex">
               {selected.size > 2 ? (
-                <Badge
-                  variant="secondary"
-                  className="rounded-sm px-1 font-normal"
-                >
-                  {selected.size} selected
-                </Badge>
+                <FilterValueBadge>{selected.size} selected</FilterValueBadge>
               ) : (
                 options
                   .filter((option) => selected.has(option.value))
                   .map((option) => (
-                    <Badge
-                      key={String(option.value)}
-                      variant="secondary"
-                      className="rounded-sm px-1 font-normal"
-                    >
+                    <FilterValueBadge key={String(option.value)}>
                       {option.label}
-                    </Badge>
+                    </FilterValueBadge>
                   ))
               )}
             </span>
