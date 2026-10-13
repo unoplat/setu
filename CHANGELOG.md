@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.4](https://github.com/unoplat/setu/compare/v0.0.3...v0.0.4) (2026-10-12)
+
+
+### Bug Fixes
+
+* **ui:** center select item content vertically ([f921d09](https://github.com/unoplat/setu/commit/f921d09bbad1860d85cf2002117f5aa52ae4c49b))
+* **ui:** center select item content vertically ([69e734c](https://github.com/unoplat/setu/commit/69e734cb80fb88bb9a0a0f590ca162917016cd56))
+
+
+### Code Refactoring
+
+* **ui:** share app-owned frontend controls ([6346afc](https://github.com/unoplat/setu/commit/6346afcb4a323858915cba98f1a33459e3bf6b6d))
+* **ui:** share app-owned frontend controls ([08e2379](https://github.com/unoplat/setu/commit/08e237971e9ae2b3ec6b2c3705ba1c9ac546db39))
+
 ## [0.0.3](https://github.com/unoplat/setu/compare/v0.0.2...v0.0.3) (2026-10-09)
 
 
