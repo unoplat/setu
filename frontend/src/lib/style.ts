@@ -72,4 +72,4 @@ export const boxSurfaceClassName = [
  * filter buttons add `border-dashed`.
  */
 export const toolbarButtonClassName =
-  "h-8 gap-1.5 rounded-md border-input px-2.5 text-[13px] [&_svg:not([class*='size-'])]:size-3.5"
+  "h-8 gap-1.5 rounded-md border-input px-2.5 text-compact [&_svg:not([class*='size-'])]:size-3.5"

@@ -392,19 +392,19 @@ function DeleteTagConfirm({
           </span>
           <p
             id={titleId}
-            className="min-w-0 text-[15px] leading-5 font-semibold tracking-[-0.01em] wrap-anywhere"
+            className="min-w-0 text-subtitle font-semibold tracking-[-0.01em] wrap-anywhere"
           >
             Delete “{tag}” everywhere?
           </p>
         </div>
         <p
           id={bodyId}
-          className="ps-9.5 text-[13px] leading-4.75 text-muted-foreground"
+          className="ps-9.5 text-compact leading-4.75 text-muted-foreground"
         >
           {usageText(usage.data?.message)}
         </p>
         {error ? (
-          <p className="ps-9.5 text-[13px] leading-4.75 text-destructive">
+          <p className="ps-9.5 text-compact leading-4.75 text-destructive">
             {frappeErrorMessage(error)}
           </p>
         ) : null}
@@ -413,11 +413,11 @@ function DeleteTagConfirm({
         <Button
           type="button"
           variant="outline"
-          className="h-8.5 gap-2 px-3.5 text-[13px]"
+          className="h-8.5 gap-2 px-3.5 text-compact"
           onClick={onCancel}
         >
           Cancel
-          <span className="text-[11px] font-normal text-muted-foreground">
+          <span className="text-meta font-normal text-muted-foreground">
             Esc
           </span>
         </Button>
@@ -428,7 +428,7 @@ function DeleteTagConfirm({
           // drops focus, and the picker would close.
           autoFocus
           aria-disabled={deleting || undefined}
-          className="h-8.5 gap-2 px-4 text-[13px] aria-disabled:opacity-60"
+          className="h-8.5 gap-2 px-4 text-compact aria-disabled:opacity-60"
           onClick={() => void confirm()}
         >
           {deleting ? "Deleting…" : "Delete tag"}

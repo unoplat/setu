@@ -80,7 +80,8 @@ function DataTableSearchFilter<TData>({
         // An empty string removes the filter (`includesString` auto-removes
         // falsy values), which also clears it from the URL.
         onChange={(event) => column?.setFilterValue(event.target.value)}
-        className="text-[13px]"
+        // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+        className="text-compact"
       />
     </InputGroup>
   )

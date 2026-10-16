@@ -202,7 +202,7 @@ export function TaskReadOnly({
           </RailGroup>
 
           <RailGroup className="gap-2.5">
-            <h2 className="text-[13px] text-muted-foreground">Tags</h2>
+            <h2 className="text-compact text-muted-foreground">Tags</h2>
             {task.tags.length ? (
               <div className="flex flex-wrap gap-1.5">
                 {task.tags.map((tag) => (

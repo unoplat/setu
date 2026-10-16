@@ -119,7 +119,7 @@ export const ProjectSettingsForm = withForm({
           {expanded ? null : (
             <div className="flex shrink-0 flex-col gap-1.5 md:w-54">
               <h2 className="text-base font-semibold">General</h2>
-              <p className="text-[13px] leading-5 text-muted-foreground">
+              <p className="text-compact leading-5 text-muted-foreground">
                 The name and context people see on the board and in the sidebar.
               </p>
             </div>

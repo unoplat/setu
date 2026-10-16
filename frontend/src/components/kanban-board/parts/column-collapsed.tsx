@@ -54,7 +54,8 @@ export function ColumnCollapsed({
       </div>
       {/* Envision: no plain item count (Paper board); a capped column keeps "n / cap". */}
       {column.maxItems !== undefined ? (
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+        // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+        <span className="text-caption text-muted-foreground tabular-nums">
           {column.items.length} / {column.maxItems}
         </span>
       ) : null}

@@ -47,7 +47,7 @@ function DetailRow({
   return (
     <div className="flex min-w-0 items-center gap-1.75 [&_svg]:size-3.5 [&_svg]:shrink-0">
       {icon}
-      <span className="shrink-0 text-[11px] leading-3.5 text-muted-foreground">
+      <span className="shrink-0 text-meta leading-3.5 text-muted-foreground">
         {label}
       </span>
       {children}
@@ -71,7 +71,7 @@ function TaskTags({ tags }: { tags: string[] }) {
                 type="button"
                 className={cn(
                   badgeVariants({ variant: "outline" }),
-                  "h-4 bg-card px-1.5 text-[10px]"
+                  "h-4 bg-card px-1.5 text-caption"
                 )}
               />
             }
@@ -104,14 +104,14 @@ export function TaskCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="grow text-[11px] leading-4 font-medium text-muted-foreground tabular-nums">
+        <span className="grow text-meta leading-4 font-medium text-muted-foreground tabular-nums">
           {data.id}
         </span>
         {data.priority ? (
           <Badge
             variant="secondary"
             className={cn(
-              "h-auto rounded-sm bg-muted px-2 py-0.75 text-[11px] leading-4 font-semibold",
+              "h-auto rounded-sm bg-muted px-2 py-0.75 text-meta leading-4 font-semibold",
               PRIORITY_CLASS[data.priority]
             )}
           >
@@ -120,7 +120,7 @@ export function TaskCard({
         ) : null}
       </div>
 
-      <h3 className="text-[15px] leading-5.25 font-semibold tracking-[-0.006em] text-card-foreground">
+      <h3 className="text-subtitle leading-5.25 font-semibold tracking-[-0.006em] text-card-foreground">
         {data.title}
       </h3>
 
@@ -170,7 +170,7 @@ export function TaskCard({
               />
               <span
                 className={cn(
-                  "grow truncate text-[11px] leading-4",
+                  "grow truncate text-meta leading-4",
                   data.overdue
                     ? "font-medium text-destructive"
                     : "text-muted-foreground"
@@ -188,7 +188,7 @@ export function TaskCard({
               {/* Paper shows the first name; the full one is on hover. */}
               <span
                 title={personName(data.assignee)}
-                className="truncate text-[11px] leading-3.5 font-medium"
+                className="truncate text-meta leading-3.5 font-medium"
               >
                 {personName(data.assignee).split(/\s+/)[0]}
               </span>
@@ -209,14 +209,14 @@ export function TaskDragPreview({ data }: { data: TaskCardData }) {
   return (
     <div className="flex w-57 flex-col gap-1.5 rounded-lg border border-input bg-card px-3 py-2.5 text-card-foreground shadow-2xl">
       <div className="flex items-center gap-2">
-        <span className="grow text-[11px] leading-4 font-medium text-muted-foreground tabular-nums">
+        <span className="grow text-meta leading-4 font-medium text-muted-foreground tabular-nums">
           {data.id}
         </span>
         {data.priority ? (
           <Badge
             variant="secondary"
             className={cn(
-              "h-auto rounded-sm bg-muted px-1.75 py-0.5 text-[11px] leading-4 font-semibold",
+              "h-auto rounded-sm bg-muted px-1.75 py-0.5 text-meta leading-4 font-semibold",
               PRIORITY_CLASS[data.priority]
             )}
           >

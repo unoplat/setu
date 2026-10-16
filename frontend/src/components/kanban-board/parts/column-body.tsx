@@ -97,7 +97,8 @@ export function ColumnBody({
                         onToggleSwimlaneCollapse?.(lane.id),
                     })
                   ) : (
-                    <span className="px-1 text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+                    // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+                    <span className="px-1 text-caption font-medium tracking-wide text-muted-foreground/70 uppercase">
                       {lane.title}
                     </span>
                   )}

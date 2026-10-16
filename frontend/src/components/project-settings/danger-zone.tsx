@@ -18,14 +18,14 @@ export function DangerZone({
         <h2 className="text-base font-semibold text-destructive">
           Danger zone
         </h2>
-        <p className="text-[13px] leading-5 text-muted-foreground">
+        <p className="text-compact leading-5 text-muted-foreground">
           Actions here cannot be undone.
         </p>
       </div>
       <div className="flex grow flex-col items-start gap-5 rounded-xl border border-destructive/35 bg-destructive/6 p-5 sm:flex-row sm:items-center sm:gap-6">
         <div className="flex grow flex-col gap-1">
           <h3 className="text-sm font-semibold">Delete this project</h3>
-          <p className="text-[13px] leading-5 text-muted-foreground">
+          <p className="text-compact leading-5 text-muted-foreground">
             Only the project creator or a Projects Manager can delete{" "}
             {projectName}, and only once it has no tasks.
           </p>

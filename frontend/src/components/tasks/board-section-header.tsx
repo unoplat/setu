@@ -26,7 +26,7 @@ export function BoardSectionHeader({
       <Button
         type="button"
         variant="ghost"
-        className="h-full min-w-0 flex-1 justify-start gap-1.5 rounded-sm px-1.5 text-[10px] leading-[14px] font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+        className="h-full min-w-0 flex-1 justify-start gap-1.5 rounded-sm px-1.5 text-caption font-semibold tracking-[0.08em] text-muted-foreground uppercase"
         onClick={onToggleCollapse}
         aria-expanded={!collapsed}
         aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}

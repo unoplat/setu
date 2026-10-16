@@ -313,7 +313,7 @@ export const CreateMilestoneForm = withForm({
         ) : (
           <footer className="flex shrink-0 flex-wrap items-center gap-2.5 border-t pt-6">
             <div className="flex min-w-0 grow flex-col gap-0.5">
-              <span className="truncate text-[13px] leading-4.5 font-medium">
+              <span className="truncate text-compact font-medium">
                 Adds to {projectName}
               </span>
               <span

@@ -12,7 +12,8 @@ export function MissingRendererFallback({
       <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-destructive" />
       <div className="flex flex-col gap-0.5">
         <span className="font-medium text-destructive">Renderer not found</span>
-        <span className="font-mono text-[10px] text-muted-foreground">
+        {/* Envision: type sizes use design-system tokens (text-caption/meta/compact). */}
+        <span className="font-mono text-caption text-muted-foreground">
           {rendererId}
         </span>
       </div>

@@ -66,7 +66,7 @@ export function RelatedTasks({
           <Button
             type="button"
             variant="outline"
-            className="h-8 gap-1.5 rounded-md border-input px-3 text-[13px]"
+            className="h-8 gap-1.5 rounded-md border-input px-3 text-compact"
             onClick={() => setAdding(true)}
           >
             <PlusIcon className="size-3.5" />
@@ -83,7 +83,7 @@ export function RelatedTasks({
       ) : total === 0 ? (
         <div className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-input px-4 py-5 text-center">
           <p className="text-sm font-medium">{emptyTitle}</p>
-          <p className="text-[13px] text-muted-foreground">{emptyText}</p>
+          <p className="text-compact text-muted-foreground">{emptyText}</p>
         </div>
       ) : (
         <ul className="-mx-2 flex flex-col">
