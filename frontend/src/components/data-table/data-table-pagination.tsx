@@ -14,8 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-const PAGE_SIZES = [10, 20, 30, 40, 50]
+import { PAGE_SIZES } from "@/lib/table/pagination"
 
 // Ported from data-table.openstatus.dev's /default route, which keeps this
 // footer in its app rather than the registry. The page count comes from the

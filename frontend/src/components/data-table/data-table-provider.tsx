@@ -49,6 +49,11 @@ interface DataTableBaseContextType<
   filterFields: DataTableFilterField<TData>[]
   columns: ColumnDef<DataTableFeatures, TData, TValue>[]
   isLoading?: boolean
+  /**
+   * Whether the store sync also writes the page and page size, under the
+   * schema's `page` and `size` keys (see data-table-store-sync).
+   */
+  syncPagination?: boolean
   totalRows?: number
   filterRows?: number
   getFacetedUniqueValues?: (
@@ -103,6 +108,7 @@ export function DataTableProvider<TData extends RowData, TValue>({
       props.columns,
       props.enableColumnOrdering,
       props.isLoading,
+      props.syncPagination,
       props.totalRows,
       props.filterRows,
       props.getFacetedUniqueValues,

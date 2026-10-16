@@ -8,15 +8,42 @@
  * them during SSR/hydration (e.g. nuqs reads URL after initial render).
  *
  * After mount: syncs changes from React Table's state (columnFilters, sorting,
- * rowSelection) to the BYOS adapter (Table → BYOS). Filter components update
+ * rowSelection, and pagination for tables that opt in with `syncPagination`)
+ * to the BYOS adapter (Table → BYOS). Filter components update
  * the table directly via column.setFilterValue(), and this component propagates
  * those changes to the BYOS adapter for URL sync (nuqs) or state persistence.
  */
+import type { PaginationState } from "@tanstack/react-table"
+
 import { useStoreContext } from "@/lib/store/context"
+import { DEFAULT_PAGE_SIZE } from "@/lib/table/pagination"
 import { useFilterActions } from "@/lib/store/hooks/useFilterActions"
 import { isStateEqual } from "@/lib/store/schema"
 import { useEffect, useRef } from "react"
 import { useDataTable } from "./data-table-provider"
+
+/** Pagination as the URL holds it: 1-based, and null at the defaults. */
+type UrlPagination = {
+  page: number | null
+  size: number | null
+}
+
+function toUrlPagination({
+  pageIndex,
+  pageSize,
+}: PaginationState): UrlPagination {
+  return {
+    page: pageIndex > 0 ? pageIndex + 1 : null,
+    size: pageSize !== DEFAULT_PAGE_SIZE ? pageSize : null,
+  }
+}
+
+function readUrlPagination(state: Record<string, unknown>): UrlPagination {
+  return {
+    page: typeof state.page === "number" ? state.page : null,
+    size: typeof state.size === "number" ? state.size : null,
+  }
+}
 
 export function DataTableStoreSync() {
   useDataTableStoreSync()
@@ -28,12 +55,23 @@ export function DataTableStoreSync() {
  */
 export function useDataTableStoreSync() {
   const context = useStoreContext()
-  const { table, filterFields, sorting, rowSelection } = useDataTable()
+  const {
+    table,
+    filterFields,
+    sorting,
+    rowSelection,
+    pagination,
+    syncPagination,
+  } = useDataTable()
   const { setFilters } = useFilterActions()
 
   const lastSentFiltersRef = useRef<Record<string, unknown>>({})
   const lastSentSortRef = useRef<{ id: string; desc: boolean } | null>(null)
   const lastSentUuidRef = useRef<string>("")
+  const lastSentPaginationRef = useRef<UrlPagination>({
+    page: null,
+    size: null,
+  })
   const isInitialMount = useRef(true)
 
   const columnFilters = table.state.columnFilters
@@ -72,6 +110,9 @@ export function useDataTableStoreSync() {
       lastSentSortRef.current = sorting?.[0] || null
       const selectedKeys = Object.keys(rowSelection || {})
       lastSentUuidRef.current = selectedKeys.length > 0 ? selectedKeys[0] : ""
+      // What the URL holds, not the table: a page the table clamped on its
+      // first render (the URL named one past the end) is then written back.
+      lastSentPaginationRef.current = readUrlPagination(byosState)
       return
     }
 
@@ -139,4 +180,17 @@ export function useDataTableStoreSync() {
     lastSentUuidRef.current = newUuidStr
     setFilters({ uuid: newUuid })
   }, [rowSelection, context, setFilters, table.options.enableMultiRowSelection])
+
+  // Sync pagination (opt-in: the schema needs `page` and `size` fields)
+  useEffect(() => {
+    if (!context || !syncPagination) return
+    if (isInitialMount.current) return
+
+    const next = toUrlPagination(pagination)
+    const last = lastSentPaginationRef.current
+    if (next.page === last.page && next.size === last.size) return
+
+    lastSentPaginationRef.current = next
+    setFilters(next)
+  }, [pagination, syncPagination, context, setFilters])
 }

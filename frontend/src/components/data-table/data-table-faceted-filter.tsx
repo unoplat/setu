@@ -33,6 +33,7 @@ export function DataTableFacetedFilter<TData>({
   value,
   label,
   options = [],
+  component: OptionComponent,
 }: DataTableCheckboxFilterField<TData>) {
   const { table, columnFilters } = useDataTable()
   const column = table.getColumn(value as string)
@@ -101,7 +102,13 @@ export function DataTableFacetedFilter<TData>({
                     data-checked={selected.has(option.value)}
                     onSelect={() => toggle(option.value)}
                   >
-                    <span className="truncate">{option.label}</span>
+                    {/* A field's `component` draws the option, e.g. with
+                        an icon before the label (linked-task-filters). */}
+                    {OptionComponent ? (
+                      <OptionComponent {...option} options={options} />
+                    ) : (
+                      <span className="truncate">{option.label}</span>
+                    )}
                     {count ? (
                       <span className="ms-auto font-mono text-xs text-muted-foreground">
                         {count}
