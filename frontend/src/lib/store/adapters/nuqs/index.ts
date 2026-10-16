@@ -1,9 +1,13 @@
 "use client"
 
 import { useQueryStates, type ParserBuilder } from "nuqs"
-import { useEffect, useMemo, useRef } from "react"
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react"
 import type { InternalStoreAdapter } from "../../adapter/types"
-import { getSchemaDefaults, validateState } from "../../schema/serialization"
+import {
+  getSchemaDefaults,
+  isStateEqual,
+  validateState,
+} from "../../schema/serialization"
 import type { SchemaDefinition, StoreSnapshot } from "../../schema/types"
 import { schemaToNuqsParsers } from "./parser-bridge"
 import type { NuqsAdapterOptions } from "./types"
@@ -57,9 +61,6 @@ export function useNuqsAdapter<T extends Record<string, unknown>>(
     }
   )
 
-  // Store state and version
-  const stateRef = useRef<T>(defaults)
-  const versionRef = useRef(0)
   const listenersRef = useRef(new Set<() => void>())
   const pausedRef = useRef(false)
   const pendingStateRef = useRef<Partial<T> | null>(null)
@@ -76,31 +77,32 @@ export function useNuqsAdapter<T extends Record<string, unknown>>(
     return { ...defaults, ...initialState, ...validated } as T
   }, [nuqsState, schema, defaults, initialState])
 
-  // Sync ref synchronously so getSnapshot() is always current during this render
-  stateRef.current = currentState
+  // Seed URL-derived state on the first client render, then publish at commit.
+  const snapshotRef = useRef<StoreSnapshot<T>>({
+    state: currentState,
+    version: 0,
+  })
 
-  // Notify listeners when state changes
-  useEffect(() => {
-    stateRef.current = currentState
-    versionRef.current++
-    listenersRef.current.forEach((listener) => listener())
-  }, [currentState])
-
-  /**
-   * REMINDER: nuqs rebuilds its setter on every render — its own `useAdapter()`
-   * returns a fresh object literal, and that sits in the setter's dep array. So
-   * keeping `setNuqsState` in the adapter's dep array below rebuilt the adapter
-   * on every render, and the `useMemo` never held.
-   *
-   * That is not a local inefficiency: every consumer memoizes on the adapter
-   * identity — `DataTableStoreProvider`'s context value, `useFilterActions`'
-   * `setFilters`, `useFilterState`'s `subscribe` — and `setFilters` reaches the
-   * dep array of the `onRowClick` that `DataTableInfinite` hands to every
-   * memoized row. An unstable adapter therefore re-rendered every row in the
-   * table on every render of the table. Read the setter through a ref instead.
-   */
+  // nuqs does not guarantee setter identity. Keep adapter/actions stable while
+  // routing writes through the latest committed setter.
   const setNuqsStateRef = useRef(setNuqsState)
-  setNuqsStateRef.current = setNuqsState
+
+  const publish = useCallback((state: T) => {
+    const previous = snapshotRef.current
+    if (isStateEqual(previous.state, state)) return
+
+    snapshotRef.current = {
+      state,
+      version: previous.version + 1,
+    }
+    listenersRef.current.forEach((listener) => listener())
+  }, [])
+
+  useLayoutEffect(() => {
+    // A listener may write state, so refresh the setter before notifying it.
+    setNuqsStateRef.current = setNuqsState
+    publish(currentState)
+  }, [currentState, setNuqsState, publish])
 
   // Create stable adapter reference
   const adapter = useMemo<InternalStoreAdapter<T>>(() => {
@@ -113,10 +115,7 @@ export function useNuqsAdapter<T extends Record<string, unknown>>(
       },
 
       getSnapshot(): StoreSnapshot<T> {
-        return {
-          state: stateRef.current,
-          version: versionRef.current,
-        }
+        return snapshotRef.current
       },
 
       getServerSnapshot(): StoreSnapshot<T> {
@@ -192,12 +191,10 @@ export function useNuqsAdapter<T extends Record<string, unknown>>(
 
       // Internal methods for provider sync
       _syncState(state: T) {
-        stateRef.current = state
-        versionRef.current++
-        listenersRef.current.forEach((listener) => listener())
+        publish(state)
       },
     }
-  }, [id, schema, defaults])
+  }, [id, schema, defaults, publish])
 
   return adapter
 }
