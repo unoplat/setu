@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.0](https://github.com/unoplat/setu/compare/v0.0.4...v0.1.0) (2026-10-16)
+
+
+### Features
+
+* **tasks:** add filterable linked task tables ([6f22619](https://github.com/unoplat/setu/commit/6f22619db1b91694153733cdafe629bea9ed54b0))
+* **tasks:** add linked task tables and improve layout ([f205fd5](https://github.com/unoplat/setu/commit/f205fd574dd535374bd1079a8c5d88b3122805b9))
+
+
+### Bug Fixes
+
+* **layout:** contain wide content within the app shell ([1de1cb0](https://github.com/unoplat/setu/commit/1de1cb0e2f47e477e6f450964fc9a5f4b667287a))
+* **store:** avoid render-time nuqs ref mutations ([2f34c11](https://github.com/unoplat/setu/commit/2f34c116e860b54704f967bfebac276ba32dd0e0))
+* **store:** preserve queued partial URL updates ([55ee3c9](https://github.com/unoplat/setu/commit/55ee3c906bbf6b880c28d3c51f6de4c266584ec5))
+
+
+### Code Refactoring
+
+* **ui:** adopt semantic typography tokens ([6c359e2](https://github.com/unoplat/setu/commit/6c359e273a439e65520afb199a4d1137e460a9e3))
+
 ## [0.0.4](https://github.com/unoplat/setu/compare/v0.0.3...v0.0.4) (2026-10-12)
 
 
