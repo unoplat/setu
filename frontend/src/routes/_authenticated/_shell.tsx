@@ -20,7 +20,10 @@ function ShellLayout() {
     <SidebarProvider>
       <GlobalCommands />
       <EnvisionSidebar />
-      <SidebarInset>
+      {/* min-w-0: without it the inset cannot shrink below its w-full, so
+          wide content (the Kanban rows) pushes the page sideways under the
+          fixed sidebar instead of scrolling inside its own scroller. */}
+      <SidebarInset className="min-w-0">
         <Outlet />
       </SidebarInset>
       <CreateProjectDialog />
