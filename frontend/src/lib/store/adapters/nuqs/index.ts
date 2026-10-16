@@ -138,7 +138,12 @@ export function useNuqsAdapter<T extends Record<string, unknown>>(
           nuqsPartial[key] = value === undefined ? null : value
         }
 
-        setNuqsStateRef.current((prev) => ({ ...prev, ...nuqsPartial }))
+        // Only the keys being set, not `{ ...prev, ...partial }`: nuqs reads
+        // `prev` from state that can lag the queued URL updates, so a second
+        // write in the same tick (a filter change, then the page reset it
+        // causes) would send the first one's keys back at their old values.
+        // nuqs leaves every key missing from the object as it is.
+        setNuqsStateRef.current(nuqsPartial)
       },
 
       setField<K extends keyof T>(key: K, value: T[K]) {
