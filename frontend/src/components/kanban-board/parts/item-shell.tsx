@@ -150,7 +150,8 @@ export function ItemShell({
         // the strip's square bottom corners — no "notch" beside the rounded card.
         <div
           {...headerListeners}
-          className="relative z-0 flex h-9 cursor-grab items-center justify-center gap-1 rounded-t-xl border border-b-0 border-border bg-muted/70 pb-2 text-[10px] font-medium tracking-wide text-muted-foreground uppercase transition-colors hover:bg-muted active:cursor-grabbing"
+          // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+          className="relative z-0 flex h-9 cursor-grab items-center justify-center gap-1 rounded-t-xl border border-b-0 border-border bg-muted/70 pb-2 text-caption font-medium tracking-wide text-muted-foreground uppercase transition-colors hover:bg-muted active:cursor-grabbing"
           aria-label="Drag to move"
           title="Drag to move"
         >
@@ -185,7 +186,7 @@ export function ItemShell({
             }}
             aria-label="Edit item"
           >
-            <span className="text-[10px]">Edit</span>
+            <span className="text-caption">Edit</span>
           </Button>
         ) : null}
         {!readOnly && !item.locked && onDelete ? (

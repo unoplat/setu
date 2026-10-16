@@ -78,12 +78,24 @@ typography:
     fontWeight: 600
     lineHeight: 1.333
     letterSpacing: "-0.0083em"
+  dialog:
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 600
+    lineHeight: 1.364
+    letterSpacing: "-0.0083em"
   body:
     fontFamily: "Inter Variable, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "0em"
+  subtitle:
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 600
+    lineHeight: 1.333
+    letterSpacing: "-0.006em"
   body-small:
     fontFamily: "Inter Variable, sans-serif"
     fontSize: "0.875rem"
@@ -96,17 +108,35 @@ typography:
     fontWeight: 500
     lineHeight: 1.429
     letterSpacing: "0em"
+  compact:
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 400
+    lineHeight: 1.385
+    letterSpacing: "0em"
   label:
     fontFamily: "Inter Variable, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: 1.333
     letterSpacing: "0em"
+  meta:
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: 400
+    lineHeight: 1.273
+    letterSpacing: "0em"
   caption:
     fontFamily: "Inter Variable, sans-serif"
     fontSize: "0.625rem"
     fontWeight: 400
     lineHeight: 1.4
+    letterSpacing: "0em"
+  avatar:
+    fontFamily: "Inter Variable, sans-serif"
+    fontSize: "0.5625rem"
+    fontWeight: 600
+    lineHeight: 1.333
     letterSpacing: "0em"
   metric:
     fontFamily: "Inter Variable, sans-serif"
@@ -239,11 +269,16 @@ The palette combines neutral zinc surfaces, a cobalt primary, a cyan-blue chart 
 - **Display** (700, 36px, 40px): Rare top-level statements and major empty states.
 - **Headline** (700, 30px, 36px): Primary page headings.
 - **Title** (600, 24px, 32px): Section and panel titles.
+- **Dialog** (600, 22px, 30px): Confirm and destructive dialog titles. `text-dialog`.
 - **Body** (400, 16px, 24px): Core reading and important control text.
+- **Subtitle** (600, 15px, 20px): Card titles, the wordmark, and inline dialog titles; 400 with 24px leading for description text. `text-subtitle`.
 - **Body Small** (400, 14px, 20px): Task cards, navigation, and dense application content.
 - **Button** (500, 14px, 20px): Implemented button labels.
+- **Compact** (400–600, 13px, 18px): Dense-surface body: property labels, table cells, activity entries, helper text. `text-compact`.
 - **Label** (500–600, 12px, 16px): Metadata, badges, summaries, and field labels.
+- **Meta** (400–500, 11px, 14px): Task IDs (mono), emails, counts, and keyboard hints. `text-meta`.
 - **Caption** (400, 10px, 14px): Timestamps and tertiary metadata only.
+- **Avatar** (600, 9px, 12px): Initials inside small avatars only. `text-avatar`.
 - **Metric** (700, 28px, 32px): Compact numeric summaries.
 
 ### Named Rules

@@ -93,7 +93,8 @@ export function SwimlaneCell({
           )
         })}
         {items.length === 0 && !hideEmptyPlaceholder ? (
-          <div className="pointer-events-none flex h-12 items-center justify-center rounded border border-dashed border-border/60 text-[10px] tracking-wide text-muted-foreground/60 uppercase">
+          // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+          <div className="pointer-events-none flex h-12 items-center justify-center rounded border border-dashed border-border/60 text-caption tracking-wide text-muted-foreground/60 uppercase">
             Empty
           </div>
         ) : null}

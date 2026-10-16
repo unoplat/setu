@@ -83,7 +83,7 @@ export function AddedProperty({ creation }: { creation: string }) {
   const valid = !Number.isNaN(date.getTime())
   return (
     <div className="flex items-start py-1.5">
-      <dt className="w-24 shrink-0 text-[13px]/6 text-muted-foreground">
+      <dt className="w-24 shrink-0 text-compact/6 text-muted-foreground">
         Added
       </dt>
       <dd className="flex min-w-0 flex-col px-2 text-sm/6">

@@ -61,7 +61,7 @@ function PromptDialogHeader({
 }) {
   const text = (
     <>
-      <DialogTitle className="text-[22px] leading-7.5 font-semibold tracking-tight wrap-anywhere">
+      <DialogTitle className="text-dialog font-semibold tracking-tight wrap-anywhere">
         {title}
       </DialogTitle>
       <DialogDescription className="leading-5.5">

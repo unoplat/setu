@@ -247,7 +247,8 @@ function RowHeader({
           type="button"
           variant="ghost"
           className={cn(
-            "h-6 gap-1.5 rounded-sm px-1.5 text-[11px] leading-3.5 font-semibold tracking-[0.08em] text-foreground uppercase",
+            // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+            "h-6 gap-1.5 rounded-sm px-1.5 text-meta font-semibold tracking-[0.08em] text-foreground uppercase",
             (landing || opening) && "text-sidebar-primary"
           )}
           onClick={onToggle}
@@ -263,11 +264,11 @@ function RowHeader({
           />
           <span className="truncate">{lane.title}</span>
         </Button>
-        <span className="text-[11px] leading-3.5 text-muted-foreground tabular-nums">
+        <span className="text-meta text-muted-foreground tabular-nums">
           {count}
         </span>
         {opening ? (
-          <span className="text-[11px] leading-3.5 font-medium text-sidebar-primary">
+          <span className="text-meta font-medium text-sidebar-primary">
             Opening…
           </span>
         ) : null}

@@ -40,7 +40,7 @@ export function BindingKeys({
         {keyedKeycaps(binding.keys).map(({ value: key, id }, index) => (
           <span key={id} className="inline-flex items-center gap-1">
             {index > 0 ? (
-              <span className="text-[10px] text-muted-foreground">then</span>
+              <span className="text-caption text-muted-foreground">then</span>
             ) : null}
             <Kbd>{formatForDisplay(key)}</Kbd>
           </span>

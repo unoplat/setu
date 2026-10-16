@@ -184,6 +184,17 @@ export function boardStatus(status: string): CreateStatus | null {
   )
 }
 
+/** The Board column a Status lands in; undefined for Cancelled. */
+export function boardColumnOf(status: string): BoardColumnId | undefined {
+  return BOARD_COLUMNS.find((column) =>
+    (column.statuses as readonly string[]).includes(status)
+  )?.id
+}
+
+export function isBoardColumnId(value: unknown): value is BoardColumnId {
+  return BOARD_COLUMNS.some((column) => column.id === value)
+}
+
 /** A Task as its page needs it (setu.api.task.get_task, Paper 09). */
 export interface TaskDetail {
   name: string
@@ -259,6 +270,10 @@ export function statusTitle(status: string): string {
 export const TASK_PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const
 
 export type TaskPriority = (typeof TASK_PRIORITIES)[number]
+
+export function isTaskPriority(value: unknown): value is TaskPriority {
+  return TASK_PRIORITIES.some((priority) => priority === value)
+}
 
 /** Paper colours only the priorities that ask for attention. */
 export const PRIORITY_CLASS: Record<TaskPriority, string> = {

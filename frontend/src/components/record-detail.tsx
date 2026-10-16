@@ -348,7 +348,7 @@ export function DescriptionField({
             Expand
             <HotkeyText
               command={toggleCommand}
-              className="text-[11px] font-normal"
+              className="text-meta font-normal"
             />
           </Button>
         </div>

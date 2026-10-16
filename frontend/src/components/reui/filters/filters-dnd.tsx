@@ -421,10 +421,11 @@ function startDrag(
     carryEl.appendChild(clip)
 
     badgeEl = document.createElement("span")
+    // Envision: type sizes use design-system tokens (text-caption/meta/compact).
     badgeEl.setAttribute("data-slot", "filters-drag-copy")
     badgeEl.className =
       "bg-primary text-primary-foreground absolute -end-1.5 -top-1.5 flex " +
-      "size-4 items-center justify-center rounded-full text-[10px] leading-none"
+      "size-4 items-center justify-center rounded-full text-caption leading-none"
     badgeEl.textContent = "+"
     // Legible BEFORE the release, or Alt is discoverable only by error.
     badgeEl.hidden = !copy

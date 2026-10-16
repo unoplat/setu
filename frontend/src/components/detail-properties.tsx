@@ -32,7 +32,7 @@ export function Property({
 }) {
   return (
     <div className="flex min-h-9 shrink-0 items-center">
-      <dt className="w-24 shrink-0 text-[13px] text-muted-foreground">
+      <dt className="w-24 shrink-0 text-compact text-muted-foreground">
         {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : label}
       </dt>
       <dd
@@ -67,7 +67,7 @@ export function DatesProperty({
 }) {
   return (
     <div className="flex items-start py-1">
-      <dt className="w-24 shrink-0 text-[13px]/7 text-muted-foreground">
+      <dt className="w-24 shrink-0 text-compact/7 text-muted-foreground">
         Dates
       </dt>
       <dd className="flex min-w-0 flex-col gap-0.5 text-sm">
@@ -151,7 +151,7 @@ export function ProgressSummary({
   const percent = total === 0 ? 0 : Math.round((done / total) * 100)
   return (
     <>
-      <div className="flex items-center justify-between text-[13px]">
+      <div className="flex items-center justify-between text-compact">
         <span className="text-muted-foreground">Progress</span>
         {loading ? (
           <Skeleton className="h-4 w-24" />
@@ -190,6 +190,6 @@ export function ReadOnlyDescription({ value }: { value: string }) {
       </React.Suspense>
     </section>
   ) : (
-    <p className="text-[15px]/6 text-muted-foreground">No description yet.</p>
+    <p className="text-subtitle/6 text-muted-foreground">No description yet.</p>
   )
 }

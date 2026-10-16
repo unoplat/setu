@@ -230,7 +230,7 @@ export const CreateModuleForm = withForm({
                   onBlur={field.handleBlur}
                   emptyLabel="No lead"
                 />
-                <FieldDescription className="text-[13px]">
+                <FieldDescription className="text-compact">
                   Who the team goes to about this area. Optional.
                 </FieldDescription>
               </CompactField>
@@ -251,7 +251,7 @@ export const CreateModuleForm = withForm({
                   onBlur={field.handleBlur}
                   current={{ name: project, project_name: projectName }}
                 />
-                <FieldDescription className="text-[13px]">
+                <FieldDescription className="text-compact">
                   The product this module is a part of.
                 </FieldDescription>
               </CompactField>
@@ -275,7 +275,7 @@ export const CreateModuleForm = withForm({
         ) : (
           <footer className="flex shrink-0 flex-wrap items-center gap-2.5 border-t pt-6">
             <div className="flex min-w-0 grow flex-col gap-0.5">
-              <span className="truncate text-[13px] leading-4.5 font-medium">
+              <span className="truncate text-compact font-medium">
                 Adds to {targetName}
               </span>
               <span

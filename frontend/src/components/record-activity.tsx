@@ -154,7 +154,7 @@ export function RecordComments({
           <Skeleton className="h-6 w-1/2" />
         </div>
       ) : error || !activity ? (
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-compact text-muted-foreground">
           {error ? frappeErrorMessage(error) : "Comments could not be loaded."}
         </p>
       ) : comments.length ? (
@@ -234,7 +234,7 @@ export function RecordActivityLog({
   return (
     <RailGroup className="gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[13px] text-muted-foreground">Activity</h2>
+        <h2 className="text-compact text-muted-foreground">Activity</h2>
         <span className="text-xs text-muted-foreground">Newest first</span>
       </div>
 
@@ -270,7 +270,7 @@ export function RecordActivityLog({
                     !last && "pb-3.5"
                   )}
                 >
-                  <p className="text-[13px]/4.5">{eventText(entry, source)}</p>
+                  <p className="text-compact">{eventText(entry, source)}</p>
                   <p className="text-xs text-muted-foreground">
                     {person.full_name || person.name} ·{" "}
                     <RelativeTime value={entry.creation} />
@@ -400,7 +400,7 @@ function CommentComposer({
             <Button
               type="button"
               variant="ghost"
-              className="h-8 px-3 text-[13px] text-muted-foreground"
+              className="h-8 px-3 text-compact text-muted-foreground"
               onClick={onCancelReply}
             >
               Cancel
@@ -408,7 +408,7 @@ function CommentComposer({
           ) : null}
           <Button
             type="button"
-            className="h-8 px-3.5 text-[13px] font-semibold"
+            className="h-8 px-3.5 text-compact font-semibold"
             disabled={!canPost}
             onClick={() => void submit()}
           >
@@ -455,7 +455,7 @@ function CommentRow({
       </div>
       <div className="flex min-w-0 grow flex-col gap-1">
         <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
-          <span className="text-[13px] font-semibold text-foreground">
+          <span className="text-compact font-semibold text-foreground">
             {person.full_name || person.name}
           </span>
           <RelativeTime value={entry.creation} />
@@ -526,7 +526,7 @@ function CommentQuote({
       )}
     >
       <div className="flex min-h-6 items-center gap-2">
-        <span className="truncate text-[13px]/4.5 font-semibold">
+        <span className="truncate text-compact font-semibold">
           {person.full_name || person.name}
         </span>
         <span className="shrink-0 text-xs text-muted-foreground">

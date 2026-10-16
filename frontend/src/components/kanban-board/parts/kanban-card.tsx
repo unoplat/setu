@@ -54,7 +54,8 @@ export function KanbanCardView({
             <Badge
               key={`${tag.label}-${i}`}
               variant="secondary"
-              className="text-[10px]"
+              // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+              className="text-caption"
             >
               {tag.label}
             </Badge>
@@ -62,7 +63,7 @@ export function KanbanCardView({
         </div>
       ) : null}
       {data.meta && data.meta.length > 0 ? (
-        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-meta text-muted-foreground">
           {data.meta.map((m) => (
             <li key={m.key} className="flex items-center gap-1">
               <span className="font-mono text-muted-foreground/70">
@@ -80,13 +81,13 @@ export function KanbanCardView({
               {a.avatarUrl ? (
                 <AvatarImage src={a.avatarUrl} alt={a.name} />
               ) : null}
-              <AvatarFallback className="text-[10px]">
+              <AvatarFallback className="text-caption">
                 {initials(a.name)}
               </AvatarFallback>
             </Avatar>
           ))}
           {data.assignees.length > 5 ? (
-            <span className="ms-2 text-[10px] text-muted-foreground">
+            <span className="ms-2 text-caption text-muted-foreground">
               +{data.assignees.length - 5}
             </span>
           ) : null}

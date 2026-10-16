@@ -62,7 +62,8 @@ export function ColumnHeader({
         {column.maxItems !== undefined ? (
           <span
             className={cn(
-              "shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums",
+              // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+              "shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-caption font-medium tabular-nums",
               overCap
                 ? "bg-destructive/15 text-destructive"
                 : "text-muted-foreground"

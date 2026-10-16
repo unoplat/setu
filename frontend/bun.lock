@@ -34,7 +34,7 @@
         "date-fns": "^4.4.0",
         "frappe-react-sdk": "^1.17.1",
         "lucide-react": "^1.33.0",
-        "nuqs": "^2.3.0",
+        "nuqs": "^2.5.0",
         "react": "^19.2.6",
         "react-date-range-picker-tailwind4": "^1.0.3",
         "react-day-picker": "^10.0.1",

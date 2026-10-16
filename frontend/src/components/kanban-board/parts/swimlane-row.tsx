@@ -19,7 +19,8 @@ export function SwimlaneRow({
       {swimlanes.map((s) => (
         <span
           key={s.id}
-          className="text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase"
+          // Envision: type sizes use design-system tokens (text-caption/meta/compact).
+          className="text-caption font-medium tracking-wide text-muted-foreground/70 uppercase"
         >
           {s.title}
         </span>

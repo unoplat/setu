@@ -262,7 +262,7 @@ export const TaskForm = withForm({
             <RailGroup className="gap-1.5">
               <label
                 htmlFor="task-tags"
-                className="text-[13px] text-muted-foreground"
+                className="text-compact text-muted-foreground"
               >
                 Tags
               </label>
