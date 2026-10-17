@@ -84,6 +84,8 @@ def create_task(
 	  Frappe document tags, so Desk, notifications and filters all see them.
 	  ``assignees`` is the list of users; the older ``assignee`` (one user)
 	  still works, and a request may send one or the other, not both.
+	- The Task is a group, so it can hold Subtasks; Tasks created in Desk keep
+	  ERPNext's default.
 	- POST only: the method writes, and Frappe commits after a successful POST.
 	"""
 	frappe.get_doc("Project", project).check_permission("read")
@@ -112,6 +114,10 @@ def create_task(
 	task.priority = priority
 	task.envision_milestone = milestone or None
 	task.envision_module = module or None
+	# ERPNext refuses a Subtask under a Task that is not a group. Only Tasks
+	# created here get this default, so any Envision Task can hold Subtasks
+	# (CONTEXT.md, Subtask); Desk and other ERPNext paths keep ERPNext's own.
+	task.is_group = 1
 	if status == "Completed":
 		# Mandatory on a Completed Task, as Desk asks for it.
 		task.completed_on = today()
