@@ -22,6 +22,7 @@ import {
   UNASSIGNED,
   type LinkedTask,
   type LinkedTaskFilterState,
+  type LinkedTaskNoun,
 } from "./linked-task-filters"
 
 /** Paper 07f/06f: soonest due first, when the URL names no sort. */
@@ -29,19 +30,29 @@ const DEFAULT_SORTING: SortingState = [{ id: "due", desc: false }]
 
 const NO_PEOPLE: Assignee[] = []
 
+/** Joins a filter's labels with "or" for noMatchTitle; built once. */
+const OR_LIST = new Intl.ListFormat("en", { type: "disjunction" })
+
 /**
  * Paper 07f "Module Detail: tasks table" and 06f "Milestone Detail: linked
- * tasks table". Every Task of the record is already loaded (useRelatedTasks),
- * so filtering, sorting and paging run in the browser; the filters, the sort
- * and the page live in the URL through nuqs.
+ * tasks table", and 09k's Subtasks. Every Task of the record is already
+ * loaded (useRelatedTasks, useSubtasks), so filtering, sorting and paging run
+ * in the browser; the filters, the sort and the page live in the URL through
+ * nuqs.
  */
 export function LinkedTaskTable({
   project,
   tasks,
+  noun = "task",
+  appendRow,
 }: {
   /** The Project's name (its id). */
   project: string
   tasks: TaskSummary[]
+  /** What the search and the no-match message call the rows. */
+  noun?: LinkedTaskNoun
+  /** A last row outside filters and paging: 09k's inline add. */
+  appendRow?: React.ReactNode
 }) {
   const adapter = useNuqsAdapter<LinkedTaskFilterState>(
     linkedTaskFilterSchema.definition,
@@ -55,7 +66,12 @@ export function LinkedTaskTable({
 
   return (
     <DataTableStoreProvider adapter={adapter}>
-      <LinkedTaskTableInner project={project} tasks={tasks} />
+      <LinkedTaskTableInner
+        project={project}
+        tasks={tasks}
+        noun={noun}
+        appendRow={appendRow}
+      />
     </DataTableStoreProvider>
   )
 }
@@ -66,9 +82,13 @@ export function LinkedTaskTable({
 function LinkedTaskTableInner({
   project,
   tasks,
+  noun,
+  appendRow,
 }: {
   project: string
   tasks: TaskSummary[]
+  noun: LinkedTaskNoun
+  appendRow: React.ReactNode
 }) {
   const urlState = useFilterState<LinkedTaskFilterState>()
   // Seeds only: after mount the table owns the state and writes it back.
@@ -88,8 +108,8 @@ function LinkedTaskTableInner({
     [tasks, project, people]
   )
   const filterFields = React.useMemo(
-    () => linkedTaskFilterFields(rows, people),
-    [rows, people]
+    () => linkedTaskFilterFields(rows, people, noun),
+    [rows, people, noun]
   )
 
   return (
@@ -103,9 +123,10 @@ function LinkedTaskTableInner({
       defaultPagination={defaults.pagination}
       syncPagination
       getRowId={getRowId}
-      empty={<LinkedTasksNoMatch />}
+      empty={<LinkedTasksNoMatch noun={noun} />}
       className="rounded-lg"
       rowClassName="relative h-13"
+      appendRow={appendRow}
     />
   )
 }
@@ -158,7 +179,7 @@ function getRowId(task: LinkedTask) {
  * they hide, and Clear filters, which also empties the search and so returns
  * to the first page.
  */
-function LinkedTasksNoMatch() {
+function LinkedTasksNoMatch({ noun }: { noun: LinkedTaskNoun }) {
   const { table, columnFilters, filterFields } = useDataTable<
     LinkedTask,
     unknown
@@ -168,12 +189,12 @@ function LinkedTasksNoMatch() {
   return (
     <div className="flex flex-col items-center gap-1 py-10 text-center">
       <p className="text-sm font-medium text-foreground">
-        {noMatchTitle(columnFilters, filterFields)}
+        {noMatchTitle(columnFilters, filterFields, noun)}
       </p>
       <p className="text-compact text-muted-foreground">
         {hidden === 1
-          ? "1 task is hidden by filters."
-          : `${hidden} tasks are hidden by filters.`}{" "}
+          ? `1 ${noun} is hidden by filters.`
+          : `${hidden} ${noun}s are hidden by filters.`}{" "}
         <button
           type="button"
           className="font-medium text-sidebar-primary outline-none hover:underline focus-visible:underline"
@@ -193,7 +214,8 @@ function LinkedTasksNoMatch() {
  */
 function noMatchTitle(
   columnFilters: ColumnFiltersState,
-  filterFields: DataTableFilterField<LinkedTask>[]
+  filterFields: DataTableFilterField<LinkedTask>[],
+  noun: LinkedTaskNoun
 ): string {
   const search = columnFilters.find((filter) => filter.id === "subject")?.value
   const phrases = [
@@ -213,10 +235,10 @@ function noMatchTitle(
   ].filter((text): text is string => text !== null)
 
   if (typeof search === "string" && search !== "") {
-    return ["No tasks match", `“${search}”`, ...phrases].join(" ")
+    return [`No ${noun}s match`, `“${search}”`, ...phrases].join(" ")
   }
-  if (phrases.length > 0) return ["No tasks", ...phrases].join(" ")
-  return "No tasks match these filters."
+  if (phrases.length > 0) return [`No ${noun}s`, ...phrases].join(" ")
+  return `No ${noun}s match these filters.`
 }
 
 /** One filter's phrase, or null when it filters nothing. */
@@ -236,5 +258,5 @@ function phrase(
       : (options?.find((option) => option.value === item)?.label ??
         String(item))
   )
-  return wrap(new Intl.ListFormat("en", { type: "disjunction" }).format(labels))
+  return wrap(OR_LIST.format(labels))
 }

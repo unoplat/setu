@@ -13,6 +13,7 @@ import { SheetClose, SheetDescription } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDay, useMilestones } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
+import { useProjectTasks } from "@/lib/tasks"
 
 import {
   MISSING_TITLE,
@@ -26,6 +27,7 @@ import {
 } from "./form"
 import { AssigneesCombobox } from "./assignees-combobox"
 import { LinkCombobox } from "./link-combobox"
+import { ParentTaskCombobox } from "./parent-task-combobox"
 import { PrioritySelect, StatusSelect } from "./task-selects"
 import { TagsCombobox } from "./tags-combobox"
 
@@ -34,7 +36,8 @@ const DescriptionEditor = React.lazy(
   () => import("@/components/create-project/description-editor")
 )
 
-// Paper: 03 — Create Task, with the Milestone (06e) and Module (07e) pickers.
+// Paper: 03 — Create Task, with the Milestone (06e) and Module (07e) pickers,
+// and 09m — Create subtask, the same form with a Parent task field first.
 
 const requiredMark = (
   <span aria-hidden="true" className="text-destructive">
@@ -48,9 +51,30 @@ export const CreateTaskForm = withForm({
     project: "",
     projectName: "",
     error: null as string | null,
+    /** Opened from a Task's Subtasks (09m): the Parent task field shows. */
+    withParent: false,
   },
-  render: function CreateTaskFormView({ form, project, projectName, error }) {
+  render: function CreateTaskFormView({
+    form,
+    project,
+    projectName,
+    error,
+    withParent,
+  }) {
     const subject = useSelector(form.store, (state) => state.values.subject)
+    const status = useSelector(form.store, (state) => state.values.status)
+    const parentTask = useSelector(
+      form.store,
+      (state) => state.values.parent_task
+    )
+    // The parent's title for the copy, and its due date, which ERPNext lets
+    // no Subtask's pass.
+    const { data: projectTasks } = useProjectTasks(project)
+    const parent = parentTask
+      ? projectTasks?.find((task) => task.name === parentTask)
+      : undefined
+    const parentDue = parent?.exp_end_date?.slice(0, 10) || undefined
+    const subtask = withParent && Boolean(parentTask)
     const startDate = useSelector(
       form.store,
       (state) => state.values.start_date
@@ -101,9 +125,13 @@ export const CreateTaskForm = withForm({
       >
         <div className="flex shrink-0 items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <PanelTitle surface="sheet">Create task</PanelTitle>
+            <PanelTitle surface="sheet">
+              {subtask ? "Create subtask" : "Create task"}
+            </PanelTitle>
             <SheetDescription>
-              Capture the outcome, owner, and dates the team needs to begin.
+              {subtask
+                ? `A full task under ${parent?.subject ?? parentTask}, with its own owner and dates.`
+                : "Capture the outcome, owner, and dates the team needs to begin."}
             </SheetDescription>
           </div>
           <SheetClose render={<PanelCloseButton />} disabled={submitting}>
@@ -114,6 +142,24 @@ export const CreateTaskForm = withForm({
 
         {/* Room for the focus rings, which the scroll box would clip. */}
         <FieldGroup className="-mx-1 min-h-0 flex-1 gap-5 overflow-y-auto px-1 pt-8 pb-6">
+          {withParent ? (
+            <form.Field name="parent_task">
+              {(field) => (
+                <CompactField>
+                  <FieldLabel htmlFor="task-parent">Parent task</FieldLabel>
+                  <ParentTaskCombobox
+                    id="task-parent"
+                    project={project}
+                    status={status}
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                    onBlur={field.handleBlur}
+                  />
+                </CompactField>
+              )}
+            </form.Field>
+          ) : null}
+
           <form.Field
             name="subject"
             validators={{
@@ -125,13 +171,17 @@ export const CreateTaskForm = withForm({
               return (
                 <CompactField data-invalid={fieldError ? true : undefined}>
                   <FieldLabel htmlFor="task-subject">
-                    Task title
+                    {subtask ? "Subtask title" : "Task title"}
                     {requiredMark}
                   </FieldLabel>
                   <FieldInput
                     id="task-subject"
                     name="subject"
-                    placeholder="Prepare release checklist"
+                    placeholder={
+                      subtask
+                        ? "Confirm privacy labels"
+                        : "Prepare release checklist"
+                    }
                     autoComplete="off"
                     autoFocus
                     value={field.state.value}
@@ -216,8 +266,9 @@ export const CreateTaskForm = withForm({
                     value={field.state.value}
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}
-                    defaultMonth={startDate}
+                    defaultMonth={startDate || parentDue}
                     minDate={startDate}
+                    maxDate={parentDue}
                   />
                 </CompactField>
               )}
@@ -341,7 +392,11 @@ export const CreateTaskForm = withForm({
             Cancel
           </SheetClose>
           <ActionButton type="submit" size="lg" disabled={state !== "ready"}>
-            {submitting ? "Creating…" : "Create task"}
+            {submitting
+              ? "Creating…"
+              : subtask
+                ? "Create subtask"
+                : "Create task"}
           </ActionButton>
         </footer>
       </form>

@@ -18,6 +18,7 @@ import {
   hasDraft,
   submitOnce,
   useAppForm,
+  type TaskValues,
 } from "./form"
 
 /** The editor package marks every popup it portals out of the panel. */
@@ -30,8 +31,10 @@ const OWN_POPUPS = `[data-richtext-portal], ${DATE_PICKER_POPUP}`
 
 /**
  * Create Task panel (Paper screen 03), opened from a Board column's "+" (its
- * Status picked), from a section's "+" (its Status and Module picked), or from
- * a milestone's or module's page (that link picked). Like
+ * Status picked), from a section's "+" (its Status and Module picked), from
+ * a milestone's or module's page (that link picked), or as Create subtask
+ * (09m) from a Task's Subtasks (its parent picked, and what the inline row
+ * held). Like
  * Create Milestone, a 520px panel on the right that asks before dropping a
  * draft.
  */
@@ -43,6 +46,8 @@ export function CreateTaskSheet({
   status,
   module,
   milestone,
+  parent,
+  initial,
   onCreated,
 }: {
   open: boolean
@@ -59,6 +64,13 @@ export function CreateTaskSheet({
   module?: string
   /** The milestone whose page the panel was opened from, if any. */
   milestone?: string
+  /**
+   * The Task whose Subtasks the panel was opened from: it shows the Parent
+   * task field with this Task picked.
+   */
+  parent?: string
+  /** What the inline row already held: the title and its picks. */
+  initial?: Partial<TaskValues>
   /** Refresh the Board; the panel waits for it. */
   onCreated: () => Promise<unknown>
 }) {
@@ -85,6 +97,7 @@ export function CreateTaskSheet({
         milestone: value.milestone || undefined,
         module: value.module || undefined,
         tags: value.tags,
+        parent_task: value.parent_task || undefined,
       }).catch(() => null)
       if (!response) return
 
@@ -116,9 +129,11 @@ export function CreateTaskSheet({
         status,
         module: module ?? "",
         milestone: milestone ?? "",
+        parent_task: parent ?? "",
+        ...initial,
       })
     }
-  }, [open, status, module, milestone, form])
+  }, [open, status, module, milestone, parent, initial, form])
 
   function close() {
     onOpenChange(false)
@@ -178,6 +193,7 @@ export function CreateTaskSheet({
           project={project}
           projectName={projectName}
           error={error ? frappeErrorMessage(error) : null}
+          withParent={parent !== undefined}
         />
         <DiscardDraftDialog
           open={confirmingDiscard}

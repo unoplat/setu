@@ -3,8 +3,9 @@ from frappe import _
 from frappe.desk.form.assign_to import add as assign_to
 from frappe.desk.form.assign_to import set_status as set_assignment_status
 from frappe.model.delete_doc import get_dynamic_linked_docs, get_linked_docs, raise_link_exists_exception
-from frappe.utils import getdate, today
-from frappe.utils.nestedset import get_descendants_of
+from frappe.model.document import Document
+from frappe.utils import format_date, getdate, today
+from frappe.utils.nestedset import get_ancestors_of, get_descendants_of
 
 from setu.api.milestone import (
 	ASSIGNED,
@@ -74,6 +75,7 @@ def create_task(
 	module: str | None = None,
 	tags: list[str] | str | None = None,
 	assignees: list[str] | str | None = None,
+	parent_task: str | None = None,
 ) -> dict:
 	"""Create a Task on a project (Paper: 03 — Create Task).
 
@@ -86,6 +88,9 @@ def create_task(
 	  still works, and a request may send one or the other, not both.
 	- The Task is a group, so it can hold Subtasks; Tasks created in Desk keep
 	  ERPNext's default.
+	- ``parent_task`` creates it as a Subtask of that Task (09k's inline "+"
+	  row, 09m's "Create subtask" sheet), after check_parent_task, and notes
+	  it on the parent's Activity.
 	- POST only: the method writes, and Frappe commits after a successful POST.
 	"""
 	frappe.get_doc("Project", project).check_permission("read")
@@ -122,7 +127,14 @@ def create_task(
 		# Mandatory on a Completed Task, as Desk asks for it.
 		task.completed_on = today()
 		task.completed_by = frappe.session.user
+	parent_task = (parent_task or "").strip() or None
+	if parent_task:
+		check_parent_task(task, parent_task)
+		task.parent_task = parent_task
+		check_parent_due_date(task)
 	task.insert()
+	if parent_task:
+		note_subtask(parent_task, _("Added subtask {0}").format(task.subject))
 
 	for tag in clean_tags(tags):
 		task.add_tag(tag)
@@ -167,6 +179,7 @@ def update_task(
 	module: str | None = None,
 	tags: list[str] | str | None = None,
 	assignees: list[str] | str | None = None,
+	parent_task: str | None = None,
 ) -> dict:
 	"""Save what changed on the Task (09: one "Save changes" for all).
 
@@ -180,8 +193,14 @@ def update_task(
 	``assignees`` is everyone assigned (set_assignees): ``[]`` unassigns
 	everyone, Desk's assignments included. The older ``assignee`` replaces
 	only the first person (replace_assignee). A request sends one or the other.
+
+	``parent_task`` moves the Task under that Task (check_parent_task), and
+	``""`` makes it a top-level Task again; both parents' Activity note the
+	move. A Task with open Subtasks cannot be marked Done.
 	"""
 	task = task_doc(name, "write")
+	previous_parent = task.parent_task or None
+	previous_due = as_date(task.exp_end_date)
 	check_one_assignee_field(assignee, assignees)
 	if assignees is not None:
 		# Checked before anything is saved; people already assigned may stay
@@ -210,6 +229,8 @@ def update_task(
 	if status is not None:
 		if status not in CREATE_STATUSES:
 			frappe.throw(_("A task cannot be set to {0}.").format(status))
+		if status == "Completed" and task.status != "Completed":
+			check_no_open_subtasks(task)
 		if status == "Completed" and task.status != "Completed" and not task.completed_on:
 			# Mandatory on a Completed Task, as Desk asks for it.
 			task.completed_on = today()
@@ -223,10 +244,26 @@ def update_task(
 		task.envision_milestone = milestone or None
 	if module is not None:
 		task.envision_module = module or None
+	if parent_task is not None:
+		parent_task = parent_task.strip() or None
+		# Checked last, against the status this request sets. Sending the
+		# current parent again checks nothing, as ERPNext only checks a move.
+		if parent_task and parent_task != previous_parent:
+			check_parent_task(task, parent_task)
+		task.parent_task = parent_task
+	moved = (task.parent_task or None) != previous_parent
+	if task.parent_task and (moved or as_date(task.exp_end_date) != previous_due):
+		check_parent_due_date(task)
 
-	fields = (subject, description, start_date, due_date, status, priority, milestone, module)
-	if any(value is not None for value in fields):
+	fields = (subject, description, start_date, due_date, status, priority, milestone, module, parent_task)
+	# ``moved`` too: clearing the parent leaves ``parent_task`` as None above.
+	if moved or any(value is not None for value in fields):
 		task.save()
+	if moved:
+		if previous_parent:
+			note_subtask(previous_parent, _("Moved out subtask {0}").format(task.subject))
+		if task.parent_task:
+			note_subtask(task.parent_task, _("Moved in subtask {0}").format(task.subject))
 	if tags is not None:
 		replace_tags(task, clean_tags(tags))
 	if assignees is not None:
@@ -239,6 +276,75 @@ def update_task(
 	if tags is not None or assignee is not None or assignees is not None:
 		task.reload()
 	return task_detail(task)
+
+
+def check_parent_task(task: Document, parent: str) -> None:
+	"""Refuse ``parent`` as the Task's parent before saving, readably.
+
+	ERPNext checks most of this too, but with Desk links in its messages, and
+	it saves the parent (populate_depends_on), so the user must be able to
+	edit it. Desk Tasks are not groups and cannot hold Subtasks.
+	"""
+	if not frappe.db.exists("Task", parent):
+		frappe.throw(_("Task {0} not found").format(parent), frappe.DoesNotExistError)
+	doc = frappe.get_doc("Task", parent)
+	if not doc.has_permission("read"):
+		# Reported as missing, so the name reveals nothing.
+		frappe.throw(_("Task {0} not found").format(parent), frappe.DoesNotExistError)
+	if doc.is_milestone:
+		frappe.throw(_("A milestone can't hold subtasks."))
+	if doc.is_template:
+		frappe.throw(_("A template can't hold subtasks."))
+	if doc.status == "Cancelled":
+		frappe.throw(_("{0} is cancelled and can't hold subtasks.").format(parent))
+	if doc.project != task.project:
+		frappe.throw(_("The parent task belongs to another project."))
+	if not doc.is_group:
+		frappe.throw(_("{0} can't hold subtasks.").format(parent))
+	if not task.is_new():
+		if parent == task.name:
+			frappe.throw(_("A task can't be its own subtask."))
+		if parent in get_descendants_of("Task", task.name, ignore_permissions=True):
+			frappe.throw(_("A task can't move under one of its own subtasks."))
+	if doc.status == "Completed" and task.status not in ("Completed", "Cancelled"):
+		frappe.throw(_("{0} is Done. Reopen it before adding open subtasks.").format(parent))
+	if not doc.has_permission("write"):
+		frappe.throw(
+			_("You can't edit {0}, so you can't add subtasks to it.").format(parent), frappe.PermissionError
+		)
+
+
+def check_parent_due_date(task: Document) -> None:
+	"""A Subtask is due by its parent's due date, as ERPNext requires; the
+	caller runs this when the Task is new, moved or its due date changed."""
+	if not task.exp_end_date:
+		return
+	parent_due = frappe.db.get_value("Task", task.parent_task, "exp_end_date")
+	if parent_due and getdate(task.exp_end_date) > getdate(parent_due):
+		frappe.throw(
+			_("The due date can't be after the parent task's due date, {0}.").format(format_date(parent_due)),
+			frappe.exceptions.InvalidDates,
+		)
+
+
+def check_no_open_subtasks(task: Document) -> None:
+	"""A Task is Done only once its Subtasks are: ERPNext refuses it too (each
+	Subtask is in its parent's Depends On), naming one Task ID."""
+	count = frappe.db.count(
+		"Task", {"parent_task": task.name, "status": ["not in", ["Completed", "Cancelled"]]}
+	)
+	if count == 1:
+		frappe.throw(_("1 subtask is still open. Finish it before marking this task Done."))
+	if count:
+		frappe.throw(
+			_("{0} subtasks are still open. Finish them before marking this task Done.").format(count)
+		)
+
+
+def note_subtask(parent: str, text: str) -> None:
+	"""Note a Subtask added, moved in or moved out on the parent's Activity
+	(09k), as an Info comment, which document_activity lists as plain text."""
+	frappe.get_doc("Task", parent).add_comment("Info", text)
 
 
 def check_one_assignee_field(assignee: str | None, assignees) -> None:
@@ -428,6 +534,8 @@ LIVE_TASKS = {
 
 
 # What the Board needs of each Task (frontend/src/lib/tasks.ts, TaskSummary).
+# ``parent_task`` and ``is_group`` serve the Subtasks table and the Parent
+# picker, which greys out Desk Tasks that cannot hold Subtasks.
 TASK_LIST_FIELDS = [
 	"name",
 	"subject",
@@ -438,6 +546,8 @@ TASK_LIST_FIELDS = [
 	"_user_tags",
 	"envision_milestone",
 	"envision_module",
+	"parent_task",
+	"is_group",
 ]
 
 
@@ -594,6 +704,10 @@ def task_detail(task) -> dict:
 		"assignees": assignee_people(task.name),
 		"milestone": task.get("envision_milestone") or None,
 		"module": task.get("envision_module") or None,
+		# 09l: the breadcrumb, the "Subtask of …" pill and the rail's Parent row.
+		"parent_task": task.parent_task or None,
+		"is_group": bool(task.is_group),
+		"ancestors": task_ancestors(task),
 		"tags": task_tags(task),
 		"project": task.project,
 		"project_name": frappe.db.get_value("Project", task.project, "project_name")
@@ -606,6 +720,19 @@ def task_detail(task) -> dict:
 		"can_write": bool(task.has_permission("write")),
 		"can_delete": bool(task.has_permission("delete")),
 	}
+
+
+def task_ancestors(task: Document) -> list[dict[str, str]]:
+	"""The Task's parents, from the top-level Task down to its direct parent.
+
+	Read without permission checks, like get_ancestors_of itself: ERPNext keeps
+	a Subtask in its parent's project, so they are the project's Tasks.
+	"""
+	if not task.parent_task:
+		return []
+	names: list[str] = get_ancestors_of("Task", task.name, order_by="lft asc")
+	subjects = titles("Task", "subject", set(names))
+	return [{"name": name, "subject": subjects.get(name, name)} for name in names]
 
 
 @frappe.whitelist()

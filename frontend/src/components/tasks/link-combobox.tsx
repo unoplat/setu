@@ -19,6 +19,8 @@ export interface LinkOption {
   label: string
   /** The second line: "Due Apr 24", "Lead · Priya Shah". */
   detail?: string
+  /** Listed but not pickable; `detail` says why. */
+  disabled?: boolean
 }
 
 // Paper 06e and 07e: the Milestone and Module fields of Create Task. The field
@@ -112,7 +114,11 @@ export function LinkCombobox({
         <ComboboxEmpty>{emptyText}</ComboboxEmpty>
         <ComboboxList>
           {(item: LinkOption) => (
-            <ComboboxItem key={item.value || "none"} value={item}>
+            <ComboboxItem
+              key={item.value || "none"}
+              value={item}
+              disabled={item.disabled}
+            >
               {item.value ? (
                 <span className="text-muted-foreground">{icon}</span>
               ) : null}

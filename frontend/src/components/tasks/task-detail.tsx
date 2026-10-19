@@ -1,5 +1,11 @@
 import * as React from "react"
-import { FlagIcon, LayoutGridIcon, SquareCheckIcon } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import {
+  CornerLeftUpIcon,
+  FlagIcon,
+  LayoutGridIcon,
+  SquareCheckIcon,
+} from "lucide-react"
 
 import {
   DatesProperty,
@@ -18,9 +24,11 @@ import { useModules } from "@/lib/modules"
 import {
   BOARD_COLUMNS,
   BOARD_PALETTE,
+  directParent,
   PRIORITY_CLASS,
   TASK_PRIORITIES,
   taskActivityKey,
+  type TaskAncestor,
   type TaskDetail,
 } from "@/lib/tasks"
 import { cn } from "@/lib/utils"
@@ -48,15 +56,40 @@ export function TaskActivityLog({ task }: { task: TaskDetail }) {
   return <RecordActivityLog record={task.name} source={TASK_ACTIVITY} />
 }
 
-/** 09's "Task" chip and the Task's ID, above the title. */
-export function TaskKind({ name }: { name: string }) {
+/**
+ * 09's "Task" chip and the Task's ID, above the title, and on a Subtask 09l's
+ * "Subtask of …", opening the parent.
+ */
+export function TaskKind({
+  name,
+  project,
+  parent,
+}: {
+  name: string
+  /** The Project's name (its id), for the parent's URL. */
+  project: string
+  /** The direct parent, on a Subtask. */
+  parent?: TaskAncestor
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-5.5 items-center gap-1 rounded-sm border px-2 text-xs font-medium">
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="flex h-5.5 shrink-0 items-center gap-1 rounded-sm border px-2 text-xs font-medium">
         <SquareCheckIcon className="size-3 text-sidebar-primary" />
         Task
       </span>
-      <span className="font-mono text-xs text-muted-foreground">{name}</span>
+      <span className="shrink-0 font-mono text-xs text-muted-foreground">
+        {name}
+      </span>
+      {parent ? (
+        <Link
+          to="/projects/$name/tasks/$task"
+          params={{ name: project, task: parent.name }}
+          className="flex h-5.5 min-w-0 items-center gap-1 rounded-sm bg-muted px-2 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <CornerLeftUpIcon className="size-3 shrink-0" />
+          <span className="truncate">Subtask of {parent.subject}</span>
+        </Link>
+      ) : null}
     </div>
   )
 }
@@ -172,6 +205,13 @@ export function TaskReadOnly({
 
           <RailGroup>
             <dl className="flex flex-col">
+              <Property label="Parent" plain>
+                <LinkValue
+                  icon={<CornerLeftUpIcon />}
+                  label={directParent(task)?.subject ?? null}
+                  emptyLabel="No parent"
+                />
+              </Property>
               <DatesProperty
                 plain
                 start={
@@ -221,7 +261,11 @@ export function TaskReadOnly({
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
           <KindRow>
-            <TaskKind name={task.name} />
+            <TaskKind
+              name={task.name}
+              project={project}
+              parent={directParent(task)}
+            />
           </KindRow>
           <h1 className="text-3xl/9 font-semibold tracking-tight">
             {task.subject}

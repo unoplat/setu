@@ -1,5 +1,5 @@
 import * as React from "react"
-import { CheckIcon, LoaderCircleIcon, Maximize2Icon } from "lucide-react"
+import { CheckIcon, LoaderCircleIcon } from "lucide-react"
 
 import { ActionButton } from "@/components/app-ui/action-button"
 import {
@@ -11,6 +11,7 @@ import {
   PromptDialogFooter,
   PromptDialogHeader,
 } from "@/components/app-ui/prompt-dialog"
+import { SectionExpandButton } from "@/components/app-ui/section-actions"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
@@ -337,20 +338,7 @@ export function DescriptionField({
         // Named like the Comments below it, with Expand always in reach.
         <div className="flex h-7 items-center justify-between gap-4">
           <h2 className="text-sm font-semibold">Description</h2>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            className="h-7 gap-1.5 rounded-sm px-2 text-muted-foreground"
-            onClick={onExpand}
-          >
-            <Maximize2Icon className="size-3" />
-            Expand
-            <HotkeyText
-              command={toggleCommand}
-              className="text-meta font-normal"
-            />
-          </Button>
+          <SectionExpandButton command={toggleCommand} onClick={onExpand} />
         </div>
       )}
 

@@ -62,6 +62,12 @@ export interface DataTableProps<TData extends RowData> {
    * so a cell's link can stretch over the whole row (see milestone-columns).
    */
   rowClassName?: string
+  /**
+   * A row after the page's rows, outside sorting, filtering and paging, so
+   * it stays last: the Subtasks table's inline add (Paper 09k). With no
+   * data at all it is the only row, without the empty message.
+   */
+  appendRow?: React.ReactNode
 }
 
 // One shared array: a fresh `[]` default per render would change the
@@ -101,6 +107,7 @@ export function DataTable<TData extends RowData>({
   syncPagination = false,
   className,
   rowClassName,
+  appendRow,
 }: DataTableProps<TData>) {
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>(defaultColumnFilters)
@@ -163,6 +170,7 @@ export function DataTable<TData extends RowData>({
 
   const table = useTable(tableOptions)
   const rows = table.getRowModel().rows
+  const showEmpty = rows.length === 0 && !(appendRow && data.length === 0)
 
   // A page past the end (fewer rows than when the URL was written, or a page
   // typed by hand) moves to the last page there is. Set during render, so the
@@ -208,7 +216,7 @@ export function DataTable<TData extends RowData>({
               ))}
             </TableHeader>
             <TableBody>
-              {rows.length ? (
+              {!showEmpty ? (
                 rows.map((row) => (
                   <TableRow key={row.id} className={rowClassName}>
                     {row.getVisibleCells().map((cell) => (
@@ -237,6 +245,7 @@ export function DataTable<TData extends RowData>({
                   </TableCell>
                 </TableRow>
               )}
+              {appendRow}
             </TableBody>
           </Table>
         </div>
