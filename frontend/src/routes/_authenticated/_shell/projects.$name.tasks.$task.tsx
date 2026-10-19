@@ -20,6 +20,7 @@ import { TaskForm } from "@/components/tasks/task-form"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
+import { useMarkRecordRead } from "@/lib/inbox"
 import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
   MY_TASKS_KEY,
@@ -44,6 +45,8 @@ export const Route = createFileRoute(
 
 function TaskPage() {
   const { name, task: taskName } = Route.useParams()
+  // Opening it marks its Inbox items read (lib/inbox.ts).
+  useMarkRecordRead("task", taskName)
   const { data: project } = useFrappeGetDoc<{ project_name?: string }>(
     "Project",
     name

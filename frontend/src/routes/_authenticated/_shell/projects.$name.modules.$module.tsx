@@ -21,6 +21,7 @@ import { RecordPlaceholder } from "@/components/record-placeholder"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
+import { useMarkRecordRead } from "@/lib/inbox"
 import {
   moduleActivityKey,
   modulesKey,
@@ -41,6 +42,8 @@ export const Route = createFileRoute(
 
 function ModulePage() {
   const { name, module: moduleName } = Route.useParams()
+  // Opening it marks its Inbox items read (lib/inbox.ts).
+  useMarkRecordRead("module", moduleName)
   const { data: project } = useFrappeGetDoc<{ project_name?: string }>(
     "Project",
     name

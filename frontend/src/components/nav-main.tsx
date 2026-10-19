@@ -27,6 +27,12 @@ export interface NavItem {
    * are (nav-projects.tsx): My tasks' Views.
    */
   sub?: React.ReactNode
+  /**
+   * Shown at the item's end, in the slot the hotkey hint takes while `G` is
+   * held: the Inbox's unread count. Hidden, with the slot, in the
+   * icon-collapsed sidebar.
+   */
+  badge?: React.ReactNode
 }
 
 export function NavMain({ items }: { items: readonly NavItem[] }) {
@@ -55,8 +61,14 @@ export function NavMain({ items }: { items: readonly NavItem[] }) {
                 {item.icon}
                 <span>{item.title}</span>
               </SidebarMenuButton>
-              <SidebarMenuBadge hidden={!revealHints}>
-                <HotkeyHint command={item.command} />
+              {/* The hint takes the slot while it is revealed; otherwise the
+                  badge, if the item has one. */}
+              <SidebarMenuBadge hidden={!revealHints && !item.badge}>
+                {revealHints ? (
+                  <HotkeyHint command={item.command} />
+                ) : (
+                  item.badge
+                )}
               </SidebarMenuBadge>
               {open ? item.sub : null}
             </SidebarMenuItem>

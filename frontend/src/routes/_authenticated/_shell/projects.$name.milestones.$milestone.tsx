@@ -20,6 +20,7 @@ import { RecordPlaceholder } from "@/components/record-placeholder"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
+import { useMarkRecordRead } from "@/lib/inbox"
 import {
   milestoneActivityKey,
   milestonesKey,
@@ -40,6 +41,8 @@ export const Route = createFileRoute(
 
 function MilestonePage() {
   const { name, milestone: milestoneName } = Route.useParams()
+  // Opening it marks its Inbox items read (lib/inbox.ts).
+  useMarkRecordRead("milestone", milestoneName)
   const { data: project } = useFrappeGetDoc<{ project_name?: string }>(
     "Project",
     name

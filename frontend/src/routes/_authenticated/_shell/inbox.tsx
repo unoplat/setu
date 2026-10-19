@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { PagePlaceholder } from "@/components/page-placeholder"
+import { InboxPage } from "@/components/inbox/inbox-page"
 
-// Personal stream of Project activity. Record basis is still undecided
-// (CONTEXT.md), so this is navigation only for now.
+// The Inbox (Paper 10c): the signed-in user's assignments and mentions across
+// Projects. Its records are Frappe's Notification Log rows on Envision
+// records, read through setu/api/inbox.py (lib/inbox.ts).
 export const Route = createFileRoute("/_authenticated/_shell/inbox")({
-  component: () => <PagePlaceholder title="Inbox" />,
+  component: InboxPage,
 })
