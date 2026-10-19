@@ -1,10 +1,5 @@
 import * as React from "react"
 import {
-  differenceInSeconds,
-  format,
-  formatDistanceToNowStrict,
-} from "date-fns"
-import {
   useFrappeAuth,
   useFrappeGetDoc,
   useFrappePostCall,
@@ -13,6 +8,7 @@ import { ArrowUpIcon, CornerDownLeftIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { HotkeyText } from "@/components/hotkey-hint"
+import { RelativeTime } from "@/components/relative-time"
 import type { CommentEditorHandle } from "@/components/milestones/comment-editor"
 import { AssigneeAvatar } from "@/components/milestones/assignee-avatar"
 import { RailGroup } from "@/components/record-detail"
@@ -573,18 +569,6 @@ function QuoteAction({
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
-  )
-}
-
-/** "just now", "5 minutes ago"; the exact time on hover. */
-function RelativeTime({ value }: { value: string }) {
-  const date = new Date(value)
-  return (
-    <time dateTime={value} title={format(date, "PPpp")}>
-      {differenceInSeconds(new Date(), date) < 60
-        ? "just now"
-        : formatDistanceToNowStrict(date, { addSuffix: true })}
-    </time>
   )
 }
 
