@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/unoplat/setu/compare/v0.2.0...v0.3.0) (2026-10-19)
+
+
+### Features
+
+* **tasks:** add subtask creation and parent management ([404ce2e](https://github.com/unoplat/setu/commit/404ce2ea5522cb18a4eeaa8f24e683aaa9af3c08))
+* **tasks:** let Envision tasks hold subtasks ([fe0af19](https://github.com/unoplat/setu/commit/fe0af194f5471eda465ff8b4950a305d0676f87a))
+
 ## [0.2.0](https://github.com/unoplat/setu/compare/v0.1.0...v0.2.0) (2026-10-19)
 
 
