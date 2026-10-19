@@ -36,6 +36,9 @@ export const linkedTaskFilterSchema = createSchema({
 
 export type LinkedTaskFilterState = typeof linkedTaskFilterSchema._type
 
+/** What the table calls its rows: a Task's Subtasks are "subtasks" (09k). */
+export type LinkedTaskNoun = "task" | "subtask"
+
 /** A row of the table: the Task, with what its cells look up. */
 export interface LinkedTask extends TaskSummary {
   /** The Project, for the Task's URL. */
@@ -47,14 +50,15 @@ export interface LinkedTask extends TaskSummary {
 /** The toolbar's filters, in the order Paper 07f and 06f show them. */
 export function linkedTaskFilterFields(
   tasks: LinkedTask[],
-  people: ReadonlyMap<string, Assignee>
+  people: ReadonlyMap<string, Assignee>,
+  noun: LinkedTaskNoun = "task"
 ): DataTableFilterField<LinkedTask>[] {
   return [
     {
       label: "Task",
       value: "subject",
       type: "input",
-      placeholder: "Filter tasks...",
+      placeholder: `Filter ${noun}s...`,
     },
     {
       label: "Status",

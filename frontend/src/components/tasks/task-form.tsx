@@ -18,7 +18,7 @@ import type {
 } from "@/lib/autosave"
 import { dueHint, formatDay, useMilestones } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
-import type { TaskDetail } from "@/lib/tasks"
+import { directParent, type TaskDetail } from "@/lib/tasks"
 
 import {
   createTaskFormOptions,
@@ -29,6 +29,7 @@ import {
 } from "./form"
 import { AssigneesCombobox } from "./assignees-combobox"
 import { LinkCombobox } from "./link-combobox"
+import { ParentTaskCombobox } from "./parent-task-combobox"
 import { OverdueNote, TaskKind } from "./task-detail"
 import { PrioritySelect, StatusSelect } from "./task-selects"
 import { TagsCombobox } from "./tags-combobox"
@@ -79,7 +80,8 @@ export const TaskForm = withForm({
   }) {
     const startDate = useStore(form.store, (s) => s.values.start_date)
     const dueDate = useStore(form.store, (s) => s.values.due_date)
-    const done = useStore(form.store, (s) => s.values.status === "Completed")
+    const taskStatus = useStore(form.store, (s) => s.values.status)
+    const done = taskStatus === "Completed"
     // The date order is checked on the start date; the rail shows it under
     // the pair.
     const datesError = useStore(form.store, (s) =>
@@ -164,6 +166,22 @@ export const TaskForm = withForm({
 
             <RailGroup>
               <dl className="flex flex-col">
+                <Property label="Parent" htmlFor="task-parent">
+                  <form.Field name="parent_task" listeners={listeners.picked}>
+                    {(field) => (
+                      <ParentTaskCombobox
+                        id="task-parent"
+                        variant="inline"
+                        project={project}
+                        task={task.name}
+                        status={taskStatus}
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        onBlur={field.handleBlur}
+                      />
+                    )}
+                  </form.Field>
+                </Property>
                 <DatesProperty
                   error={datesError}
                   hint={dueDate && !done ? dueHint(dueDate) : null}
@@ -301,7 +319,11 @@ export const TaskForm = withForm({
         >
           <div className="flex flex-col gap-3">
             <KindRow indicator={indicator}>
-              <TaskKind name={task.name} />
+              <TaskKind
+                name={task.name}
+                project={project}
+                parent={directParent(task)}
+              />
             </KindRow>
             <form.Field
               name="subject"

@@ -47,6 +47,7 @@ import {
   taskKey,
   taskMove,
   toBoardData,
+  topLevelTasks,
   useProjectTasks,
   useTags,
   type CreateStatus,
@@ -136,8 +137,9 @@ export function ProjectBoard({
     }),
     [milestones, modules, people]
   )
+  // Cards are top-level Tasks; a Subtask is listed on its parent's page.
   const shown = React.useMemo(
-    () => filterTasks(tasks ?? [], filters.filters),
+    () => filterTasks(topLevelTasks(tasks ?? []), filters.filters),
     [tasks, filters.filters]
   )
   const board = React.useMemo(

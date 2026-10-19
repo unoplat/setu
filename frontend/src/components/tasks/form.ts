@@ -36,6 +36,8 @@ export interface TaskValues {
   /** An Envision Module's name, or "" for none. */
   module: string
   tags: string[]
+  /** The Task it is a Subtask of, or "" for a top-level Task. */
+  parent_task: string
 }
 
 export const EMPTY_TASK: TaskValues = {
@@ -50,6 +52,7 @@ export const EMPTY_TASK: TaskValues = {
   milestone: "",
   module: "",
   tags: [],
+  parent_task: "",
 }
 
 export const createTaskFormOptions = formOptions({
@@ -103,6 +106,7 @@ export function taskValues(task: TaskDetail): TaskValues {
     milestone: task.milestone ?? "",
     module: task.module ?? "",
     tags: task.tags,
+    parent_task: task.parent_task ?? "",
   }
 }
 

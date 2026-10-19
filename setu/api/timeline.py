@@ -214,7 +214,11 @@ def changed_fields(doc, data: str) -> list[str]:
 		changed = json.loads(data or "{}").get("changed") or []
 	except ValueError:
 		return []
-	return [_(doc.meta.get_label(fieldname)) for fieldname, *_values in changed]
+	# depends_on_tasks is a hidden copy of Depends On that ERPNext rewrites
+	# whenever a Subtask joins or leaves the Task (populate_depends_on).
+	return [
+		_(doc.meta.get_label(fieldname)) for fieldname, *_values in changed if fieldname != "depends_on_tasks"
+	]
 
 
 def timestamp(value) -> str:

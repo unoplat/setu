@@ -16,9 +16,10 @@ import {
   TaskComments,
   TaskReadOnly,
 } from "@/components/tasks/task-detail"
+import { SubtasksSection } from "@/components/tasks/subtasks-section"
 import { TaskForm } from "@/components/tasks/task-form"
 import { useAutosaveForm } from "@/lib/autosave"
-import { useCommand, useScope } from "@/lib/commands"
+import { useCommand, useScope, useScopeStack } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
 import { useMarkRecordRead } from "@/lib/inbox"
 import { isMilestoneProgressKey } from "@/lib/milestones"
@@ -133,15 +134,28 @@ function TaskScreen({
   // it is shown, not edited.
   const canWrite = task.can_write && boardStatus(task.status) !== null
   useScope("task")
+  // In the Subtasks' inline row the same keys open Create subtask instead.
+  const addingSubtask = useScopeStack().includes("subtask-row")
   useCommand("task.toggleDescription", () => setExpanded((value) => !value), {
-    enabled: canWrite,
+    enabled: canWrite && !addingSubtask,
   })
   useCommand("task.collapseDescription", () => setExpanded(false), {
     enabled: expanded,
   })
   useCommand("task.save", () => void flush(), { enabled: canWrite })
 
-  const footer = <TaskComments task={task} />
+  // 09k: the Subtasks between the description and the comments.
+  const footer = (
+    <>
+      <SubtasksSection
+        project={project}
+        projectName={projectName}
+        task={task}
+        canAdd={canWrite}
+      />
+      <TaskComments task={task} />
+    </>
+  )
   const activity = <TaskActivityLog task={task} />
 
   return (
@@ -151,6 +165,7 @@ function TaskScreen({
         projectName={projectName}
         section="Tasks"
         page={{ title: task.subject, sectionTo: "/projects/$name" }}
+        ancestors={task.ancestors}
       >
         <TaskActions
           project={project}

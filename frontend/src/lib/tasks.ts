@@ -36,6 +36,10 @@ export interface TaskSummary {
   _user_tags: string | null
   envision_milestone: string | null
   envision_module: string | null
+  /** The Task it is a Subtask of; null for a top-level Task. */
+  parent_task: string | null
+  /** 1 when it may hold Subtasks: every Task Envision creates. */
+  is_group: 0 | 1
 }
 
 /** Shared SWR key so a create or move can revalidate the Board on screen. */
@@ -89,6 +93,55 @@ export const MY_TASKS_KEY = "envision:my-tasks"
  */
 export function useMyTasks() {
   return useTaskList<MyTask>(MY_TASKS_KEY, "setu.api.task.list_my_tasks")
+}
+
+/**
+ * The Board's Cards: top-level Tasks only. A Subtask is listed on its
+ * parent's page, and My tasks still lists the ones assigned to you.
+ */
+export function topLevelTasks<T extends TaskSummary>(tasks: T[]): T[] {
+  return tasks.filter((task) => !task.parent_task)
+}
+
+/**
+ * A Task's direct Subtasks from the list the Board already loads, and how
+ * many of them are Done (Paper 09k), as useRelatedTasks does for a milestone.
+ */
+export function useSubtasks(project: string, parent: string) {
+  const { data, isLoading } = useProjectTasks(project)
+  const tasks = React.useMemo(
+    () => (data ?? []).filter((task) => task.parent_task === parent),
+    [data, parent]
+  )
+  return {
+    tasks,
+    total: tasks.length,
+    done: tasks.filter((task) => task.status === "Completed").length,
+    loading: isLoading || !data,
+  }
+}
+
+/**
+ * Every Task under `name`, at any depth, from the project list: what the
+ * parent picker leaves out, since a Task cannot move under its own Subtask.
+ */
+export function descendantsOf(tasks: TaskSummary[], name: string): Set<string> {
+  const children = new Map<string, string[]>()
+  for (const task of tasks) {
+    if (!task.parent_task) continue
+    children.set(task.parent_task, [
+      ...(children.get(task.parent_task) ?? []),
+      task.name,
+    ])
+  }
+  const found = new Set<string>()
+  const queue = [...(children.get(name) ?? [])]
+  for (let next = queue.shift(); next; next = queue.shift()) {
+    if (found.has(next)) continue
+    found.add(next)
+    queue.push(...(children.get(next) ?? []))
+  }
+  return found
 }
 
 /** What ties a Task to the page it is listed on: one of the two. */
@@ -218,6 +271,12 @@ export interface TaskDetail {
   tags: string[]
   project: string | null
   project_name: string | null
+  /** The Task it is a Subtask of, or null. */
+  parent_task: string | null
+  /** Whether it may hold Subtasks; false for a Task made in Desk. */
+  is_group: boolean
+  /** Every Task above it, the top-level one first; [] when it has none. */
+  ancestors: TaskAncestor[]
   owner: string
   /** ISO datetimes with their offsets. */
   creation: string
@@ -226,6 +285,17 @@ export interface TaskDetail {
   can_write: boolean
   /** Whether this user may permanently delete it and its subtasks. */
   can_delete: boolean
+}
+
+/** A Task above another, for the breadcrumb and the Parent property. */
+export interface TaskAncestor {
+  name: string
+  subject: string
+}
+
+/** The direct parent of a Subtask: the last of its ancestors. */
+export function directParent(task: TaskDetail): TaskAncestor | undefined {
+  return task.ancestors.at(-1)
 }
 
 export function taskKey(name: string) {

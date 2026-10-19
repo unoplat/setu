@@ -29,6 +29,7 @@ export type CommandScope =
   | "create-task"
   | "task"
   | "task-comment"
+  | "subtask-row"
   | "confirm"
   | "shortcut-recorder"
 
@@ -50,6 +51,9 @@ export const SCOPES: Record<CommandScope, { label: string; modal: boolean }> = {
   "create-task": { label: "Create task panel", modal: true },
   task: { label: "Task", modal: false },
   "task-comment": { label: "Task comment box", modal: false },
+  // The Subtasks table's inline add, while it has focus: ⌘⇧↵ there opens the
+  // full panel instead of expanding the description.
+  "subtask-row": { label: "Adding a subtask", modal: false },
   // A page, not a dialog: global navigation keeps working on it.
   "project-settings": { label: "Project settings", modal: false },
   // Owns no commands: a Delete confirm is open, and nothing
@@ -417,6 +421,14 @@ export const COMMANDS = {
     scope: "task",
     defaultBinding: hotkey("Mod+Enter"),
     ignoreInputs: false,
+  },
+  "task.expandSubtask": {
+    title: "Open every field",
+    description:
+      "Open the subtask you are adding in the Create subtask panel, keeping its title.",
+    group: "Task",
+    scope: "subtask-row",
+    defaultBinding: hotkey("Mod+Shift+Enter"),
   },
   "task.comment": {
     title: "Post comment",
