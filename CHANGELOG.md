@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/unoplat/setu/compare/v0.1.0...v0.2.0) (2026-10-19)
+
+
+### Features
+
+* **inbox:** add inbox API over Frappe notification logs ([d9dabca](https://github.com/unoplat/setu/commit/d9dabcac01429188b8dc3f4e074efaa5f909a126))
+* **inbox:** add inbox page with live unread badge ([e5a6afa](https://github.com/unoplat/setu/commit/e5a6afa54bfb6c8f82f01ffe1d50b37f1afc5565))
+
 ## [0.1.0](https://github.com/unoplat/setu/compare/v0.0.4...v0.1.0) (2026-10-16)
 
 
