@@ -6,6 +6,8 @@ import {
   useSWRConfig,
 } from "frappe-react-sdk"
 
+import { type PublishTarget } from "@/components/github/publish-dialog"
+import { useGitHubTagConfirm } from "@/components/github/use-github-tag-confirm"
 import { ProjectHeader } from "@/components/project-header"
 import { SaveIndicator, UnsavedEditsDialog } from "@/components/record-detail"
 import { RecordPlaceholder } from "@/components/record-placeholder"
@@ -16,19 +18,23 @@ import {
   TaskComments,
   TaskReadOnly,
 } from "@/components/tasks/task-detail"
+import { TaskGitHubPanel } from "@/components/tasks/task-github"
 import { SubtasksSection } from "@/components/tasks/subtasks-section"
 import { TaskForm } from "@/components/tasks/task-form"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope, useScopeStack } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
+import { taskGitHubKey, useTaskGitHub } from "@/lib/github"
 import { useMarkRecordRead } from "@/lib/inbox"
 import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
   MY_TASKS_KEY,
   TAGS_KEY,
   boardStatus,
+  descendantsOf,
   projectTasksKey,
   taskActivityKey,
+  useProjectTasks,
   useTask,
   type TaskDetail,
 } from "@/lib/tasks"
@@ -123,12 +129,31 @@ function TaskScreen({
       void revalidate(projectTasksKey(project))
       void revalidate(isMilestoneProgressKey)
       void revalidate(taskActivityKey(task.name))
+      // A tag can publish it, and a synced field queues a sync to GitHub.
+      void revalidate(taskGitHubKey(task.name))
       if (changes.tags) void revalidate(TAGS_KEY)
       if (changes.assignees) void revalidate(MY_TASKS_KEY)
       return taskValues(response.message)
     },
   })
   const { form, flush } = autosave
+
+  // Adding the github tag publishes the Task when its Project syncs, so it
+  // asks first (components/github/publish-dialog). Until the Task's GitHub
+  // state has loaded, it asks without knowing the repository.
+  const github = useTaskGitHub(task.name)
+  const { data: projectTasks } = useProjectTasks(project)
+  const publishTarget = React.useMemo<PublishTarget | null>(() => {
+    const view = github.data?.message
+    if (!view) return { repository: null, subtasks: 0 }
+    if (view.link || !view.eligible || !view.route.sync_enabled) return null
+    return {
+      repository: view.route.repository,
+      subtasks: projectTasks ? descendantsOf(projectTasks, task.name).size : 0,
+    }
+  }, [github.data, projectTasks, task.name])
+  const { confirmTags, dialog: publishDialog } =
+    useGitHubTagConfirm(publishTarget)
 
   // A Task the Board leaves off (Cancelled in Desk) has no column to pick, so
   // it is shown, not edited.
@@ -156,7 +181,12 @@ function TaskScreen({
       <TaskComments task={task} />
     </>
   )
-  const activity = <TaskActivityLog task={task} />
+  const activity = (
+    <>
+      <TaskGitHubPanel task={task.name} project={project} />
+      <TaskActivityLog task={task} />
+    </>
+  )
 
   return (
     <>
@@ -180,6 +210,7 @@ function TaskScreen({
             task={task}
             project={project}
             listeners={autosave.listeners}
+            confirmTags={confirmTags}
             status={autosave.status}
             descriptionRevision={autosave.replaced.description ?? 0}
             descriptionConflict={
@@ -219,6 +250,7 @@ function TaskScreen({
         saving={autosave.status === "saving"}
         conflict={autosave.status === "conflict"}
       />
+      {publishDialog}
     </>
   )
 }

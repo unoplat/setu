@@ -63,7 +63,25 @@ const DESCRIPTION_PLACEHOLDER =
 
 export const descriptionExtensions = [
   Document,
-  Paragraph,
+  Paragraph.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        githubTitleContinuation: {
+          default: null,
+          keepOnSplit: false,
+          parseHTML: (element) =>
+            element.getAttribute("data-github-title-continuation") === "1"
+              ? "1"
+              : null,
+          renderHTML: (attributes) =>
+            attributes.githubTitleContinuation === "1"
+              ? { "data-github-title-continuation": "1" }
+              : {},
+        },
+      }
+    },
+  }),
   Text,
   HardBreak,
   ListItem,

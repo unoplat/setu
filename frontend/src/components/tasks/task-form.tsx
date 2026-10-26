@@ -3,6 +3,10 @@ import { useStore } from "@tanstack/react-form"
 import { FlagIcon, LayoutGridIcon } from "lucide-react"
 
 import { DatesProperty, Property } from "@/components/detail-properties"
+import {
+  applyTags,
+  type ConfirmTags,
+} from "@/components/github/use-github-tag-confirm"
 import { DatePicker } from "@/components/milestones/date-picker"
 import {
   DescriptionField,
@@ -45,6 +49,8 @@ export const TaskForm = withForm({
     task: {} as TaskDetail,
     project: "",
     listeners: {} as AutosaveListeners,
+    /** A tags change, which adding `github` may first confirm. */
+    confirmTags: applyTags as ConfirmTags,
     status: "idle" as AutosaveStatus,
     /** Moves when the description was replaced from outside. */
     descriptionRevision: 0,
@@ -67,6 +73,7 @@ export const TaskForm = withForm({
     task,
     project,
     listeners,
+    confirmTags,
     status,
     descriptionRevision,
     descriptionConflict,
@@ -291,7 +298,9 @@ export const TaskForm = withForm({
                       id="task-tags"
                       variant="inline"
                       value={field.state.value}
-                      onChange={field.handleChange}
+                      onChange={(next) =>
+                        confirmTags(field.state.value, next, field.handleChange)
+                      }
                       onBlur={field.handleBlur}
                     />
                   )}
