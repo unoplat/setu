@@ -11,9 +11,28 @@ FRAPPE_URL = "http://erpdev.localhost"
 FM_BENCH = "erpdev.localhost"
 FRAPPE_SITE = "erpdev.localhost"
 
+[tasks.setup-frappe-bench]
+description = "Set up the Frappe development bench"
+run = '''
+fm create "$FM_BENCH" \
+  --environment dev \
+  --apps frappe:version-16 \
+  --apps erpnext:version-16 \
+  --python 3.14
+'''
+
+
+[tasks.init_setu]
+description = "Fetch the setu app into the Frappe bench"
+run = 'fm shell "$FM_BENCH" -c "bench get-app https://github.com/unoplat/setu.git"'
+
 [tasks.backend]
 description = "Start the Frappe Manager site separately (requires Docker/OrbStack)"
 run = 'fm start "$FM_BENCH"'
+
+[tasks.tunnel]
+description = "Expose the local Frappe site through a temporary public HTTPS URL (requires cloudflared)"
+run = 'cloudflared tunnel --url http://127.0.0.1:80 --http-host-header "$FRAPPE_SITE"'
 
 [tasks.dev]
 description = "Build and deploy the frontend bundle and setu app; start Frappe separately with `mise run backend` (run `mise run migrate` after for custom field changes)"
@@ -57,7 +76,12 @@ description = "Build, then copy the bundle and the setu Python app into the loca
 depends = ["build"]
 run = """
 set -e
-BENCH_APP=/Users/jg/frappe/sites/erpdev.localhost/workspace/frappe-bench/apps/setu
+# Default Frappe Manager location; override BENCH_APP for a custom installation.
+BENCH_APP="${BENCH_APP:-$HOME/frappe/sites/$FM_BENCH/workspace/frappe-bench/apps/setu}"
+if [ ! -f "$BENCH_APP/pyproject.toml" ] || [ ! -d "$BENCH_APP/setu" ]; then
+  echo "setu app not found at $BENCH_APP. Install it first, or set BENCH_APP to its actual path." >&2
+  exit 1
+fi
 # Backend: API, DocTypes, hooks and setup. The bundle is copied separately below.
 rsync -a --exclude __pycache__ --exclude public ../setu/ "$BENCH_APP/setu/"
 rsync -a --delete ../setu/public/envision/ "$BENCH_APP/setu/public/envision/"
