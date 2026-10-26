@@ -1,0 +1,129 @@
+{
+ "doctype": "DocType",
+ "module": "Envision",
+ "engine": "InnoDB",
+ "creation": "2026-10-23 12:00:00.000000",
+ "modified": "2026-10-24 18:00:00.000000",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "actions": [],
+ "links": [],
+ "states": [],
+ "index_web_pages_for_search": 0,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "name": "Envision GitHub Settings",
+ "issingle": 1,
+ "field_order": [
+  "app_id",
+  "app_slug",
+  "client_id",
+  "client_secret",
+  "private_key",
+  "webhook_secret",
+  "owner_login",
+  "owner_id",
+  "owner_type",
+  "site_url_at_creation",
+  "site_binding",
+  "subscribed_events",
+  "connected_by",
+  "connected_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "app_id",
+   "fieldtype": "Data",
+   "label": "App ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app_slug",
+   "fieldtype": "Data",
+   "label": "App Slug",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Password",
+   "label": "Client Secret",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_key",
+   "fieldtype": "Password",
+   "label": "Private Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "read_only": 1
+  },
+  {
+   "fieldname": "owner_login",
+   "fieldtype": "Data",
+   "label": "Owner",
+   "read_only": 1
+  },
+  {
+   "fieldname": "owner_id",
+   "fieldtype": "Data",
+   "label": "Owner ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "owner_type",
+   "fieldtype": "Select",
+   "label": "Owner Type",
+   "options": "\nOrganization\nUser",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_url_at_creation",
+   "fieldtype": "Data",
+   "label": "Registered Site URL",
+   "read_only": 1
+  },
+  {
+   "description": "Identifies the site and database that own this connection. A restored copy differs and pauses sync until an admin confirms it.",
+   "fieldname": "site_binding",
+   "fieldtype": "Data",
+   "label": "Site Binding",
+   "read_only": 1
+  },
+  {
+   "description": "Webhook events the app is subscribed to on GitHub, one per line.",
+   "fieldname": "subscribed_events",
+   "fieldtype": "Small Text",
+   "label": "Subscribed Events",
+   "read_only": 1
+  },
+  {
+   "fieldname": "connected_by",
+   "fieldtype": "Link",
+   "label": "Connected By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "connected_on",
+   "fieldtype": "Datetime",
+   "label": "Connected On",
+   "read_only": 1
+  }
+ ]
+}

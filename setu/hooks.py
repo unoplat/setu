@@ -97,15 +97,19 @@ add_to_apps_screen = [
 # before_install = "setu.install.before_install"
 # Custom Fields and Property Setters on ERPNext DocTypes, and the built-in
 # Link Types (setu/setup/).
+# The GitHub integration user that changes from GitHub are saved as
+# (setu.github.bot); created once, disabled and without roles.
 after_install = [
 	"setu.setup.custom_fields.create_envision_custom_fields",
 	"setu.setup.property_setters.create_envision_property_setters",
 	"setu.setup.link_types.create_envision_link_types",
+	"setu.github.bot.ensure_bot_user",
 ]
 after_migrate = [
 	"setu.setup.custom_fields.create_envision_custom_fields",
 	"setu.setup.property_setters.create_envision_property_setters",
 	"setu.setup.link_types.create_envision_link_types",
+	"setu.github.bot.ensure_bot_user",
 ]
 
 # Uninstallation
@@ -157,10 +161,16 @@ before_uninstall = "setu.setup.uninstall.before_uninstall"
 permission_query_conditions = {
 	"Board Message": "setu.envision.doctype.board_message.board_message.get_permission_query_conditions",
 	"Envision View": "setu.envision.doctype.envision_view.envision_view.get_permission_query_conditions",
+	"Envision GitHub Project Settings": "setu.envision.doctype.envision_github_project_settings.envision_github_project_settings.get_permission_query_conditions",
+	"Envision GitHub Issue Sync": "setu.envision.doctype.envision_github_issue_sync.envision_github_issue_sync.get_permission_query_conditions",
+	"Envision GitHub Operation": "setu.envision.doctype.envision_github_operation.envision_github_operation.get_permission_query_conditions",
 }
 has_permission = {
 	"Board Message": "setu.envision.doctype.board_message.board_message.has_permission",
 	"Envision View": "setu.envision.doctype.envision_view.envision_view.has_permission",
+	"Envision GitHub Project Settings": "setu.envision.doctype.envision_github_project_settings.envision_github_project_settings.has_permission",
+	"Envision GitHub Issue Sync": "setu.envision.doctype.envision_github_issue_sync.envision_github_issue_sync.has_permission",
+	"Envision GitHub Operation": "setu.envision.doctype.envision_github_operation.envision_github_operation.has_permission",
 }
 
 # Document Events
@@ -188,6 +198,7 @@ _search_index_events = {
 }
 doc_events = {
 	"Project": {
+		"before_rename": "setu.github.projects.guard_project_rename",
 		"on_trash": "setu.api.project.guard_project_delete",
 		"on_change": "setu.search_maintenance.on_project_change",
 		"after_rename": [
@@ -195,8 +206,14 @@ doc_events = {
 			"setu.search_maintenance.on_project_rename",
 		],
 	},
+	# GitHub Issue sync (setu.github.links, docs/adr/0008): Subtasks of
+	# published Tasks publish, changes queue a reconcile after commit, and a
+	# deleted Task leaves a tombstone instead of deleting its Issue.
 	"Task": {
 		"validate": "setu.api.task.validate_task_links",
+		"after_insert": "setu.github.links.on_task_insert",
+		"on_update": "setu.github.links.on_task_update",
+		"on_trash": "setu.github.links.on_task_trash",
 		**_search_index_events,
 	},
 	"Envision Module": _search_index_events,
@@ -204,6 +221,11 @@ doc_events = {
 	# Frappe's rename leaves the old name in each document's _user_tags.
 	"Tag": {
 		"after_rename": "setu.api.task.rename_tag",
+	},
+	# Frappe's tag API (Envision, Desk and REST alike) inserts a Tag Link as a
+	# tag is added, after the Task's own save: the github tag publishes here.
+	"Tag Link": {
+		"after_insert": "setu.github.links.on_tag_link_insert",
 	},
 	"User": {
 		"after_rename": "setu.api.view.rename_user_filters",
@@ -232,6 +254,17 @@ sqlite_search = ["setu.search.EnvisionSearch"]
 
 # Scheduled Tasks
 # ---------------
+
+# Recover committed webhook receipts and sync operations when queue
+# publication or a worker fails (setu.github.recovery).
+scheduler_events = {
+	"cron": {
+		"*/5 * * * *": [
+			"setu.github.events.retry_pending_deliveries",
+			"setu.github.recovery.run_recovery",
+		],
+	},
+}
 
 # scheduler_events = {
 # 	"all": [
@@ -331,9 +364,9 @@ extend_doctype_class = {
 # Automatically update python controller files with type annotations for this app.
 # export_python_type_annotations = True
 
-# default_log_clearing_doctypes = {
-# 	"Logging DocType Name": 30  # days to retain logs
-# }
+# Webhook receipt metadata and finished sync operations contain no Issue
+# bodies or credentials. Open and failed operations are kept.
+default_log_clearing_doctypes = {"Envision GitHub Delivery": 30, "Envision GitHub Operation": 30}
 
 # Translation
 # ------------

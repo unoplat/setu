@@ -9,6 +9,18 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     # "frappe~=16.0.0" # Installed and managed by bench.
+    # GitHub Issue body ↔ Task description (setu/github/convert.py):
+    # markdown-it-py renders Issue bodies, markdownify writes descriptions as
+    # Markdown. Frappe also depends on markdownify; this range must overlap
+    # its pin (the bench has 1.2.3). BeautifulSoup and the HTML sanitizer
+    # come with Frappe.
+    "markdown-it-py>=3.0.0,<5",
+    "markdownify>=1.2.0,<2",
+    # GitHub REST client (setu/github/client.py): App JWT, installation tokens
+    # and typed 2022-11-28 models. Pinned exactly: client.py relies on its
+    # auth, cache and exception internals.
+    "githubkit[auth-app]==0.16.1",
+    "githubkit-schemas[2022-11-28]==26.10.21",
 ]
 
 [build-system]

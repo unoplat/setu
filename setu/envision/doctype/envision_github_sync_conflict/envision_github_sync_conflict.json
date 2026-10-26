@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "creation": "2026-10-24 18:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "field",
+  "kind",
+  "detected_on",
+  "detail",
+  "local_value",
+  "remote_value",
+  "resolution",
+  "resolved_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "field",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Field",
+   "options": "title\ndescription\nstatus\nparent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Kind",
+   "options": "both_changed\nlossy_outbound\nlossy_inbound\ntoo_long\ntitle_too_long\nremote_reopened\nclosed_not_planned\nclosed_while_blocked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "detected_on",
+   "fieldtype": "Datetime",
+   "label": "Detected On",
+   "read_only": 1
+  },
+  {
+   "description": "What a conversion could not carry, as codes (docs/github-description-fidelity.md).",
+   "fieldname": "detail",
+   "fieldtype": "Small Text",
+   "label": "Detail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "local_value",
+   "fieldtype": "Long Text",
+   "label": "Envision Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remote_value",
+   "fieldtype": "Long Text",
+   "label": "GitHub Value",
+   "read_only": 1
+  },
+  {
+   "description": "A user's choice, applied by the next sync run.",
+   "fieldname": "resolution",
+   "fieldtype": "Select",
+   "label": "Resolution",
+   "options": "\nenvision\ngithub",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Data",
+   "label": "Resolved By",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-24 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision GitHub Sync Conflict",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

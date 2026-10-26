@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-24 12:00:00.000000",
+ "description": "Routes one Envision-enabled Project to one GitHub repository. Sync is turned on only from Project Settings, after the privacy and publication acknowledgements.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "repository",
+  "column_break_route",
+  "sync_enabled",
+  "paused",
+  "connected_by",
+  "connected_on",
+  "section_activation",
+  "activated_on",
+  "activated_by",
+  "activated_at_utc",
+  "column_break_activation",
+  "privacy_acknowledged_by",
+  "privacy_acknowledged_on",
+  "publication_acknowledged",
+  "section_progress",
+  "activation_import_state",
+  "activation_import_page",
+  "column_break_progress",
+  "last_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "description": "Stable GitHub repository ID. Clear the route and connect again to change it.",
+   "fieldname": "repository",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Repository",
+   "options": "Envision GitHub Repository",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_route",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Turned on only from Project Settings, after the privacy and publication acknowledgements.",
+   "fieldname": "sync_enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Sync Enabled",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Paused by a manager: webhooks are deferred and queued work waits.",
+   "fieldname": "paused",
+   "fieldtype": "Check",
+   "label": "Paused",
+   "read_only": 1
+  },
+  {
+   "fieldname": "connected_by",
+   "fieldtype": "Link",
+   "label": "Connected By",
+   "options": "User",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "connected_on",
+   "fieldtype": "Datetime",
+   "label": "Connected On",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_activation",
+   "fieldtype": "Section Break",
+   "label": "Activation"
+  },
+  {
+   "fieldname": "activated_on",
+   "fieldtype": "Datetime",
+   "label": "Activated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activated_by",
+   "fieldtype": "Link",
+   "label": "Activated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "description": "The activation time in GitHub's UTC form. Issues created before it import only when labelled github at activation.",
+   "fieldname": "activated_at_utc",
+   "fieldtype": "Data",
+   "label": "Activated At (UTC)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_activation",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "privacy_acknowledged_by",
+   "fieldtype": "Link",
+   "label": "Privacy Acknowledged By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "privacy_acknowledged_on",
+   "fieldtype": "Datetime",
+   "label": "Privacy Acknowledged On",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "publication_acknowledged",
+   "fieldtype": "Check",
+   "label": "Publication Acknowledged",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_progress",
+   "fieldtype": "Section Break",
+   "label": "Progress"
+  },
+  {
+   "fieldname": "activation_import_state",
+   "fieldtype": "Select",
+   "label": "Labelled Issue Import",
+   "options": "\nQueued\nRunning\nDone\nFailed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "The next page of labelled Issues to import, so an interrupted import resumes.",
+   "fieldname": "activation_import_page",
+   "fieldtype": "Int",
+   "label": "Import Page",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_progress",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-26 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision GitHub Project Settings",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

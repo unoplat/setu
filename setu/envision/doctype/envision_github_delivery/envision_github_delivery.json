@@ -1,0 +1,157 @@
+{
+ "doctype": "DocType",
+ "module": "Envision",
+ "engine": "InnoDB",
+ "creation": "2026-10-23 12:00:00.000000",
+ "modified": "2026-10-24 18:00:00.000000",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "actions": [],
+ "links": [],
+ "states": [],
+ "index_web_pages_for_search": 0,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "name": "Envision GitHub Delivery",
+ "issingle": 0,
+ "field_order": [
+  "app_id",
+  "event",
+  "action",
+  "installation_id",
+  "status",
+  "attempts",
+  "error",
+  "processed_at",
+  "section_issue",
+  "repository_id",
+  "issue_id",
+  "issue_number",
+  "column_break_issue",
+  "related_issue_id",
+  "related_issue_number",
+  "related_repository_id",
+  "actor_login"
+ ],
+ "fields": [
+  {
+   "fieldname": "app_id",
+   "fieldtype": "Data",
+   "label": "App ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Data",
+   "label": "Event",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "label": "Action",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "installation_id",
+   "fieldtype": "Data",
+   "label": "Installation ID",
+   "read_only": 1
+  },
+  {
+   "description": "Deferred: the repository's project is not syncing now. Resuming sync processes it.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Queued\nProcessing\nProcessed\nIgnored\nDeferred\nFailed",
+   "default": "Queued",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "processed_at",
+   "fieldtype": "Datetime",
+   "label": "Processed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_issue",
+   "fieldtype": "Section Break",
+   "label": "Issue"
+  },
+  {
+   "fieldname": "repository_id",
+   "fieldtype": "Data",
+   "label": "Repository ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "description": "The Issue, or for sub-issue events the sub-issue.",
+   "fieldname": "issue_id",
+   "fieldtype": "Data",
+   "label": "Issue ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issue_number",
+   "fieldtype": "Int",
+   "label": "Issue Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_issue",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "For sub-issue events, the parent Issue.",
+   "fieldname": "related_issue_id",
+   "fieldtype": "Data",
+   "label": "Parent Issue ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "related_issue_number",
+   "fieldtype": "Int",
+   "label": "Parent Issue Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "related_repository_id",
+   "fieldtype": "Data",
+   "label": "Parent Repository ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actor_login",
+   "fieldtype": "Data",
+   "label": "GitHub Actor",
+   "read_only": 1
+  }
+ ],
+ "autoname": "prompt",
+ "naming_rule": "Set by user",
+ "allow_rename": 0,
+ "description": "Verified webhook receipt metadata only: event, identifiers and processing state. Issue titles, bodies and payloads are never stored."
+}

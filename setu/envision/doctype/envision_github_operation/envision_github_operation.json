@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-24 18:00:00.000000",
+ "description": "Durable GitHub sync work for one link, recorded with the change that caused it and run by a worker after commit. Holds no Task or Issue content.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "link",
+  "project",
+  "kind",
+  "status",
+  "open_key",
+  "rerun",
+  "column_break_state",
+  "attempts",
+  "retry_at",
+  "started_at",
+  "request_started_at",
+  "lookups",
+  "triggered_by",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "link",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Link",
+   "options": "Envision GitHub Issue Sync",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Kind",
+   "options": "create_issue\nimport_issue\nreconcile",
+   "read_only": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Queued\nRunning\nWaiting\nRetrying\nUncertain\nDone\nCancelled\nError",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "description": "\"<link>:<kind>\" while open, empty once finished: one open operation per link and kind.",
+   "fieldname": "open_key",
+   "fieldtype": "Data",
+   "label": "Open Key",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "description": "Triggered again while running: run once more afterwards.",
+   "fieldname": "rerun",
+   "fieldtype": "Check",
+   "label": "Run Again",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_state",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "retry_at",
+   "fieldtype": "Datetime",
+   "label": "Retry At",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "description": "Set before an Issue create is sent. While set, the outcome is unknown and the Issue is looked up before any new create.",
+   "fieldname": "request_started_at",
+   "fieldtype": "Datetime",
+   "label": "Create Sent At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "lookups",
+   "fieldtype": "Int",
+   "label": "Lookups",
+   "read_only": 1
+  },
+  {
+   "fieldname": "triggered_by",
+   "fieldtype": "Data",
+   "label": "Triggered By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-24 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision GitHub Operation",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

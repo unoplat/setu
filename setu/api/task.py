@@ -17,6 +17,8 @@ from setu.api.milestone import (
 )
 from setu.api.timeline import comment_on, document_activity, people_details, timestamp
 from setu.api.view import rename_filter_value
+from setu.github import links as github_links
+from setu.github.store import GITHUB_LINK_DOCTYPES
 
 # Envision's Task endpoints (Paper: 03 — Create Task, 04 — Task Created, 09 —
 # Task Detail). A
@@ -41,6 +43,20 @@ class EnvisionTask:
 		if self.status == "Blocked":
 			return
 		super().update_status()
+
+	def populate_depends_on(self):
+		# ERPNext saves a subtask's parent without forwarding ignore_permissions.
+		# Inbound sync uses a disabled, role-less bot: carry its already-checked
+		# permission bypass into that nested save, but keep all normal validation.
+		if not frappe.flags.get("envision_github_inbound") or not self.flags.ignore_permissions:
+			return super().populate_depends_on()
+		if self.parent_task:
+			parent = frappe.get_doc("Task", self.parent_task)
+			if self.name not in [row.task for row in parent.depends_on]:
+				parent.append(
+					"depends_on", {"doctype": "Task Depends On", "task": self.name, "subject": self.subject}
+				)
+				parent.save(ignore_permissions=True)
 
 
 def validate_task_links(doc, method=None) -> None:
@@ -136,8 +152,14 @@ def create_task(
 	if parent_task:
 		note_subtask(parent_task, _("Added subtask {0}").format(task.subject))
 
-	for tag in clean_tags(tags):
+	tags = clean_tags(tags)
+	for tag in tags:
 		task.add_tag(tag)
+	if tags:
+		# Tags are added after the insert, so no Task hook sees them. The Tag
+		# Link hook usually publishes first; this call is idempotent, and like
+		# the hooks it never fails the create (recovery republishes).
+		github_links.guarded(github_links.tags_changed, task.name)
 	if assignees:
 		set_assignees(task, assignees)
 	elif assignee:
@@ -266,6 +288,9 @@ def update_task(
 			note_subtask(task.parent_task, _("Moved in subtask {0}").format(task.subject))
 	if tags is not None:
 		replace_tags(task, clean_tags(tags))
+		# A github tag added later publishes too (docs/adr/0008); removing it
+		# never stops a published Task's sync (only Pause or Disconnect does).
+		github_links.guarded(github_links.tags_changed, task.name)
 	if assignees is not None:
 		set_assignees(task, assignees)
 	elif assignee is not None:
@@ -291,6 +316,18 @@ def check_parent_task(task: Document, parent: str) -> None:
 	if not doc.has_permission("read"):
 		# Reported as missing, so the name reveals nothing.
 		frappe.throw(_("Task {0} not found").format(parent), frappe.DoesNotExistError)
+	check_parent_rules(task, doc)
+	if not doc.has_permission("write"):
+		frappe.throw(
+			_("You can't edit {0}, so you can't add subtasks to it.").format(parent), frappe.PermissionError
+		)
+
+
+def check_parent_rules(task: Document, doc: Document) -> None:
+	"""The rules for ``doc`` as the Task's parent, without the user's
+	permission checks: GitHub sub-issue changes are applied by the
+	integration user (setu.github.reconcile) under the same rules."""
+	parent = doc.name
 	if doc.is_milestone:
 		frappe.throw(_("A milestone can't hold subtasks."))
 	if doc.is_template:
@@ -308,10 +345,6 @@ def check_parent_task(task: Document, parent: str) -> None:
 			frappe.throw(_("A task can't move under one of its own subtasks."))
 	if doc.status == "Completed" and task.status not in ("Completed", "Cancelled"):
 		frappe.throw(_("{0} is Done. Reopen it before adding open subtasks.").format(parent))
-	if not doc.has_permission("write"):
-		frappe.throw(
-			_("You can't edit {0}, so you can't add subtasks to it.").format(parent), frappe.PermissionError
-		)
 
 
 def check_parent_due_date(task: Document) -> None:
@@ -669,6 +702,10 @@ def delete_task(name: str) -> dict:
 	for doc in documents:
 		for link in [*get_linked_docs(doc), *get_dynamic_linked_docs(doc)]:
 			if link["reference_doctype"] == "Task" and link["reference_docname"] in tree_names:
+				continue
+			# A GitHub link becomes a tombstone as its Task is deleted
+			# (setu.github.links.on_task_trash); the Issue is never deleted.
+			if link["reference_doctype"] in GITHUB_LINK_DOCTYPES:
 				continue
 			raise_link_exists_exception(
 				doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")

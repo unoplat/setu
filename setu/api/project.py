@@ -5,6 +5,7 @@ from setu.api.board_message import delete_project_messages
 from setu.api.link import delete_project_links
 from setu.api.module import delete_project_modules
 from setu.api.view import delete_project_views
+from setu.github.projects import delete_project_route
 
 # Envision's Project endpoints. Projects are standard ERPNext Projects (ADR
 # 0001); Envision adds the ``envision_enabled`` flag, keeps the description in
@@ -77,7 +78,7 @@ def guard_project_delete(doc, method=None) -> None:
 	Projects Manager may delete it, and only once it has no tasks. Its modules,
 	links, board messages and everyone's views of it go with it, and it leaves
 	every My tasks view's project filter (a view filtering on it alone goes
-	too; ``delete_project_views``)."""
+	too; ``delete_project_views``), and so does its GitHub repository route."""
 	if not user_may_delete(doc):
 		frappe.throw(
 			_("Only the project creator or a Projects Manager can delete {0}.").format(
@@ -98,6 +99,8 @@ def guard_project_delete(doc, method=None) -> None:
 	delete_project_links(doc.name)
 	delete_project_messages(doc.name)
 	delete_project_views(doc.name)
+	# Its GitHub repository route (docs/adr/0007) would block it the same way.
+	delete_project_route(doc.name)
 
 
 def project_settings(doc) -> dict:
