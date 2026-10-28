@@ -71,9 +71,11 @@ export function Board({
 }) {
   // Translate a vertical mouse-wheel delta into horizontal scroll so a plain
   // mouse can reach every column (a horizontal-only scroller ignores deltaY).
-  // Yields to a column under the pointer that can still scroll vertically in
-  // that direction. Attached non-passive because React's onWheel is passive —
-  // a passive listener can't preventDefault to stop the page also scrolling.
+  // Yields entirely to a column under the pointer that scrolls vertically —
+  // even at its top or bottom edge, so scrolling past a column's last card
+  // stops there instead of chaining sideways. Attached non-passive because
+  // React's onWheel is passive — a passive listener can't preventDefault to
+  // stop the page also scrolling.
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = scrollRef.current
@@ -88,10 +90,7 @@ export function Board({
           (oy === "auto" || oy === "scroll") &&
           node.scrollHeight > node.clientHeight
         ) {
-          const atTop = node.scrollTop <= 0
-          const atBottom =
-            Math.ceil(node.scrollTop + node.clientHeight) >= node.scrollHeight
-          if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)) return
+          return
         }
         node = node.parentElement
       }

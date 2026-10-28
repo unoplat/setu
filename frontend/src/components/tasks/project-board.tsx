@@ -244,8 +244,9 @@ export function ProjectBoard({
     []
   )
 
+  // Bound the page so the board scrolls vertically instead of growing with its rows.
   return (
-    <>
+    <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden">
       <ProjectHeader
         name={name}
         projectName={projectName}
@@ -315,6 +316,6 @@ export function ProjectBoard({
           ])
         }
       />
-    </>
+    </div>
   )
 }
