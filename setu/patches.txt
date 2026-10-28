@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 setu.patches.v0_1.enable_subtasks_on_envision_tasks
 setu.patches.v0_3.github_site_binding
+setu.patches.v0_3.pause_legacy_disconnected_github_links

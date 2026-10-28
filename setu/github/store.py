@@ -34,7 +34,7 @@ GITHUB_LINK_DOCTYPES = frozenset({ISSUE_SYNC, OPERATION})
 OpKind = Literal["create_issue", "import_issue", "reconcile"]
 OpStatus = Literal["Queued", "Running", "Waiting", "Retrying", "Uncertain", "Done", "Cancelled", "Error"]
 OPEN_OPS: tuple[OpStatus, ...] = ("Queued", "Running", "Waiting", "Retrying", "Uncertain")
-LinkState = Literal["Pending", "Synced", "Conflict", "Error", "Paused", "Disconnected", "Tombstoned"]
+LinkState = Literal["Pending", "Synced", "Conflict", "Error", "Paused", "Tombstoned"]
 # States in which a link's work runs. Paused links keep their operations.
 ACTIVE_STATES: tuple[LinkState, ...] = ("Pending", "Synced", "Conflict", "Error")
 PauseReason = Literal[
@@ -46,6 +46,7 @@ PauseReason = Literal[
 	"remote_deleted",
 	"access_lost",
 	"destination_changed",
+	"legacy_disconnected",
 ]
 # Route-level pauses that enabling or reconnecting the same repository lifts.
 ROUTE_PAUSES: tuple[PauseReason, ...] = ("route_cleared", "app_disconnected", "access_lost")
@@ -241,7 +242,7 @@ def has_open_ops(link: str) -> bool:
 
 def pause_links(filters: dict[str, str | list[str | list[str]]], reason: PauseReason) -> list[str]:
 	"""Pause the matching active links. Already paused links keep their reason,
-	so lifting a route-level pause never resumes a link a user paused."""
+	so lifting a route-level pause never resumes a link stopped for another reason."""
 	names = frappe.get_all(
 		ISSUE_SYNC,
 		filters={**filters, "sync_state": ["in", list(ACTIVE_STATES)]},

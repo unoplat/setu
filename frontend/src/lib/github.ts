@@ -216,7 +216,6 @@ export type LinkState =
   | "Conflict"
   | "Error"
   | "Paused"
-  | "Disconnected"
   | "Tombstoned"
 
 export type PauseReason =
@@ -228,6 +227,7 @@ export type PauseReason =
   | "remote_deleted"
   | "access_lost"
   | "destination_changed"
+  | "legacy_disconnected"
 
 export type ConflictField = "title" | "status" | "parent"
 
@@ -306,7 +306,6 @@ export interface TaskGitHub {
   actions: {
     retry: boolean
     resume: boolean
-    disconnect: boolean
     resolve: boolean
   }
 }
@@ -459,7 +458,6 @@ export const LINK_STATE_LABELS: Record<LinkState, string> = {
   Conflict: "Conflict",
   Error: "Error",
   Paused: "Paused",
-  Disconnected: "Disconnected",
   Tombstoned: "Deleted",
 }
 

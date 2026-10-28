@@ -16,7 +16,7 @@ Publishing (docs/adr/0008):
   Tasks tagged before that are the backlog that activation previews and
   publishes when sync turns on.
 - A Task links to at most one Issue, ever: a link that exists in any state,
-  tombstones and disconnected links included, is never replaced, so removing
+  paused links and tombstones included, is never replaced, so removing
   and re-adding the tag never creates a second Issue.
 
 Hooks run inside the user's own save. Each runs in a savepoint and logs
@@ -107,7 +107,6 @@ class LinkView(TypedDict):
 class TaskActions(TypedDict):
 	retry: bool
 	resume: bool
-	disconnect: bool
 	resolve: bool
 
 
@@ -340,7 +339,7 @@ def tombstone(link_name: str, task_name: str) -> None:
 
 
 def resume(link_name: str) -> None:
-	"""Resume a paused or disconnected link: compare both sides before any
+	"""Resume a paused link: compare both sides before any
 	write. Never moves it to another repository."""
 	link = frappe.db.get_value(
 		store.ISSUE_SYNC,
@@ -349,7 +348,7 @@ def resume(link_name: str) -> None:
 		as_dict=True,
 		for_update=True,
 	)
-	if not link or link.sync_state not in ("Paused", "Disconnected"):
+	if not link or link.sync_state != "Paused":
 		frappe.throw(_("This task is not paused."))
 	route = projects.route_for(project=link.project)
 	if not route or not route["sync_enabled"]:
@@ -363,7 +362,7 @@ def resume(link_name: str) -> None:
 		frappe.throw(
 			_(
 				"This task's GitHub Issue is in a different repository from the project's. "
-				"Envision never moves an Issue; disconnect this task instead."
+				"Envision never moves an Issue. Restore the original project repository before resuming sync."
 			)
 		)
 	task = frappe.db.get_value("Task", link.task, TASK_FIELDS, as_dict=True) if link.task else None
@@ -384,20 +383,6 @@ def resume(link_name: str) -> None:
 	)
 	store.requeue_waiting([link_name])
 	store.queue_op(link_name, "reconcile" if link.issue_id else "create_issue", link.project)
-
-
-def disconnect(link_name: str) -> None:
-	"""Stop syncing this Task for good. The Issue is untouched, the identity
-	is kept, and the tag never publishes the Task again; Resume relinks it."""
-	link = frappe.db.get_value(store.ISSUE_SYNC, link_name, ["sync_state"], as_dict=True, for_update=True)
-	if not link or link.sync_state in ("Disconnected", "Tombstoned"):
-		frappe.throw(_("This task is not syncing."))
-	store.cancel_ops([link_name])
-	frappe.db.set_value(
-		store.ISSUE_SYNC,
-		link_name,
-		{"sync_state": "Disconnected", "paused_reason": None, "error": None},
-	)
 
 
 class Target(TypedDict):
@@ -451,8 +436,6 @@ def allowed_choices() -> list[str]:
 def state_message(state: str, reason: str | None) -> str | None:
 	if state == "Pending":
 		return _("Waiting to publish to GitHub.")
-	if state == "Disconnected":
-		return _("Sync with GitHub is off for this task. The Issue was left as it is.")
 	if state == "Tombstoned":
 		return None
 	if state != "Paused":
@@ -466,6 +449,10 @@ def state_message(state: str, reason: str | None) -> str | None:
 		"remote_deleted": _("GitHub can't find this Issue. It may have been deleted."),
 		"access_lost": _("The GitHub App lost access to this Issue's repository."),
 		"destination_changed": _("The project now uses a different repository than this task's Issue."),
+		"legacy_disconnected": _(
+			"Sync was stopped before task-level disconnect was removed. "
+			"Resume to compare both sides and restart syncing."
+		),
 	}.get(reason or "", _("Sync with GitHub is paused for this task."))
 
 
@@ -568,12 +555,7 @@ def task_projection(task: Document) -> TaskGitHub:
 		"can_write": can_write,
 		"actions": {
 			"retry": can_write and view is not None and state in ("Error", "Pending", "Conflict"),
-			"resume": can_write
-			and (
-				(state == "Paused" and view["paused_reason"] != "destination_changed")
-				or state == "Disconnected"
-			),
-			"disconnect": can_write and view is not None and state not in ("Disconnected", "Tombstoned"),
+			"resume": can_write and state == "Paused" and view["paused_reason"] != "destination_changed",
 			"resolve": can_write and bool(view and view["conflicts"]),
 		},
 	}

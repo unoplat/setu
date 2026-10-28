@@ -102,7 +102,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "State",
-   "options": "Pending\nSynced\nConflict\nError\nPaused\nDisconnected\nTombstoned",
+   "options": "Pending\nSynced\nConflict\nError\nPaused\nTombstoned",
    "read_only": 1,
    "search_index": 1
   },
@@ -110,7 +110,7 @@
    "fieldname": "paused_reason",
    "fieldtype": "Select",
    "label": "Paused Because",
-   "options": "\nroute_cleared\napp_disconnected\nproject_changed\ntask_ineligible\ntransferred\nremote_deleted\naccess_lost\ndestination_changed",
+   "options": "\nroute_cleared\napp_disconnected\nproject_changed\ntask_ineligible\ntransferred\nremote_deleted\naccess_lost\ndestination_changed\nlegacy_disconnected",
    "read_only": 1
   },
   {

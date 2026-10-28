@@ -118,7 +118,7 @@ def finalize(op: frappe._dict, result: store.Outcome, *, attempted: bool) -> Non
 		store.OPERATION, op.name, ["status", "rerun", "attempts", "kind"], as_dict=True, for_update=True
 	)
 	if not row or row.status == "Cancelled":
-		# Cancelled while running (disconnect or delete): leave it so.
+		# Cancelled while running (Task deleted): leave it so.
 		frappe.db.commit()
 		return
 	attempts = row.attempts + (1 if attempted else 0)

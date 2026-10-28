@@ -80,8 +80,7 @@ export function PublishToGitHubDialog({
       </div>
       <div className="flex flex-col gap-2">
         <p className="text-sm leading-5">
-          {subtaskText(subtasks)} Removing the github tag doesn't stop sync; use
-          Pause or Disconnect on the task.
+          {subtaskText(subtasks)} Removing the github tag doesn't stop sync.
         </p>
         <MentionsWarning />
       </div>

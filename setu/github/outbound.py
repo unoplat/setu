@@ -36,7 +36,7 @@ def create_issue(link_name: str, op_name: str) -> store.Outcome:
 	link = frappe.get_doc(store.ISSUE_SYNC, link_name)
 	if link.issue_id:
 		return store.outcome("Done")
-	if link.sync_state in ("Disconnected", "Tombstoned") or not link.task:
+	if link.sync_state == "Tombstoned" or not link.task:
 		return store.outcome("Cancelled")
 	if link.sync_state == "Paused":
 		return store.outcome("Waiting")
@@ -53,7 +53,7 @@ def create_issue(link_name: str, op_name: str) -> store.Outcome:
 
 	op = frappe.db.get_value(store.OPERATION, op_name, ["request_started_at", "lookups"], as_dict=True)
 	# The link keeps the time too, so a create sent by an earlier operation
-	# (cancelled by a disconnect, or cleared from the log) is still looked for.
+	# (cancelled or cleared from the log) is still looked for.
 	started = op.request_started_at or link.create_requested_at
 	if started:
 		issue = find_created(found, link.create_marker, started)
@@ -192,7 +192,7 @@ def record_created(link_name: str, task: Document, issue: IssueData, body: Issue
 	"""Link the Task to its new Issue, with both sides' values as baselines.
 
 	The identity is always recorded, so the Issue is never created again or
-	imported as a new Task. A link paused, disconnected or tombstoned while
+	imported as a new Task. A link paused or tombstoned while
 	the request was out keeps that state: only Resume continues it."""
 	link = frappe.get_doc(store.ISSUE_SYNC, link_name, for_update=True)
 	if link.issue_id:

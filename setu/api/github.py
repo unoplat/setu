@@ -206,17 +206,9 @@ def retry_task_sync(task: str) -> TaskGitHub:
 
 @frappe.whitelist(methods=["POST"])
 def resume_task_sync(task: str) -> TaskGitHub:
-	"""Resume a paused or disconnected Task: both sides are compared first."""
+	"""Resume a paused Task: both sides are compared first."""
 	doc = task_doc(task, "write")
 	links.resume(require_link(doc.name))
-	return links.task_projection(doc)
-
-
-@frappe.whitelist(methods=["POST"])
-def disconnect_task_sync(task: str) -> TaskGitHub:
-	"""Stop syncing this Task. The Issue is left as it is on GitHub."""
-	doc = task_doc(task, "write")
-	links.disconnect(require_link(doc.name))
 	return links.task_projection(doc)
 
 

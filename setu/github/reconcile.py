@@ -93,7 +93,7 @@ class Plan:
 
 def reconcile(link_name: str, op_name: str) -> store.Outcome:
 	link = frappe.get_doc(store.ISSUE_SYNC, link_name)
-	if link.sync_state in ("Disconnected", "Tombstoned") or not link.task:
+	if link.sync_state == "Tombstoned" or not link.task:
 		return store.outcome("Cancelled")
 	if link.sync_state == "Paused":
 		return store.outcome("Waiting")
@@ -432,12 +432,7 @@ def apply_parent(plan: Plan, link: Document, remote: str | None) -> None:
 		plan.actions["parent"] = "apply"
 		return
 	parent = links.link_for_issue(remote)
-	if (
-		not parent
-		or not parent.task
-		or parent.project != link.project
-		or parent.sync_state in ("Disconnected", "Tombstoned")
-	):
+	if not parent or not parent.task or parent.project != link.project or parent.sync_state == "Tombstoned":
 		plan.hierarchy_error = _(
 			"On GitHub this Issue is a sub-issue of an Issue that isn't synced to this project, so its parent task was not changed."
 		)

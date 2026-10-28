@@ -134,7 +134,7 @@ def route_for_delivery(doc) -> dict | None:
 def handle_issue(doc, route: dict) -> str | None:
 	link = links.link_for_issue(doc.issue_id)
 	if link:
-		if link.sync_state in ("Disconnected", "Tombstoned"):
+		if link.sync_state == "Tombstoned":
 			return _("This Issue's task no longer syncs.")
 		if doc.action == "deleted":
 			store.pause_links({"name": link.name}, "remote_deleted")
@@ -247,7 +247,7 @@ def import_issue(link_name: str, op_name: str) -> store.Outcome:
 	link = frappe.get_doc(store.ISSUE_SYNC, link_name)
 	if link.task:
 		return store.outcome("Done")
-	if link.sync_state in ("Disconnected", "Tombstoned"):
+	if link.sync_state == "Tombstoned":
 		return store.outcome("Cancelled")
 	if link.sync_state == "Paused":
 		return store.outcome("Waiting")

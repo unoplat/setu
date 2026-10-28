@@ -16,11 +16,6 @@ import {
 } from "lucide-react"
 
 import { StatusBadge } from "@/components/app-ui/status-badge"
-import {
-  ConfirmDialog,
-  ConfirmFooter,
-  ConfirmHeader,
-} from "@/components/confirm-dialog"
 import { ConflictDialog } from "@/components/github/conflict-dialog"
 import { GitHubTime, RepositoryLink } from "@/components/github/github-parts"
 import { RailGroup } from "@/components/record-detail"
@@ -45,7 +40,7 @@ import { cn } from "@/lib/utils"
 // the server allows this user (`actions`). Sync runs on the server; every
 // action here asks it and shows what it answers.
 
-type TaskAction = "retry" | "resume" | "disconnect"
+type TaskAction = "retry" | "resume"
 
 const STATE_ICONS: Record<LinkState, React.ReactNode> = {
   Pending: <ClockIcon />,
@@ -53,7 +48,6 @@ const STATE_ICONS: Record<LinkState, React.ReactNode> = {
   Conflict: <GitMergeIcon className="text-destructive" />,
   Error: <CircleAlertIcon className="text-destructive" />,
   Paused: <PauseIcon />,
-  Disconnected: <UnlinkIcon />,
   Tombstoned: <UnlinkIcon />,
 }
 
@@ -82,18 +76,14 @@ export function TaskGitHubPanel({
   const resume = useFrappePostCall<{ message: TaskGitHub }>(
     "setu.api.github.resume_task_sync"
   )
-  const disconnect = useFrappePostCall<{ message: TaskGitHub }>(
-    "setu.api.github.disconnect_task_sync"
-  )
   const resolve = useFrappePostCall<{ message: TaskGitHub }>(
     "setu.api.github.resolve_task_conflict"
   )
-  const calls = { retry, resume, disconnect }
+  const calls = { retry, resume }
 
   const [running, setRunning] = React.useState<TaskAction | null>(null)
   const runningRef = React.useRef(false)
   const [actionError, setActionError] = React.useState<string | null>(null)
-  const [confirming, setConfirming] = React.useState<"disconnect" | null>(null)
   const [reviewing, setReviewing] = React.useState<ConflictField | null>(null)
 
   // A sync that changed the Task (from GitHub, or a chosen resolution) shows
@@ -115,8 +105,8 @@ export function TaskGitHubPanel({
     void revalidate(taskActivityKey(task))
   }
 
-  /** An action without a confirm: one at a time, its refusal shown below. */
-  async function act(action: Exclude<TaskAction, "disconnect">) {
+  /** One action at a time, its refusal shown below. */
+  async function act(action: TaskAction) {
     if (runningRef.current) return
     runningRef.current = true
     setRunning(action)
@@ -130,17 +120,6 @@ export function TaskGitHubPanel({
     } finally {
       runningRef.current = false
       setRunning(null)
-    }
-  }
-
-  /** An action behind a confirm, which shows its refusal itself. */
-  async function confirmed(action: "disconnect") {
-    setActionError(null)
-    try {
-      await show(await calls[action].call({ task }))
-    } catch (failure) {
-      void mutate()
-      throw failure
     }
   }
 
@@ -280,41 +259,9 @@ export function TaskGitHubPanel({
         view={view}
         running={running}
         busy={busy}
-        onDisconnect={() => {
-          setActionError(null)
-          setConfirming("disconnect")
-        }}
         onAct={(action) => void act(action)}
       />
 
-      <ConfirmDialog
-        open={confirming === "disconnect"}
-        onOpenChange={(open) => {
-          if (!open) setConfirming(null)
-        }}
-        onConfirm={() => confirmed("disconnect")}
-      >
-        <ConfirmHeader
-          tone="destructive"
-          icon={<UnlinkIcon />}
-          title="Stop syncing with GitHub?"
-          description={
-            link?.issue_number
-              ? `This task stops syncing with Issue #${link.issue_number}. The Issue is left as it is on GitHub, and nothing is deleted.`
-              : "This task stops syncing with GitHub, and nothing is deleted."
-          }
-        />
-        <p className="text-sm leading-5">
-          Adding the github tag again won't publish it. Resume reconnects this
-          task to the same Issue, after comparing both sides.
-        </p>
-        <ConfirmFooter
-          tone="destructive"
-          label="Disconnect"
-          pendingLabel="Disconnecting…"
-          ready
-        />
-      </ConfirmDialog>
       <ConflictDialog
         conflict={conflict}
         onOpenChange={(open) => {
@@ -341,17 +288,15 @@ function TaskGitHubActions({
   view,
   running,
   busy,
-  onDisconnect,
   onAct,
 }: {
   view: TaskGitHub
   running: TaskAction | null
   busy: boolean
-  onDisconnect: () => void
-  onAct: (action: "retry" | "resume") => void
+  onAct: (action: TaskAction) => void
 }) {
   const { actions } = view
-  if (!actions.retry && !actions.resume && !actions.disconnect) {
+  if (!actions.retry && !actions.resume) {
     return null
   }
   return (
@@ -380,18 +325,6 @@ function TaskGitHubActions({
         >
           <PlayIcon />
           {running === "resume" ? "Resuming…" : "Resume"}
-        </Button>
-      ) : null}
-      {actions.disconnect ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={onDisconnect}
-        >
-          <UnlinkIcon />
-          Disconnect…
         </Button>
       ) : null}
     </div>
