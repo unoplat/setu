@@ -96,7 +96,7 @@ export const descriptionExtensions = [
   SearchAndReplace,
   Clear,
   FormatPainter,
-  Heading.configure({ levels: [1, 2, 3] }),
+  Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
   FontFamily,
   FontSize,
   Bold,
