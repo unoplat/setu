@@ -15,10 +15,7 @@ import {
 import { toast } from "sonner"
 
 import { ActionButton } from "@/components/app-ui/action-button"
-import {
-  CompactField,
-  PickerSelectTrigger,
-} from "@/components/app-ui/field-controls"
+import { CompactField } from "@/components/app-ui/field-controls"
 import {
   ConfirmDialog,
   ConfirmFooter,
@@ -29,14 +26,9 @@ import {
   RepositoryLink,
   VisibilityBadge,
 } from "@/components/github/github-parts"
+import { RepositoryCombobox } from "@/components/github/repository-combobox"
 import { Button } from "@/components/ui/button"
 import { FieldError, FieldLabel } from "@/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { submitOnce, useAppForm } from "@/lib/form"
 import { frappeErrorMessage } from "@/lib/frappe-error"
@@ -65,10 +57,10 @@ import {
 type ProjectAction = "pause" | "resume" | "retry"
 
 const IMPORT_TEXT: Record<ActivationImportState, string> = {
-  Queued: "Issues labelled github: waiting to import.",
-  Running: "Issues labelled github: importing…",
-  Done: "Issues labelled github were imported.",
-  Failed: "Importing Issues labelled github failed. Retry to continue.",
+  Queued: "Existing Issues: waiting to import.",
+  Running: "Existing Issues: importing…",
+  Done: "Existing Issues were imported.",
+  Failed: "Importing existing Issues failed. Retry to continue.",
 }
 
 export function GitHubSection({
@@ -165,15 +157,7 @@ function ConnectRepository({
   const connect = useFrappePostCall<{ message: ProjectGitHub }>(
     "setu.api.github.connect_project_repository"
   )
-  const options = React.useMemo(
-    () =>
-      (candidates.data?.message ?? []).map((repository) => ({
-        value: repository.id,
-        label: repository.full_name,
-        private: repository.private,
-      })),
-    [candidates.data]
-  )
+  const repositories = candidates.data?.message ?? []
 
   const form = useAppForm({
     defaultValues: { repository: "" },
@@ -217,7 +201,7 @@ function ConnectRepository({
       </div>
     )
   }
-  if (!options.length) {
+  if (!repositories.length) {
     return (
       <p className="text-sm leading-5 text-muted-foreground">
         No repository is available. A System Manager connects this site's GitHub
@@ -253,47 +237,15 @@ function ConnectRepository({
               <FieldLabel htmlFor="project-github-repository">
                 Repository
               </FieldLabel>
-              <Select
-                items={options}
-                value={field.state.value || null}
-                onValueChange={(next: string | null) =>
-                  field.handleChange(next ?? "")
-                }
-                onOpenChange={(open) => {
-                  if (!open) field.handleBlur()
-                }}
+              <RepositoryCombobox
+                id="project-github-repository"
+                repositories={repositories}
+                value={field.state.value}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
                 disabled={submitting}
-              >
-                <PickerSelectTrigger
-                  id="project-github-repository"
-                  aria-invalid={fieldError ? true : undefined}
-                >
-                  <SelectValue>
-                    {(current: string | null) => {
-                      const option = options.find(
-                        (item) => item.value === current
-                      )
-                      return option ? (
-                        option.label
-                      ) : (
-                        <span className="text-muted-foreground">
-                          Choose a repository
-                        </span>
-                      )
-                    }}
-                  </SelectValue>
-                </PickerSelectTrigger>
-                <SelectContent>
-                  {options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <span className="grow">{option.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {option.private ? "Private" : "Public"}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                invalid={Boolean(fieldError)}
+              />
               <FieldError>{fieldError}</FieldError>
             </CompactField>
           )
@@ -570,7 +522,7 @@ function syncText(view: ProjectGitHub): string {
   if (view.paused) {
     return "Sync is paused. Changes on GitHub wait until it resumes."
   }
-  return "Sync is on: new Issues and tasks tagged github sync both ways."
+  return "Sync is on: every Issue imports as a task, and tasks tagged github publish as Issues. Linked ones stay in sync both ways."
 }
 
 function countsText(view: ProjectGitHub): string {

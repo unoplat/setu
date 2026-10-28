@@ -1,6 +1,12 @@
 import * as React from "react"
+import { Combobox } from "@base-ui/react/combobox"
 import { useFrappePostCall } from "frappe-react-sdk"
-import { ExternalLinkIcon, GitBranchIcon, RefreshCwIcon } from "lucide-react"
+import {
+  ExternalLinkIcon,
+  GitBranchIcon,
+  RefreshCwIcon,
+  SearchIcon,
+} from "lucide-react"
 
 import {
   AlertDialog,
@@ -13,6 +19,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
 import { submitOnce, useAppForm } from "@/lib/form"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import {
@@ -89,6 +101,79 @@ export function GitHubSettings({ result }: { result?: GitHubResult }) {
         </p>
       )}
     </section>
+  )
+}
+
+// A plain filterable list, not a picker: rows are links out to GitHub, so a
+// search field over the list fits better than Combobox/Command option roles.
+// Base UI's filter matches "owner/name" like the project RepositoryCombobox.
+function RepositoryAccessList({
+  repositories,
+}: {
+  repositories: ManagedGitHubConnection["repositories"]
+}) {
+  const [query, setQuery] = React.useState("")
+  const filter = Combobox.useFilter()
+  const trimmed = query.trim()
+  const matches = trimmed
+    ? repositories.filter((repository) =>
+        filter.contains(repository.full_name, trimmed)
+      )
+    : repositories
+
+  return (
+    <div className="grid gap-2">
+      <InputGroup>
+        <InputGroupAddon>
+          <SearchIcon />
+        </InputGroupAddon>
+        <InputGroupInput
+          type="search"
+          placeholder="Search repositories"
+          aria-label="Search accessible repositories"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {trimmed ? (
+          <InputGroupAddon align="inline-end">
+            <InputGroupText aria-live="polite">
+              {matches.length} of {repositories.length}
+            </InputGroupText>
+          </InputGroupAddon>
+        ) : null}
+      </InputGroup>
+      {matches.length ? (
+        <ul className="max-h-64 divide-y overflow-y-auto rounded-xl border">
+          {matches.map((repository) => (
+            <li
+              key={repository.name}
+              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
+            >
+              <a
+                href={repository.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all underline-offset-4 hover:underline"
+              >
+                {repository.full_name}
+              </a>
+              <span className="text-xs text-muted-foreground">
+                {repository.private ? "Private" : "Public"}
+                {repository.archived ? " · Archived" : ""}
+                {!repository.has_issues ? " · Issues disabled" : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-xl border px-3 py-6 text-center text-sm text-muted-foreground">
+          No repository matches “{trimmed}”.
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -447,28 +532,7 @@ function ManageGitHub({
               </Button>
             </div>
             {repositories.length ? (
-              <ul className="max-h-64 divide-y overflow-y-auto rounded-xl border">
-                {repositories.map((repository) => (
-                  <li
-                    key={repository.name}
-                    className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
-                  >
-                    <a
-                      href={repository.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="break-all underline-offset-4 hover:underline"
-                    >
-                      {repository.full_name}
-                    </a>
-                    <span className="text-xs text-muted-foreground">
-                      {repository.private ? "Private" : "Public"}
-                      {repository.archived ? " · Archived" : ""}
-                      {!repository.has_issues ? " · Issues disabled" : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <RepositoryAccessList repositories={repositories} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Install the app and select a test repository on GitHub, then
