@@ -7,11 +7,14 @@ Publishing (docs/adr/0008):
   Frappe's tag API in Desk and REST, which inserts a Tag Link; so the triggers
   are ``on_tag_link_insert``, the explicit ``tags_changed`` call in the Task
   API, and setu.github.recovery's scan for tagged Tasks without a link.
-- A published Task's whole Subtask tree publishes with it, and Subtasks added
-  or moved under a published Task later publish too. A tagged Subtask whose
-  parent is not published publishes as a standalone Issue.
+- A published Task's whole Subtask tree publishes with it, Completed
+  Subtasks included, and Subtasks added or moved under a published Task later
+  publish too. A tagged Subtask whose parent is not published publishes as a
+  standalone Issue.
+- A Completed tagged Task, and so its tree, publishes once it is reopened.
 - Nothing publishes until a manager has turned sync on for the Project.
-  Tasks tagged before that are the backlog that activation previews.
+  Tasks tagged before that are the backlog that activation previews and
+  publishes when sync turns on.
 - A Task links to at most one Issue, ever: a link that exists in any state,
   tombstones and disconnected links included, is never replaced, so removing
   and re-adding the tag never creates a second Issue.
@@ -54,12 +57,8 @@ LINK_FIELDS = [
 	"last_synced_at",
 	"create_marker",
 ]
-# Keep Envision / Keep GitHub, except where one side cannot be applied.
+# Manual choices apply only to title, status and parent conflicts.
 DEFAULT_CHOICES = ("envision", "github")
-CHOICES: dict[str, tuple[str, ...]] = {
-	# GitHub would refuse Envision's description: only GitHub's can win.
-	"too_long": ("github",),
-}
 
 
 class RepositoryView(TypedDict):
@@ -106,9 +105,7 @@ class LinkView(TypedDict):
 
 
 class TaskActions(TypedDict):
-	publish: bool
 	retry: bool
-	pause: bool
 	resume: bool
 	disconnect: bool
 	resolve: bool
@@ -153,6 +150,14 @@ def link_for_issue(issue_id: str) -> frappe._dict | None:
 	return frappe.db.get_value(store.ISSUE_SYNC, {"issue_id": issue_id}, LINK_FIELDS, as_dict=True)
 
 
+def completed_parent(issue_id: str | None) -> bool:
+	"""Whether a linked GitHub parent is already Done in Envision."""
+	if not issue_id:
+		return False
+	parent = link_for_issue(issue_id)
+	return bool(parent and parent.task and frappe.db.get_value("Task", parent.task, "status") == "Completed")
+
+
 def publishing(link: frappe._dict | None) -> bool:
 	"""Whether a parent's link carries its new Subtasks along."""
 	return bool(link and link.sync_state in store.ACTIVE_STATES)
@@ -168,6 +173,9 @@ def tags_changed(task_name: str) -> None:
 	"""
 	row = frappe.db.get_value("Task", task_name, TASK_FIELDS, as_dict=True)
 	if not row or not has_github_tag(row._user_tags) or ineligible_reason(row):
+		return
+	# Reopening it publishes it (task_updated).
+	if row.status == "Completed":
 		return
 	if frappe.db.exists(store.ISSUE_SYNC, {"task": task_name}):
 		return
@@ -200,7 +208,7 @@ def subtree_rows(task_name: str) -> list[frappe._dict]:
 	)
 
 
-def prepare_subtree(task_name: str, route: dict, *, held: bool = False) -> list[str]:
+def prepare_subtree(task_name: str, route: dict) -> list[str]:
 	"""Link every eligible, unlinked Task in the tree. Returns their names."""
 	rows = subtree_rows(task_name)
 	linked = set(
@@ -210,17 +218,16 @@ def prepare_subtree(task_name: str, route: dict, *, held: bool = False) -> list[
 	for row in rows:
 		if row.name in linked or ineligible_reason(row) or row.project != route["project"]:
 			continue
-		if prepare_publication(row.name, route, held=held):
+		if prepare_publication(row.name, route):
 			prepared.append(row.name)
 	return prepared
 
 
-def prepare_publication(task_name: str, route: dict, *, held: bool = False) -> str | None:
+def prepare_publication(task_name: str, route: dict) -> str | None:
 	"""Record that a Task publishes to the route's repository.
 
 	The destination is fixed here: a later route change never reroutes it.
-	``held`` keeps it unpublished (a backlog the manager chose not to publish)
-	until someone publishes it explicitly. Returns None if a link exists.
+	Returns None if a link exists.
 	"""
 	repository_row = route["repository_row"] or {}
 	name = store.insert_unique(
@@ -231,14 +238,13 @@ def prepare_publication(task_name: str, route: dict, *, held: bool = False) -> s
 			"repository_id": route["repository"],
 			"repository_full_name": repository_row.get("full_name"),
 			"origin": "Envision",
-			"sync_state": "Paused" if held else "Pending",
-			"paused_reason": "backlog_held" if held else None,
+			"sync_state": "Pending",
 			# The same form as setu.github.convert.new_marker. Generated here so
 			# the Task API never loads the Markdown converter.
 			"create_marker": secrets.token_urlsafe(18),
 		}
 	)
-	if name and not held:
+	if name:
 		store.queue_op(name, "create_issue", route["project"])
 	return name
 
@@ -286,6 +292,9 @@ def task_updated(doc: Document) -> None:
 		return
 	if doc.parent_task and doc.has_value_changed("parent_task") and not ineligible_reason(doc):
 		publish_under_parent(doc.name, doc.parent_task, doc.project)
+	# A Completed tagged Task waits unpublished; reopening it publishes it.
+	if doc.has_value_changed("status") and doc.get_doc_before_save().status == "Completed":
+		tags_changed(doc.name)
 
 
 def on_task_trash(doc: Document, method: str | None = None) -> None:
@@ -328,13 +337,6 @@ def tombstone(link_name: str, task_name: str) -> None:
 			"remote_body_markdown": None,
 		},
 	)
-
-
-def pause(link_name: str) -> None:
-	link = frappe.db.get_value(store.ISSUE_SYNC, link_name, ["sync_state"], as_dict=True, for_update=True)
-	if not link or link.sync_state not in store.ACTIVE_STATES:
-		frappe.throw(_("Only a syncing task can be paused."))
-	store.pause_links({"name": link_name}, "user_paused")
 
 
 def resume(link_name: str) -> None:
@@ -382,34 +384,6 @@ def resume(link_name: str) -> None:
 	)
 	store.requeue_waiting([link_name])
 	store.queue_op(link_name, "reconcile" if link.issue_id else "create_issue", link.project)
-
-
-def publish_held(link_name: str) -> int:
-	"""Publish a held backlog Task and its held Subtasks. Returns the count.
-
-	The Task itself must publish (a refusal is shown); a Subtask that cannot
-	(moved or no longer eligible) stays held for review and is skipped."""
-	link = frappe.db.get_value(store.ISSUE_SYNC, link_name, ["task", "project"], as_dict=True)
-	rows = subtree_rows(link.task)
-	held = dict(
-		frappe.get_all(
-			store.ISSUE_SYNC,
-			filters={
-				"task": ["in", [row.name for row in rows[1:]] or [""]],
-				"sync_state": "Paused",
-				"paused_reason": "backlog_held",
-			},
-			fields=["task", "name"],
-			as_list=True,
-		)
-	)
-	resume(link_name)
-	published = 1
-	# Parents before children, so a Subtask's Issue attaches under its parent's.
-	for row in rows[1:]:
-		if row.name in held and store.attempt(resume, held[row.name]):
-			published += 1
-	return published
 
 
 def disconnect(link_name: str) -> None:
@@ -467,8 +441,8 @@ def blocked(link_name: str, blocker: str) -> store.Outcome:
 	)
 
 
-def allowed_choices(kind: str) -> list[str]:
-	return list(CHOICES.get(kind, DEFAULT_CHOICES))
+def allowed_choices() -> list[str]:
+	return list(DEFAULT_CHOICES)
 
 
 # Projection for the Task page (setu.api.github.get_task_github).
@@ -484,8 +458,6 @@ def state_message(state: str, reason: str | None) -> str | None:
 	if state != "Paused":
 		return None
 	return {
-		"user_paused": _("Sync with GitHub is paused for this task."),
-		"backlog_held": _("Tagged before sync was turned on, and not published yet."),
 		"route_cleared": _("The project's repository was disconnected."),
 		"app_disconnected": _("The site's GitHub App was disconnected."),
 		"project_changed": _("The task moved to another project. Envision never moves an Issue."),
@@ -557,11 +529,12 @@ def link_view(link_name: str, route_blocked: bool) -> LinkView:
 				"detail": [code for code in (row.detail or "").split(",") if code],
 				"local_value": row.local_value or "",
 				"remote_value": row.remote_value or "",
-				"allowed_choices": allowed_choices(row.kind),
+				"allowed_choices": allowed_choices(),
 				"detected_on": clock.site_iso(row.detected_on),
 				"resolution": row.resolution or None,
 			}
 			for row in doc.conflicts
+			if row.field != "description"
 		],
 	}
 
@@ -578,7 +551,10 @@ def task_projection(task: Document) -> TaskGitHub:
 	can_write = bool(task.has_permission("write"))
 	waiting = None
 	if tagged and not link and not reason:
-		waiting = route["blocker"] or ("publishing" if raw_route and raw_route["sync_enabled"] else None)
+		if task.status == "Completed":
+			waiting = "completed"
+		else:
+			waiting = route["blocker"] or ("publishing" if raw_route and raw_route["sync_enabled"] else None)
 	state = view["state"] if view else None
 	return {
 		"task": task.name,
@@ -586,28 +562,26 @@ def task_projection(task: Document) -> TaskGitHub:
 		"eligible": reason is None,
 		"ineligible_reason": reason,
 		"waiting_reason": waiting,
-		"waiting_message": (
-			_("Publishing to GitHub shortly.")
-			if waiting == "publishing"
-			else (projects.inactive_message(waiting) if waiting else None)
-		),
+		"waiting_message": waiting_message(waiting),
 		"route": route,
 		"link": view,
 		"can_write": can_write,
 		"actions": {
-			"publish": can_write
-			and (
-				(view is not None and state == "Paused" and view["paused_reason"] == "backlog_held")
-				or (view is None and tagged and reason is None and route["sync_enabled"])
-			),
 			"retry": can_write and view is not None and state in ("Error", "Pending", "Conflict"),
-			"pause": can_write and state in store.ACTIVE_STATES,
 			"resume": can_write
 			and (
-				(state == "Paused" and view["paused_reason"] not in ("backlog_held", "destination_changed"))
+				(state == "Paused" and view["paused_reason"] != "destination_changed")
 				or state == "Disconnected"
 			),
 			"disconnect": can_write and view is not None and state not in ("Disconnected", "Tombstoned"),
 			"resolve": can_write and bool(view and view["conflicts"]),
 		},
 	}
+
+
+def waiting_message(waiting: str | None) -> str | None:
+	if waiting == "publishing":
+		return _("Publishing to GitHub shortly.")
+	if waiting == "completed":
+		return _("Completed tasks publish to GitHub once reopened.")
+	return projects.inactive_message(waiting) if waiting else None

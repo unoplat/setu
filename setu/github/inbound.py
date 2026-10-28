@@ -6,14 +6,14 @@ a sub-issue change is taken from its payload (parent, child and action).
 Processing never holds the global connection lock: a per-Issue lock
 serializes it instead.
 
-Which Issues become Tasks (docs/adr/0008):
-
-- an Issue created after sync was turned on, labelled or not;
-- an Issue that already had the ``github`` label when sync was turned on
-  (setu.github.activation imports those);
-- never a pull request, an Issue created before activation without the
-  label, an Issue Envision itself created (its body carries the create
-  marker), or one already linked or tombstoned.
+Which Issues become Tasks (docs/adr/0008): every Issue whose top-level
+Issue in this repository is open, labelled or not, whether it existed when
+sync was turned on (setu.github.activation imports those) or arrives later.
+A closed Issue under an open one comes along, but a closed ancestor or a
+completed parent Task keeps its descendants out until it is reopened. Never
+a pull request, an Issue Envision itself created (its body carries the create
+marker), or one already linked or tombstoned. The ``github`` label gates
+only Envision → GitHub publication (setu.github.links).
 
 An import is recorded first: a link with the unique Issue id, then an
 ``import_issue`` operation that creates the Task as the integration user.
@@ -29,7 +29,6 @@ from redis.exceptions import LockError
 from setu.github import (
 	bot,
 	client,
-	clock,
 	connection,
 	convert,
 	issues,
@@ -166,11 +165,9 @@ def handle_issue(doc, route: dict) -> str | None:
 	return consider_import(route, issue, actor=doc.actor_login)
 
 
-def consider_import(
-	route: dict, issue: IssueData, *, labelled: bool = False, actor: str | None = None
-) -> str | None:
+def consider_import(route: dict, issue: IssueData, *, actor: str | None = None) -> str | None:
 	"""Record an Issue for import if it should become a Task. Returns why
-	not, or None. ``labelled``: it carried the github label at activation."""
+	not, or None."""
 	if issue["is_pull_request"]:
 		return _("Pull requests are not synced.")
 	if links.link_for_issue(issue["id"]):
@@ -191,11 +188,8 @@ def consider_import(
 		# Either way never a new Task: a second Issue with a linked Task's
 		# marker is a duplicate create, left on GitHub for a person to close.
 		return _("Created by Envision.")
-	if not labelled:
-		created = clock.parse(issue["created_at"])
-		activated = clock.parse(route["activated_at_utc"])
-		if not created or not activated or created < activated:
-			return _("Created before sync was turned on, without the github label; not imported.")
+	if not top_open(route, issue):
+		return _("This Issue or an ancestor is closed, or its parent task is Done; import skipped.")
 	row = route["repository_row"]
 	name = store.insert_unique(
 		{
@@ -217,6 +211,37 @@ def consider_import(
 	return None
 
 
+def top_open(route: dict, issue: IssueData) -> bool:
+	"""Whether this tree can import: an open root and no closed ancestors.
+
+	A linked parent is not enough: it may since have completed on either
+	side. A closed child of an open parent still imports, but not its subtree.
+	Parents in another repository remain outside this tree.
+	"""
+	row = route["repository_row"]
+	if not row:
+		return issue["state"] == "open"
+	current = issue
+	for _depth in range(issues.MAX_DEPTH):
+		if (
+			not current["parent_number"]
+			or (current["parent_full_name"] or "").lower() != row.full_name.lower()
+		):
+			break
+		parent = linked_parent(route["repository"], row.full_name, current)
+		if parent and links.completed_parent(parent.issue_id):
+			return False
+		try:
+			current = issues.get_issue(row.installation, row.full_name, current["parent_number"])
+			if current["state"] == "closed":
+				return False
+		except GitHubError as exc:
+			if exc.status not in GONE:
+				raise
+			break
+	return current["state"] == "open"
+
+
 def import_issue(link_name: str, op_name: str) -> store.Outcome:
 	"""Create the Task for a recorded Issue (worker operation)."""
 	link = frappe.get_doc(store.ISSUE_SYNC, link_name)
@@ -236,7 +261,9 @@ def import_issue(link_name: str, op_name: str) -> store.Outcome:
 			raise
 		drop_import(link_name)
 		return store.outcome("Cancelled")
-	if issue["is_pull_request"] or issue["id"] != link.issue_id:
+	if issue["is_pull_request"] or issue["id"] != link.issue_id or not top_open(found["route"], issue):
+		# Eligibility can change between activation/webhook and this worker.
+		# No Task is created and no error is recorded for a skipped import.
 		drop_import(link_name)
 		return store.outcome("Cancelled")
 
@@ -286,15 +313,6 @@ def import_issue(link_name: str, op_name: str) -> store.Outcome:
 			"error": None,
 		}
 	)
-	if rendered["lossy"]:
-		outbound.add_conflict(
-			doc,
-			"description",
-			"lossy_inbound",
-			titles.content(task.description, continued),
-			issue["body"],
-			list(rendered["dropped"]),
-		)
 	if doc.conflicts:
 		doc.sync_state = "Conflict"
 	doc.save(ignore_permissions=True)
@@ -328,6 +346,27 @@ def import_issue(link_name: str, op_name: str) -> store.Outcome:
 	if issue["sub_issue_count"]:
 		observe_sub_issues(found, issue["id"], issue["number"])
 	return store.outcome("Done")
+
+
+def observe_sub_issues(found: links.Target, parent_id: str, parent_number: int) -> None:
+	"""Record a parent Issue's current sub-issues on their links, including
+	children still being imported, and record the rest for import, open and
+	closed: an imported parent brings its whole tree."""
+	children = issues.list_sub_issues(found["installation_id"], found["full_name"], parent_number)
+	linked = frappe.get_all(
+		store.ISSUE_SYNC,
+		filters={
+			"issue_id": ["in", [child["id"] for child in children] or [""]],
+			"sync_state": ["in", list(store.ACTIVE_STATES)],
+		},
+		fields=["name", "project", "issue_id"],
+	)
+	for child in linked:
+		set_remote_parent(child.name, child.project, parent_id, parent_number)
+	seen = {child.issue_id for child in linked}
+	for child in children:
+		if child["id"] not in seen:
+			consider_import(found["route"], child)
 
 
 def drop_import(link_name: str) -> None:
@@ -412,19 +451,6 @@ def linked_parent(repository_id: str, full_name: str, issue: IssueData) -> frapp
 		["issue_id", "issue_number"],
 		as_dict=True,
 	)
-
-
-def observe_sub_issues(found: links.Target, parent_id: str, parent_number: int) -> list[str]:
-	"""Record a parent Issue's current sub-issues on their links, including
-	children still being imported. Returns the child Issue ids GitHub listed."""
-	ids = issues.list_sub_issue_ids(found["installation_id"], found["full_name"], parent_number)
-	for child in frappe.get_all(
-		store.ISSUE_SYNC,
-		filters={"issue_id": ["in", ids or [""]], "sync_state": ["in", list(store.ACTIVE_STATES)]},
-		fields=["name", "project"],
-	):
-		set_remote_parent(child.name, child.project, parent_id, parent_number)
-	return ids
 
 
 def set_remote_parent(link_name: str, project: str, parent_id: str | None, parent_number: int | None) -> None:

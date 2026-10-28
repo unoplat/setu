@@ -110,7 +110,7 @@
    "fieldname": "paused_reason",
    "fieldtype": "Select",
    "label": "Paused Because",
-   "options": "\nuser_paused\nbacklog_held\nroute_cleared\napp_disconnected\nproject_changed\ntask_ineligible\ntransferred\nremote_deleted\naccess_lost\ndestination_changed",
+   "options": "\nroute_cleared\napp_disconnected\nproject_changed\ntask_ineligible\ntransferred\nremote_deleted\naccess_lost\ndestination_changed",
    "read_only": 1
   },
   {

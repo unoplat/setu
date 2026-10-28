@@ -38,8 +38,6 @@ LinkState = Literal["Pending", "Synced", "Conflict", "Error", "Paused", "Disconn
 # States in which a link's work runs. Paused links keep their operations.
 ACTIVE_STATES: tuple[LinkState, ...] = ("Pending", "Synced", "Conflict", "Error")
 PauseReason = Literal[
-	"user_paused",
-	"backlog_held",
 	"route_cleared",
 	"app_disconnected",
 	"project_changed",

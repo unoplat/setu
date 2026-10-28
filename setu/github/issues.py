@@ -10,6 +10,9 @@ Endpoints (API version 2022-11-28):
 - ``GET/PATCH /repos/{owner}/{repo}/issues/{number}``, ``POST /repos/{owner}/{repo}/issues``
 - ``GET /repos/{owner}/{repo}/issues`` (``state``, ``since``, ``sort``,
   ``direction``, ``labels``, ``creator``, ``per_page``, ``page``)
+- ``GET /repos/{owner}/{repo}/labels/{name}``, ``POST /repos/{owner}/{repo}/labels``
+  and ``POST /repos/{owner}/{repo}/issues/{number}/labels`` (which adds to the
+  Issue's labels): the label every Issue published from Envision carries.
 - ``GET/POST /repos/{owner}/{repo}/issues/{number}/sub_issues`` and
   ``DELETE /repos/{owner}/{repo}/issues/{number}/sub_issue``: the body names
   the child by its Issue **id**, not its number.
@@ -33,6 +36,13 @@ FULL_NAME = re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+")
 # ``parent_issue_url``: https://api.github.com/repos/{owner}/{repo}/issues/{number}
 PARENT_URL = re.compile(r"/repos/([A-Za-z0-9-]+/[A-Za-z0-9._-]+)/issues/(\d+)$")
 PAGE_SIZE = 100
+# GitHub nests sub-issues at most eight levels deep.
+MAX_DEPTH = 8
+# Marks the Issues Envision publishes; never synced, so removing it on GitHub
+# changes nothing.
+ENVISION_LABEL = "envision-erpnext"
+ENVISION_LABEL_COLOR = "d4c5f9"
+ENVISION_LABEL_DESCRIPTION = "Published from Envision (ERPNext)"
 
 IssueState = Literal["open", "closed"]
 
@@ -92,7 +102,7 @@ def create_issue(installation_id: str, full_name: str, title: str, body: str) ->
 		github.rest(client.API_VERSION).issues.create,
 		owner,
 		repo,
-		data={"title": title, "body": body},
+		data={"title": title, "body": body, "labels": [ENVISION_LABEL]},
 	)
 	try:
 		return issue_data(response.parsed_data)
@@ -147,11 +157,56 @@ def list_issues(
 	return {"issues": [issue_data(item) for item in result], "more": len(result) >= PAGE_SIZE}
 
 
-def list_sub_issue_ids(installation_id: str, full_name: str, number: int) -> list[str]:
-	"""The ids of every sub-issue of an Issue, all pages."""
+def ensure_label(installation_id: str, full_name: str) -> None:
+	"""Create the Envision label in the repository unless it is there. GitHub
+	does not document what an Issue create does with a missing label."""
 	owner, repo = repository_parts(full_name)
 	github = client.installation_client(installation_id)
-	ids: list[str] = []
+	try:
+		client.installation_call(
+			installation_id, github.rest(client.API_VERSION).issues.get_label, owner, repo, ENVISION_LABEL
+		)
+		return
+	except GitHubError as exc:
+		if exc.status != 404:
+			raise
+	try:
+		client.installation_write(
+			installation_id,
+			github.rest(client.API_VERSION).issues.create_label,
+			owner,
+			repo,
+			data={
+				"name": ENVISION_LABEL,
+				"color": ENVISION_LABEL_COLOR,
+				"description": ENVISION_LABEL_DESCRIPTION,
+			},
+		)
+	except GitHubError as exc:
+		# Created meanwhile by another worker.
+		if exc.status != 422:
+			raise
+
+
+def add_label(installation_id: str, full_name: str, number: int) -> None:
+	"""Add the Envision label to an Issue, keeping its other labels."""
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	client.installation_write(
+		installation_id,
+		github.rest(client.API_VERSION).issues.add_labels,
+		owner,
+		repo,
+		number,
+		data={"labels": [ENVISION_LABEL]},
+	)
+
+
+def list_sub_issues(installation_id: str, full_name: str, number: int) -> list[IssueData]:
+	"""Every sub-issue of an Issue, open and closed, all pages."""
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	found: list[IssueData] = []
 	page = 1
 	while True:
 		result = client.installation_call(
@@ -163,9 +218,9 @@ def list_sub_issue_ids(installation_id: str, full_name: str, number: int) -> lis
 			per_page=PAGE_SIZE,
 			page=page,
 		)
-		ids.extend(issue_data(item)["id"] for item in result)
+		found.extend(issue_data(item) for item in result)
 		if len(result) < PAGE_SIZE or page >= 50:
-			return ids
+			return found
 		page += 1
 
 

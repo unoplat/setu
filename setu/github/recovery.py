@@ -4,7 +4,7 @@
 was lost or whose worker died, publishes tagged Tasks and new Subtasks of
 published Tasks that no hook caught (a raw ``_user_tags`` edit, a failed
 hook), reconciles Tasks changed without a recorded operation, and resumes an
-interrupted labelled-Issue import. GitHub is never polled: Issue and
+interrupted Issue import. GitHub is never polled: Issue and
 sub-issue changes arrive as webhooks (docs/adr/0008).
 
 Each Project is handled on its own: one failing repository never stops the rest.
@@ -78,7 +78,7 @@ def enqueue_due_operations() -> None:
 
 
 def scan_tags(route: dict) -> None:
-	"""Tagged Tasks with no link, however the tag got there."""
+	"""Open tagged Tasks with no link, however the tag got there."""
 	for row in frappe.get_all(
 		"Task",
 		filters={
@@ -86,7 +86,7 @@ def scan_tags(route: dict) -> None:
 			"_user_tags": ["like", f"%{links.GITHUB_TAG}%"],
 			"is_milestone": 0,
 			"is_template": 0,
-			"status": ["not in", ["Cancelled", "Template"]],
+			"status": ["not in", ["Cancelled", "Template", "Completed"]],
 		},
 		fields=["name", "_user_tags"],
 		limit_page_length=500,
@@ -122,10 +122,13 @@ def scan_new_subtasks(route: dict) -> None:
 
 
 def scan_local_changes() -> None:
-	"""Linked Tasks changed after their last sync with no operation recorded
-	(a failed hook, or a direct database change)."""
+	"""Recover missed saves and retire legacy manual description conflicts."""
 	link = frappe.qb.DocType(store.ISSUE_SYNC)
 	task = frappe.qb.DocType("Task")
+	conflict = frappe.qb.DocType("Envision GitHub Sync Conflict")
+	legacy_descriptions = (
+		frappe.qb.from_(conflict).select(conflict.parent).where(conflict.field == "description")
+	)
 	rows = (
 		frappe.qb.from_(link)
 		.join(task)
@@ -133,7 +136,11 @@ def scan_local_changes() -> None:
 		.select(link.name, link.project)
 		.where(link.sync_state.isin(["Synced", "Conflict", "Error"]))
 		.where(link.issue_id.isnotnull())
-		.where(link.last_synced_at.isnull() | (task.modified > link.last_synced_at))
+		.where(
+			link.last_synced_at.isnull()
+			| (task.modified > link.last_synced_at)
+			| link.name.isin(legacy_descriptions)
+		)
 		.limit(BATCH)
 	).run(as_dict=True)
 	for row in rows:

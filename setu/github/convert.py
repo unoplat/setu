@@ -13,10 +13,10 @@ docs/github-description-fidelity.md is the contract. In short:
   Before that it reports formatting Markdown cannot hold and takes out
   addresses GitHub readers cannot open; after, it renders the Markdown back
   and compares the two, so anything markdownify escapes or nests differently
-  is reported instead of published.
+  is reported as a conversion diagnostic.
 - Both report what they could not carry as ``dropped`` codes. ``lossy`` is set
-  when one of them changes what a reader sees; callers then keep both versions
-  for review instead of overwriting either side.
+  when one of them changes what a reader sees. Sync uses the best-effort
+  conversion automatically, without a manual description choice.
 - ``issue_body`` adds the integration marker and says whether the body differs
   from GitHub's at all. Callers compare ``html_digest``/``markdown_digest``
   with their stored baselines first, so a title or status change never
@@ -78,7 +78,7 @@ LossCode = Literal[
 	"footnote",
 	"alert",
 	"math",
-	"heading_level",
+	"heading_level",  # Legacy conflicts from before the editor supported H1-H6.
 	"task_item_blocks",
 	"mixed_task_list",
 	"table_alignment",
@@ -113,8 +113,7 @@ class IssueBody(TypedDict):
 MAX_BODY_LENGTH = 65536
 # Dropped but invisible on GitHub, so they never make a result lossy.
 HIDDEN_LOSSES: frozenset[LossCode] = frozenset({"html_comment"})
-# Look, not content. Only for describing a conflict: these are reviewed like
-# any other loss (approved policy P5).
+# Presentation-only conversion diagnostics, distinct from content loss.
 PRESENTATION_LOSSES: frozenset[LossCode] = frozenset(
 	{
 		"underline",
@@ -324,8 +323,8 @@ def body_reproducible(markdown: str | None) -> bool:
 	"""Whether a description can show everything a reader sees in this body.
 
 	When it cannot (raw HTML, footnotes, math...), replacing the body with the
-	description's Markdown would lose that content on GitHub, so callers keep
-	both versions for review instead.
+	description's Markdown would lose that content on GitHub. This is diagnostic;
+	description sync does not wait for a manual choice.
 	"""
 	return not markdown_to_html(markdown)["lossy"]
 
@@ -527,11 +526,7 @@ def _mark_task_items(tokens: list[Token]) -> None:
 
 
 def _to_editor_markup(soup: BeautifulSoup, dropped: list[LossCode]) -> None:
-	# The editor keeps three heading levels and has no table cell alignment.
-	for heading in soup.find_all(["h4", "h5", "h6"]):
-		if isinstance(heading, Tag):
-			heading.name = "h3"
-			_flag(dropped, "heading_level")
+	# All six heading levels survive unchanged; table cell alignment does not.
 	for cell in soup.find_all(["th", "td"]):
 		if isinstance(cell, Tag) and cell.has_attr("style"):
 			del cell["style"]

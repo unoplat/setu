@@ -28,6 +28,8 @@ LOOKUP_INTERVAL_MINUTES = 2
 LOOKUP_PAGES = 5
 # GitHub's title limit, in characters.
 MAX_TITLE_LENGTH = 256
+# (site, repository) pairs whose Envision label this process saw or created.
+LABELLED: set[tuple[str, str]] = set()
 
 
 def create_issue(link_name: str, op_name: str) -> store.Outcome:
@@ -84,11 +86,9 @@ def create_issue(link_name: str, op_name: str) -> store.Outcome:
 			).format(len(title), MAX_TITLE_LENGTH),
 		)
 	body = body_for(link.create_marker, titles.content(task.description, False), None)
-	if body["lossy"]:
-		# Publish the title, not a silently flattened description. Keep the
-		# original locally and let the resulting conflict request explicit
-		# consent before any lossy Markdown is sent to GitHub.
-		body = {**body, "body": convert.add_marker("", link.create_marker), "changed": True}
+	if "body_too_long" in body["dropped"]:
+		return store.outcome("Error", error=body_size_error())
+	ensure_label(found)
 	sent_at = now_datetime()
 	frappe.db.set_value(
 		store.OPERATION, op_name, {"request_started_at": sent_at, "lookups": 0}, update_modified=False
@@ -114,6 +114,16 @@ def create_issue(link_name: str, op_name: str) -> store.Outcome:
 		raise
 	record_created(link_name, task, issue, body)
 	return store.outcome("Done")
+
+
+def ensure_label(found: links.Target) -> None:
+	"""Make sure the repository has the label the create sets, once per
+	process. A label deleted on GitHub later is found again after a restart."""
+	key = (frappe.local.site, found["full_name"].lower())
+	if key in LABELLED:
+		return
+	issues.ensure_label(found["installation_id"], found["full_name"])
+	LABELLED.add(key)
 
 
 def app_login() -> str | None:
@@ -235,11 +245,7 @@ def record_created(link_name: str, task: Document, issue: IssueData, body: Issue
 			"last_synced_at": now_datetime(),
 		}
 	)
-	if "body_too_long" in body["dropped"]:
-		add_conflict(link, "description", "too_long", description, issue["body"], body["dropped"])
-	elif body["lossy"]:
-		# The Issue shows what Markdown can hold; the Task keeps everything.
-		add_conflict(link, "description", "lossy_outbound", description, issue["body"], body["dropped"])
+	link.set("conflicts", [row for row in link.conflicts if row.field != "description"])
 	if active:
 		link.sync_state = "Conflict" if link.conflicts else "Synced"
 		link.error = None
@@ -288,6 +294,10 @@ def add_conflict(
 			row.update(values)
 			return
 	link.append("conflicts", {**values, "detected_on": now_datetime()})
+
+
+def body_size_error() -> str:
+	return _("This task's description is too long for GitHub. Shorten it to sync the description.")
 
 
 def site_url() -> str | None:

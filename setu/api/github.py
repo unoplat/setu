@@ -140,7 +140,6 @@ def enable_project_sync(
 	project: str,
 	acknowledge_private_data: bool = False,
 	acknowledge_publication: bool = False,
-	publish_backlog: bool = False,
 	backlog_token: str = "",
 ) -> ProjectGitHub:
 	return github_errors(
@@ -148,7 +147,6 @@ def enable_project_sync(
 		project,
 		acknowledge_private_data,
 		acknowledge_publication,
-		publish_backlog,
 		backlog_token,
 	)
 
@@ -173,7 +171,7 @@ def disconnect_project_repository(project: str) -> ProjectGitHub:
 @frappe.whitelist(methods=["POST"])
 def retry_project_sync(project: str) -> ProjectGitHub:
 	"""Retry the Project's failed imports and failed Task syncs, and a failed
-	import of Issues labelled github at activation. A link whose state changed
+	import of the repository's Issues at activation. A link whose state changed
 	meanwhile is skipped rather than failing the rest."""
 	projects.require_route_permission(project)
 	for name in frappe.get_all(
@@ -199,39 +197,10 @@ def get_task_github(task: str) -> TaskGitHub:
 
 
 @frappe.whitelist(methods=["POST"])
-def publish_task(task: str) -> TaskGitHub:
-	"""Publish a held backlog Task, or a tagged Task not yet published."""
-	doc = task_doc(task, "write")
-	link = links.link_for_task(doc.name)
-	if link:
-		if link.sync_state != "Paused" or link.paused_reason != "backlog_held":
-			frappe.throw(_("This task is already linked to GitHub."))
-		links.publish_held(link.name)
-		return links.task_projection(doc)
-	if not links.has_github_tag(frappe.db.get_value("Task", doc.name, "_user_tags")):
-		frappe.throw(_("Add the github tag to publish this task."))
-	reason = links.ineligible_reason(doc)
-	if reason:
-		frappe.throw(_("Only ordinary tasks sync with GitHub."))
-	route = projects.route_for(project=doc.project)
-	if not route or not route["sync_enabled"]:
-		frappe.throw(projects.inactive_message(projects.sync_blocker(route) or "sync_not_enabled"))
-	links.prepare_subtree(doc.name, route)
-	return links.task_projection(doc)
-
-
-@frappe.whitelist(methods=["POST"])
 def retry_task_sync(task: str) -> TaskGitHub:
 	"""Retry now. An uncertain create still looks for its Issue first."""
 	doc = task_doc(task, "write")
 	retry_link(require_link(doc.name))
-	return links.task_projection(doc)
-
-
-@frappe.whitelist(methods=["POST"])
-def pause_task_sync(task: str) -> TaskGitHub:
-	doc = task_doc(task, "write")
-	links.pause(require_link(doc.name))
 	return links.task_projection(doc)
 
 
@@ -256,11 +225,13 @@ def resolve_task_conflict(task: str, field: str, choice: str) -> TaskGitHub:
 	"""Keep Envision's or GitHub's value of one field. The next sync applies
 	it through the normal Task save and records who chose."""
 	doc = task_doc(task, "write")
+	if field == "description":
+		frappe.throw(_("Descriptions sync automatically and do not need a manual choice."))
 	link = frappe.get_doc(store.ISSUE_SYNC, require_link(doc.name), for_update=True)
 	row = next((row for row in link.conflicts if row.field == field), None)
 	if not row:
 		frappe.throw(_("This conflict was already resolved."))
-	if choice not in links.allowed_choices(row.kind):
+	if choice not in links.allowed_choices():
 		frappe.throw(_("Choose Keep Envision or Keep GitHub."))
 	row.resolution = choice
 	row.resolved_by = frappe.session.user

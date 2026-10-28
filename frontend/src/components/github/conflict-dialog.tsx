@@ -10,7 +10,6 @@ import {
   PromptDialogHeader,
   PromptDialogIcon,
 } from "@/components/app-ui/prompt-dialog"
-import { ReadOnlyDescription } from "@/components/detail-properties"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose } from "@/components/ui/dialog"
 import { useScope } from "@/lib/commands"
@@ -37,10 +36,7 @@ const CHOICE_LABELS: Record<ConflictChoice, string> = {
  * Envision / Keep GitHub where the server allows it (`allowed_choices`).
  * The choice is recorded with the user; the next sync applies it through
  * the normal Task save, which can still refuse it (open subtasks, say).
- *
- * GitHub's description is Markdown from outside Envision, so it is shown as
- * text and never as HTML. Envision's is the Task's own sanitized HTML, shown
- * through the read-only editor, which keeps only what its schema knows.
+ * Descriptions sync automatically and never appear in this dialog.
  */
 export function ConflictDialog({
   conflict,
@@ -222,21 +218,11 @@ function ConflictValue({
   side: string
   conflict: SyncConflict
   value: string
-  /** Envision's side, whose description is the Task's sanitized HTML. */
+  /** Whether the value is from Envision rather than GitHub. */
   local: boolean
 }) {
   let content: React.ReactNode
-  if (conflict.field === "description") {
-    content = local ? (
-      <ReadOnlyDescription value={value} />
-    ) : value.trim() ? (
-      <pre className="font-mono text-xs leading-5 wrap-anywhere whitespace-pre-wrap">
-        {value}
-      </pre>
-    ) : (
-      <p className="text-sm text-muted-foreground">No description.</p>
-    )
-  } else if (conflict.field === "status") {
+  if (conflict.field === "status") {
     content = (
       <p className="text-sm">
         {local ? statusTitle(value) : remoteStatusLabel(value)}

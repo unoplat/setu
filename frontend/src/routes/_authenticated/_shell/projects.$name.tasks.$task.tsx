@@ -146,12 +146,20 @@ function TaskScreen({
   const publishTarget = React.useMemo<PublishTarget | null>(() => {
     const view = github.data?.message
     if (!view) return { repository: null, subtasks: 0 }
-    if (view.link || !view.eligible || !view.route.sync_enabled) return null
+    // A Completed Task publishes once reopened, not when tagged.
+    if (
+      view.link ||
+      !view.eligible ||
+      !view.route.sync_enabled ||
+      task.status === "Completed"
+    ) {
+      return null
+    }
     return {
       repository: view.route.repository,
       subtasks: projectTasks ? descendantsOf(projectTasks, task.name).size : 0,
     }
-  }, [github.data, projectTasks, task.name])
+  }, [github.data, projectTasks, task.name, task.status])
   const { confirmTags, dialog: publishDialog } =
     useGitHubTagConfirm(publishTarget)
 

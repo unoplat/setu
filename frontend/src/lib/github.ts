@@ -208,7 +208,6 @@ export interface SyncPreview {
   /** Sent back with Enable; a backlog that changed since is refused. */
   backlog_token: string
   missing_events: string[]
-  labelled_import: boolean
 }
 
 export type LinkState =
@@ -221,8 +220,6 @@ export type LinkState =
   | "Tombstoned"
 
 export type PauseReason =
-  | "user_paused"
-  | "backlog_held"
   | "route_cleared"
   | "app_disconnected"
   | "project_changed"
@@ -232,13 +229,10 @@ export type PauseReason =
   | "access_lost"
   | "destination_changed"
 
-export type ConflictField = "title" | "description" | "status" | "parent"
+export type ConflictField = "title" | "status" | "parent"
 
 export type ConflictKind =
   | "both_changed"
-  | "lossy_outbound"
-  | "lossy_inbound"
-  | "too_long"
   | "title_too_long"
   | "remote_reopened"
   | "closed_not_planned"
@@ -249,12 +243,9 @@ export type ConflictChoice = "envision" | "github"
 export interface SyncConflict {
   field: ConflictField
   kind: ConflictKind
-  /** Loss codes (docs/github-description-fidelity.md) for a description. */
+  /** Additional context, such as a missing title-continuation marker. */
   detail: string[]
-  /**
-   * Envision's value. For a description it is the Task's own sanitized
-   * HTML; GitHub's is raw Markdown and is only ever shown as text.
-   */
+  /** Envision and GitHub values for a title, status or parent conflict. */
   local_value: string
   remote_value: string
   allowed_choices: ConflictChoice[]
@@ -302,17 +293,18 @@ export interface TaskGitHub {
   tagged: boolean
   eligible: boolean
   ineligible_reason: IneligibleReason | null
-  /** A tagged, unlinked Task: a route blocker, or "publishing". */
-  waiting_reason: SyncBlocker | "publishing" | null
+  /**
+   * A tagged, unlinked Task: a route blocker, "publishing", or "completed"
+   * (it publishes once reopened).
+   */
+  waiting_reason: SyncBlocker | "publishing" | "completed" | null
   waiting_message: string | null
   route: TaskRoute
   link: TaskLink | null
   can_write: boolean
   /** Which controls the server allows this user now; show only those. */
   actions: {
-    publish: boolean
     retry: boolean
-    pause: boolean
     resume: boolean
     disconnect: boolean
     resolve: boolean
@@ -473,7 +465,6 @@ export const LINK_STATE_LABELS: Record<LinkState, string> = {
 
 export const CONFLICT_FIELD_LABELS: Record<ConflictField, string> = {
   title: "Title",
-  description: "Description",
   status: "Status",
   parent: "Parent",
 }
@@ -481,11 +472,6 @@ export const CONFLICT_FIELD_LABELS: Record<ConflictField, string> = {
 /** What happened, in a sentence, for each kind of conflict. */
 export const CONFLICT_KIND_TEXT: Record<ConflictKind, string> = {
   both_changed: "Changed differently in Envision and on GitHub.",
-  lossy_outbound:
-    "Envision's description can't be published exactly: GitHub would lose some of it, or lose what only the Issue has.",
-  lossy_inbound:
-    "GitHub's description has formatting Envision can't show exactly.",
-  too_long: "Envision's description is too long for a GitHub Issue.",
   title_too_long: "GitHub's title is longer than Envision allows.",
   remote_reopened: "The Issue was reopened on GitHub, but this task is Done.",
   closed_not_planned:
@@ -517,12 +503,6 @@ export function choiceEffect(
   }
   if (conflict.kind === "title_too_long" && choice === "github") {
     return "Uses GitHub's whole title. What doesn't fit the task title continues at the top of its description."
-  }
-  if (conflict.kind === "lossy_outbound" && choice === "envision") {
-    return "Replaces the Issue's description. What's listed above is lost on GitHub."
-  }
-  if (conflict.kind === "lossy_inbound" && choice === "github") {
-    return "Replaces this task's description. What's listed above is lost in Envision."
   }
   return choice === "envision"
     ? `Replaces the Issue's ${field} with this task's.`

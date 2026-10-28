@@ -14,9 +14,9 @@ import { audienceText, type RepositoryView } from "@/lib/github"
 
 /**
  * Publishing copies a Task's title and description to GitHub, possibly
- * publicly (docs/plans/github-issue-sync.md §7). Every way a person starts
- * it here, the Publish action and adding the `github` tag at creation or
- * later, first shows where it goes, who can read it there, and that
+ * publicly (docs/plans/github-issue-sync.md §7). Adding the `github` tag,
+ * at creation or later, is how a person starts it here; it first shows
+ * where it goes, who can read it there, and that
  * mentions notify people. The server publishes; this only asks first.
  */
 

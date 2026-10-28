@@ -24,6 +24,31 @@ CALLBACK_PATH = "/api/method/setu.api.github."
 # Webhook events Issue sync needs. Apps registered before sub_issues was added
 # must subscribe to it on GitHub (docs/github-connection.md).
 REQUIRED_EVENTS = ("issues", "sub_issues")
+# Reserve access for planned comment/PR sync, CI and release visibility at registration.
+# These are not requirements for today's Issue sync; existing installations
+# must keep working until their owners approve the additional permissions.
+DEFAULT_PERMISSIONS = {
+	"metadata": "read",
+	"contents": "read",
+	"issues": "write",
+	"pull_requests": "write",
+	"checks": "read",
+	"statuses": "read",
+	"actions": "read",
+}
+DEFAULT_EVENTS = (
+	*REQUIRED_EVENTS,
+	"issue_comment",
+	"pull_request",
+	"pull_request_review",
+	"pull_request_review_comment",
+	"check_run",
+	"check_suite",
+	"status",
+	"workflow_run",
+	"workflow_job",
+	"release",
+)
 
 
 def connection_lock(timeout: int = 660, blocking_timeout: int = 10):
@@ -147,15 +172,15 @@ def start_app_creation(owner_type: str, organization: str = "") -> dict:
 		"manifest": {
 			"name": f"Envision {urlsplit(base).hostname.split('.')[0]}"[:34],
 			"url": f"{base}/envision",
-			"description": "Connects Envision Tasks to GitHub Issues.",
+			"description": "Connects Envision to GitHub Issues, pull requests, comments, CI status and releases.",
 			"hook_attributes": {"url": f"{base}{CALLBACK_PATH}webhook", "active": True},
 			"redirect_url": f"{base}{CALLBACK_PATH}manifest_callback",
 			"setup_url": f"{base}{CALLBACK_PATH}setup_callback",
 			"setup_on_update": True,
 			"request_oauth_on_install": False,
 			"public": False,
-			"default_permissions": {"metadata": "read", "issues": "write"},
-			"default_events": list(REQUIRED_EVENTS),
+			"default_permissions": dict(DEFAULT_PERMISSIONS),
+			"default_events": list(DEFAULT_EVENTS),
 		},
 	}
 

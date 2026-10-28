@@ -7,9 +7,11 @@ fresh and compares both current values with those baselines:
 
 - changed on one side only → copied to the other side;
 - changed on both sides to the same thing → accepted;
-- changed on both sides differently → a conflict keeps both values until a
-  user chooses Keep Envision or Keep GitHub, or someone edits the two sides
-  to agree (a lossy description conflict always waits for a choice).
+- title, status and parent changed differently on both sides → a conflict
+  keeps both values until a user chooses a side;
+- descriptions flow automatically: a changed GitHub body is applied,
+  otherwise a changed Task description is pushed, with best-effort formatting.
+  Descriptions never require a manual choice.
 
 Our own writes come back as webhooks with values equal to the new baselines,
 so they change nothing (echo suppression without ignoring the bot). Status
@@ -136,6 +138,16 @@ def reconcile(link_name: str, op_name: str) -> store.Outcome:
 	if "parent" in plan.actions and plan.actions["parent"] == "push":
 		push_hierarchy(plan, link, found)
 	finish(link_name, plan, saved, issue, response)
+	if (
+		response["sub_issue_count"]
+		and response["state"] == "open"
+		and saved.status != "Completed"
+		and (link.base_status == "Completed" or link.base_state == "closed")
+	):
+		# Reopening a parent makes its previously skipped children eligible.
+		from setu.github import inbound
+
+		inbound.observe_sub_issues(found, issue["id"], issue["number"])
 	return store.outcome("Done")
 
 
@@ -251,67 +263,36 @@ def plan_description(
 	# The title's note is not part of the description (setu.github.titles).
 	html = titles.content(task.description, plan.continued)
 	body = issue["body"]
-	chosen = resolution(row)
-	if chosen:
-		plan.resolved["description"] = chosen
-		if chosen[0] == "envision":
+	local_changed = convert.description_changed(html, link.base_description_hash)
+	remote_changed = convert.body_changed(body, link.base_body_hash)
+	# Retire legacy inbound conflicts by reimporting the original Markdown,
+	# unless the Task has been edited since the conflict snapshot was taken.
+	legacy_inbound = (
+		row is not None
+		and row.kind == "lossy_inbound"
+		and convert.html_digest(html) == convert.html_digest(row.local_value)
+	)
+	if remote_changed or legacy_inbound:
+		# A retried outbound write may already be on GitHub. Accept it without
+		# round-tripping away formatting still present in the Task.
+		if local_changed and not legacy_inbound:
 			result = outbound.body_for(link.create_marker, html, body)
-			if "body_too_long" in result["dropped"]:
-				# Still too long for GitHub: keep the conflict.
-				plan.drop("description")
-				plan.conflicts.append(
-					Conflict("description", "too_long", html, body, list(result["dropped"]))
-				)
-				return
-			push_body(plan, result["body"], result["changed"])
-		else:
-			apply_description(plan, convert.markdown_to_html(body)["html"])
-		return
-	# A too-long conflict is looked at again: a shorter description clears it.
-	if row is not None and row.kind != "too_long":
-		if row.kind == "both_changed":
-			result = outbound.body_for(link.create_marker, html, body)
-			if not result["changed"] and not result["lossy"]:
-				# Someone made both sides agree. Lossy conflicts stay until a
-				# person chooses: the Issue cannot show all of the Task.
+			if not result["changed"]:
 				plan.actions["description"] = "accept"
 				return
-		detail = [code for code in (row.detail or "").split(",") if code]
-		plan.conflicts.append(Conflict("description", row.kind, html, body, detail))
+		apply_description(plan, convert.markdown_to_html(body)["html"])
 		return
-	local_changed = convert.description_changed(html, link.base_description_hash) or row is not None
-	remote_changed = convert.body_changed(body, link.base_body_hash)
-	if not local_changed and not remote_changed:
-		return
-	if local_changed and remote_changed:
+	# Old outbound conflicts may have matching baselines despite publishing
+	# only a marker. Send their description now, without a manual decision.
+	legacy_outbound = row is not None and row.kind in ("lossy_outbound", "too_long", "both_changed")
+	if local_changed or legacy_outbound:
 		result = outbound.body_for(link.create_marker, html, body)
-		if result["changed"]:
-			plan.conflicts.append(Conflict("description", "both_changed", html, body))
-		else:
-			plan.actions["description"] = "accept"
-		return
-	if local_changed:
-		result = outbound.body_for(link.create_marker, html, body)
-		dropped = list(result["dropped"])
-		if "body_too_long" in dropped:
-			plan.conflicts.append(Conflict("description", "too_long", html, body, dropped))
-		elif result["lossy"]:
-			plan.conflicts.append(Conflict("description", "lossy_outbound", html, body, dropped))
-		elif result["changed"] and (shown := convert.markdown_to_html(body))["lossy"]:
-			# The Issue holds content Envision cannot show (raw HTML, math,
-			# footnotes...): overwriting it would lose that on GitHub. The
-			# codes say what (docs/github-description-fidelity.md).
-			plan.conflicts.append(
-				Conflict("description", "lossy_outbound", html, body, list(shown["dropped"]))
-			)
-		else:
-			push_body(plan, result["body"], result["changed"])
-		return
-	rendered = convert.markdown_to_html(body)
-	if rendered["lossy"]:
-		plan.conflicts.append(Conflict("description", "lossy_inbound", html, body, list(rendered["dropped"])))
-	else:
-		apply_description(plan, rendered["html"])
+		if "body_too_long" in result["dropped"]:
+			plan.errors.append(outbound.body_size_error())
+			return
+		push_body(plan, result["body"], result["changed"])
+	elif row is not None:
+		plan.actions["description"] = "accept"
 
 
 def push_body(plan: Plan, body: str, changed: bool) -> None:
@@ -662,6 +643,8 @@ def finish(link_name: str, plan: Plan, task: Document, issue: IssueData, respons
 		values["hierarchy_error"] = plan.hierarchy_error
 	doc.update(values)
 	settled = set(plan.actions)
+	# Successful automatic description sync also retires any legacy row.
+	# A failed Task save keeps it for retry, never as a manual UI choice.
 	doc.set("conflicts", [row for row in doc.conflicts if row.field not in settled])
 	for row in doc.conflicts:
 		if row.field in plan.reset:

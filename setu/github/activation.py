@@ -9,13 +9,15 @@ after seeing:
   with Project/Task access in Envision (the privacy acknowledgement);
 - that tagged Tasks' titles, descriptions and Subtasks are copied to GitHub,
   possibly publicly (the publication acknowledgement);
-- the backlog: Tasks already tagged ``github``. The manager publishes them or
-  holds them; held Tasks publish only when someone publishes them one by one.
-  The preview's token must still match, so a backlog that changed after the
-  preview is never published unseen.
+- the backlog: open Tasks already tagged ``github``, which publish with their
+  Subtasks, Completed ones included, when sync turns on. A Completed tagged
+  Task publishes once reopened. The preview's token must still match, so a
+  backlog that changed after the preview is never published unseen.
 
-Then existing Issues labelled ``github`` import (``run_import``) and Issues
-created from now on import as they arrive.
+Then every open Issue imports with its tree, labelled or not (``run_import``),
+Issues created or reopened from now on import as they arrive, and Issues
+Envision published earlier get its label. The ``github`` tag gates only
+Envision → GitHub.
 """
 
 import hashlib
@@ -30,8 +32,6 @@ from frappe.utils import add_to_date, cint, now_datetime
 
 from setu.github import clock, connection, inbound, issues, links, projects, store
 from setu.github.client import GitHubError
-
-IMPORT_LABEL = links.GITHUB_TAG
 
 
 class RepositoryPreview(TypedDict):
@@ -57,7 +57,6 @@ class SyncPreview(TypedDict):
 	backlog_count: int
 	backlog_token: str
 	missing_events: list[str]
-	labelled_import: bool
 
 
 class SyncCounts(TypedDict):
@@ -89,8 +88,8 @@ class ProjectGitHub(TypedDict):
 
 
 def backlog(project: str) -> tuple[list[str], list[str], str]:
-	"""The tagged, unlinked Tasks (roots) and every Task that would publish
-	with them, with a token for the exact set."""
+	"""The open tagged, unlinked Tasks (roots) and every Task that would
+	publish with them, with a token for the exact set."""
 	tagged = [
 		row.name
 		for row in frappe.get_all(
@@ -100,7 +99,7 @@ def backlog(project: str) -> tuple[list[str], list[str], str]:
 				"_user_tags": ["like", f"%{links.GITHUB_TAG}%"],
 				"is_milestone": 0,
 				"is_template": 0,
-				"status": ["not in", ["Cancelled", "Template"]],
+				"status": ["not in", ["Cancelled", "Template", "Completed"]],
 			},
 			fields=["name", "_user_tags"],
 			order_by="lft asc",
@@ -169,7 +168,6 @@ def preview(project: str) -> SyncPreview:
 		"backlog_count": len(publishing),
 		"backlog_token": token,
 		"missing_events": connection.missing_events(),
-		"labelled_import": True,
 	}
 
 
@@ -177,7 +175,6 @@ def enable(
 	project: str,
 	acknowledge_private_data: bool,
 	acknowledge_publication: bool,
-	publish_backlog: bool,
 	backlog_token: str,
 ) -> ProjectGitHub:
 	"""Turn sync on. Runs its own transaction under the connection lock."""
@@ -231,7 +228,7 @@ def enable(
 			doc.save(ignore_permissions=True)
 			route = projects.route_for(project=project)
 			for root in roots:
-				links.prepare_subtree(root, route, held=not cint(publish_backlog))
+				links.prepare_subtree(root, route)
 			resume_route_links(route)
 			frappe.db.commit()
 		except Exception:
@@ -328,7 +325,7 @@ def enqueue_delivery(name: str) -> None:
 
 
 def enqueue_import(project: str) -> None:
-	"""Run the labelled import once the state it reads is committed."""
+	"""Run the import once the state it reads is committed."""
 	frappe.db.after_commit.add(partial(enqueue_import_committed, project))
 
 
@@ -347,12 +344,12 @@ def enqueue_import_committed(project: str) -> None:
 
 
 def run_import(project: str) -> None:
-	"""Record every Issue labelled github for import, a page at a time, so an
-	interruption resumes where it stopped. Pull requests are skipped.
-
-	Labels are read when this runs: GitHub does not say when a label was
-	added, so a delayed or retried run also includes Issues labelled since
-	activation (docs/adr/0008). Once Done it never runs again."""
+	"""Record every open Issue in the repository for import, a page at a
+	time, so an interruption resumes where it stopped; each one's closed
+	sub-issues follow its import (inbound.observe_sub_issues). Pull requests
+	are skipped. Issues created meanwhile arrive by webhook too; the unique
+	Issue id on the link imports each once (docs/adr/0008). Then the Issues
+	Envision published get its label. Once Done it never runs again."""
 	route = projects.route_for(project=project)
 	if not route or projects.sync_blocker(route):
 		return
@@ -371,19 +368,19 @@ def run_import(project: str) -> None:
 			result = issues.list_issues(
 				row.installation,
 				row.full_name,
-				labels=IMPORT_LABEL,
-				state="all",
+				state="open",
 				sort="created",
 				direction="asc",
 				page=page,
 			)
 			for issue in result["issues"]:
-				inbound.consider_import(route, issue, labelled=True)
+				inbound.consider_import(route, issue)
 			page += 1
 			frappe.db.set_value(connection.PROJECT_ROUTE, name, "activation_import_page", page)
 			frappe.db.commit()
 			if not result["more"]:
 				break
+		label_published(route)
 		frappe.db.set_value(
 			connection.PROJECT_ROUTE, name, {"activation_import_state": "Done", "last_error": None}
 		)
@@ -394,6 +391,33 @@ def run_import(project: str) -> None:
 			connection.PROJECT_ROUTE, name, {"activation_import_state": "Failed", "last_error": str(exc)}
 		)
 		frappe.db.commit()
+
+
+def label_published(route: dict) -> None:
+	"""Add the Envision label to the Issues Envision already published to
+	the repository. Adding it twice changes nothing, so an interrupted import
+	runs this again; an Issue GitHub no longer has is skipped."""
+	row = route["repository_row"]
+	numbers = frappe.get_all(
+		store.ISSUE_SYNC,
+		filters={
+			"project": route["project"],
+			"repository_id": route["repository"],
+			"origin": "Envision",
+			"issue_number": ["is", "set"],
+			"sync_state": ["in", list(store.ACTIVE_STATES)],
+		},
+		pluck="issue_number",
+	)
+	if not numbers:
+		return
+	issues.ensure_label(row.installation, row.full_name)
+	for number in numbers:
+		try:
+			issues.add_label(row.installation, row.full_name, number)
+		except GitHubError as exc:
+			if exc.status not in inbound.GONE:
+				raise
 
 
 def counts(project: str) -> SyncCounts:

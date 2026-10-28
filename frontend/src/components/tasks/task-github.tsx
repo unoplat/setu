@@ -12,7 +12,6 @@ import {
   PauseIcon,
   PlayIcon,
   RefreshCwIcon,
-  SendIcon,
   UnlinkIcon,
 } from "lucide-react"
 
@@ -24,7 +23,6 @@ import {
 } from "@/components/confirm-dialog"
 import { ConflictDialog } from "@/components/github/conflict-dialog"
 import { GitHubTime, RepositoryLink } from "@/components/github/github-parts"
-import { PublishToGitHubDialog } from "@/components/github/publish-dialog"
 import { RailGroup } from "@/components/record-detail"
 import { Button } from "@/components/ui/button"
 import { frappeErrorMessage } from "@/lib/frappe-error"
@@ -39,13 +37,7 @@ import {
   type LinkState,
   type TaskGitHub,
 } from "@/lib/github"
-import {
-  descendantsOf,
-  projectTasksKey,
-  taskActivityKey,
-  taskKey,
-  useProjectTasks,
-} from "@/lib/tasks"
+import { projectTasksKey, taskActivityKey, taskKey } from "@/lib/tasks"
 import { cn } from "@/lib/utils"
 
 // The Task page's GitHub block, in the rail above the Activity: where the
@@ -53,7 +45,7 @@ import { cn } from "@/lib/utils"
 // the server allows this user (`actions`). Sync runs on the server; every
 // action here asks it and shows what it answers.
 
-type TaskAction = "publish" | "retry" | "pause" | "resume" | "disconnect"
+type TaskAction = "retry" | "resume" | "disconnect"
 
 const STATE_ICONS: Record<LinkState, React.ReactNode> = {
   Pending: <ClockIcon />,
@@ -84,14 +76,8 @@ export function TaskGitHubPanel({
   const { data, error, isLoading, mutate } = useTaskGitHub(task)
   const view = data?.message
 
-  const publish = useFrappePostCall<{ message: TaskGitHub }>(
-    "setu.api.github.publish_task"
-  )
   const retry = useFrappePostCall<{ message: TaskGitHub }>(
     "setu.api.github.retry_task_sync"
-  )
-  const pause = useFrappePostCall<{ message: TaskGitHub }>(
-    "setu.api.github.pause_task_sync"
   )
   const resume = useFrappePostCall<{ message: TaskGitHub }>(
     "setu.api.github.resume_task_sync"
@@ -102,22 +88,13 @@ export function TaskGitHubPanel({
   const resolve = useFrappePostCall<{ message: TaskGitHub }>(
     "setu.api.github.resolve_task_conflict"
   )
-  const calls = { publish, retry, pause, resume, disconnect }
+  const calls = { retry, resume, disconnect }
 
   const [running, setRunning] = React.useState<TaskAction | null>(null)
   const runningRef = React.useRef(false)
   const [actionError, setActionError] = React.useState<string | null>(null)
-  const [confirming, setConfirming] = React.useState<
-    "publish" | "disconnect" | null
-  >(null)
+  const [confirming, setConfirming] = React.useState<"disconnect" | null>(null)
   const [reviewing, setReviewing] = React.useState<ConflictField | null>(null)
-
-  // Subtasks that would publish with it, from the list the page has loaded.
-  const { data: projectTasks } = useProjectTasks(project)
-  const subtasks = React.useMemo(
-    () => (projectTasks ? descendantsOf(projectTasks, task).size : 0),
-    [projectTasks, task]
-  )
 
   // A sync that changed the Task (from GitHub, or a chosen resolution) shows
   // on the rest of the page too.
@@ -139,7 +116,7 @@ export function TaskGitHubPanel({
   }
 
   /** An action without a confirm: one at a time, its refusal shown below. */
-  async function act(action: Exclude<TaskAction, "publish" | "disconnect">) {
+  async function act(action: Exclude<TaskAction, "disconnect">) {
     if (runningRef.current) return
     runningRef.current = true
     setRunning(action)
@@ -157,7 +134,7 @@ export function TaskGitHubPanel({
   }
 
   /** An action behind a confirm, which shows its refusal itself. */
-  async function confirmed(action: "publish" | "disconnect") {
+  async function confirmed(action: "disconnect") {
     setActionError(null)
     try {
       await show(await calls[action].call({ task }))
@@ -303,10 +280,6 @@ export function TaskGitHubPanel({
         view={view}
         running={running}
         busy={busy}
-        onPublish={() => {
-          setActionError(null)
-          setConfirming("publish")
-        }}
         onDisconnect={() => {
           setActionError(null)
           setConfirming("disconnect")
@@ -314,16 +287,6 @@ export function TaskGitHubPanel({
         onAct={(action) => void act(action)}
       />
 
-      <PublishToGitHubDialog
-        open={confirming === "publish"}
-        onOpenChange={(open) => {
-          if (!open) setConfirming(null)
-        }}
-        target={{ repository: route.repository, subtasks }}
-        label="Publish"
-        pendingLabel="Publishing…"
-        onConfirm={() => confirmed("publish")}
-      />
       <ConfirmDialog
         open={confirming === "disconnect"}
         onOpenChange={(open) => {
@@ -378,41 +341,21 @@ function TaskGitHubActions({
   view,
   running,
   busy,
-  onPublish,
   onDisconnect,
   onAct,
 }: {
   view: TaskGitHub
   running: TaskAction | null
   busy: boolean
-  onPublish: () => void
   onDisconnect: () => void
-  onAct: (action: "retry" | "pause" | "resume") => void
+  onAct: (action: "retry" | "resume") => void
 }) {
   const { actions } = view
-  if (
-    !actions.publish &&
-    !actions.retry &&
-    !actions.pause &&
-    !actions.resume &&
-    !actions.disconnect
-  ) {
+  if (!actions.retry && !actions.resume && !actions.disconnect) {
     return null
   }
   return (
     <div className="flex flex-wrap gap-1.5">
-      {actions.publish ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={onPublish}
-        >
-          <SendIcon />
-          Publish…
-        </Button>
-      ) : null}
       {actions.retry ? (
         <Button
           type="button"
@@ -437,18 +380,6 @@ function TaskGitHubActions({
         >
           <PlayIcon />
           {running === "resume" ? "Resuming…" : "Resume"}
-        </Button>
-      ) : null}
-      {actions.pause ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={() => onAct("pause")}
-        >
-          <PauseIcon />
-          {running === "pause" ? "Pausing…" : "Pause"}
         </Button>
       ) : null}
       {actions.disconnect ? (
