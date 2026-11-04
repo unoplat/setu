@@ -34,7 +34,7 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date, now_datetime
 from frappe.utils.nestedset import get_descendants_of
 
-from setu.github import bot, clock, projects, store
+from setu.github import bot, clock, delta, link_state, projects, store
 
 GITHUB_TAG = "github"
 # Task fields that sync. A change to any of them reconciles the link.
@@ -57,6 +57,8 @@ LINK_FIELDS = [
 	"last_synced_at",
 	"create_marker",
 ]
+# What settling a link's sync_state reads (setu.github.link_state).
+STATE_FIELDS = ["name", "sync_state", "delta", "repository_id", "repository_provider_issue_id"]
 # Manual choices apply only to title, status and parent conflicts.
 DEFAULT_CHOICES = ("envision", "github")
 
@@ -428,6 +430,110 @@ def blocked(link_name: str, blocker: str) -> store.Outcome:
 
 def allowed_choices() -> list[str]:
 	return list(DEFAULT_CHOICES)
+
+
+# sync_state (docs/adr/0008, setu.github.link_state).
+
+
+def inbound_job(link: frappe._dict) -> str | None:
+	"""The Issue's github:issue Retry Job row, the only row a webhook merges into."""
+	if not (link.repository_id and link.repository_provider_issue_id):
+		return None
+	key = delta.inbound_job_key(link.repository_id, link.repository_provider_issue_id)
+	return frappe.db.exists(store.RETRY_JOB, key) or None
+
+
+def outbound_job(link_name: str) -> str | None:
+	"""The link's github:task Retry Job row. Found by ``target.link``, because
+	the row's key keeps the Task's name after the Task is deleted."""
+	# A substring match narrows the rows whatever the JSON spacing; the parse decides.
+	rows = frappe.get_all(
+		store.RETRY_JOB,
+		filters={
+			"job_key": ["like", f"{delta.OUTBOUND_KEY_PREFIX}%"],
+			"target": ["like", f"%{link_name}%"],
+		},
+		fields=["name", "target"],
+	)
+	return next(
+		(row.name for row in rows if (delta.parse_object(row.target) or {}).get("link") == link_name), None
+	)
+
+
+def retry_jobs(link: frappe._dict) -> list[str]:
+	return [name for name in (inbound_job(link), outbound_job(link.name)) if name]
+
+
+def state_facts(link: frappe._dict) -> link_state.Facts:
+	entries = delta.parse_delta(link.delta) or {}
+	return link_state.Facts(
+		has_issue=bool(link.repository_provider_issue_id),
+		link_delta=entries,
+		has_retry_job=bool(retry_jobs(link)),
+	)
+
+
+def locked_link(link_name: str) -> frappe._dict | None:
+	return frappe.db.get_value(store.ISSUE_SYNC, link_name, STATE_FIELDS, as_dict=True, for_update=True)
+
+
+def settle(link_name: str) -> link_state.LinkState | None:
+	"""Work out a link's sync_state again after its delta or Retry Job rows changed.
+
+	A mark (to_be_deleted, unlinked) is kept; anything else is read from the
+	facts, so synced always means nothing is pending in either direction, and
+	cron_sync always has a row behind it. Returns the state, or None with no row.
+	"""
+	link = locked_link(link_name)
+	if not link:
+		return None
+	state = link_state.settled_state(link.sync_state, state_facts(link))
+	if state != link.sync_state:
+		if not link_state.can_transition(link.sync_state, state):
+			raise ValueError(f"sync_state {link.sync_state} → {state} is not allowed")
+		values: dict[str, object] = {"sync_state": state}
+		if state == link_state.SYNCED:
+			values["last_synced_at"] = now_datetime()
+		frappe.db.set_value(store.ISSUE_SYNC, link_name, values, update_modified=False)
+	return state
+
+
+def mark_synced(job: Document) -> None:
+	"""Retry Job on-done hook (hooks.py retry_job_on_done), called after the cron
+	deletes an emptied row, in the same transaction.
+
+	To be deleted: the delete is done, so the link row goes. Otherwise the
+	link settles: cron_sync while another row exists, to_be_updated while
+	link.delta holds Envision keys, else synced. Never synced over pending work.
+	"""
+	target = delta.parse_object(job.target) or {}
+	if delta.job_direction(job.job_key) == "outbound":
+		link_name = target.get("link")
+	else:
+		link_name = frappe.db.get_value(
+			store.ISSUE_SYNC,
+			{
+				"repository_id": target.get("repository_id"),
+				"repository_provider_issue_id": target.get("issue_id"),
+			},
+			"name",
+		)
+	if not isinstance(link_name, str) or not link_name:
+		return
+	link = locked_link(link_name)
+	if not link:
+		return
+	if link.sync_state == link_state.TO_BE_DELETED:
+		delete_link(link)
+		return
+	settle(link_name)
+
+
+def delete_link(link: frappe._dict) -> None:
+	"""Delete a link row and every Retry Job row for it, in both directions."""
+	for name in retry_jobs(link):
+		frappe.delete_doc(store.RETRY_JOB, name, ignore_permissions=True, force=True)
+	frappe.db.delete(store.ISSUE_SYNC, {"name": link.name})
 
 
 # Projection for the Task page (setu.api.github.get_task_github).

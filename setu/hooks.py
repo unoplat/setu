@@ -163,14 +163,12 @@ permission_query_conditions = {
 	"Envision View": "setu.envision.doctype.envision_view.envision_view.get_permission_query_conditions",
 	"Envision GitHub Project Settings": "setu.envision.doctype.envision_github_project_settings.envision_github_project_settings.get_permission_query_conditions",
 	"Envision GitHub Issue Sync": "setu.envision.doctype.envision_github_issue_sync.envision_github_issue_sync.get_permission_query_conditions",
-	"Envision GitHub Operation": "setu.envision.doctype.envision_github_operation.envision_github_operation.get_permission_query_conditions",
 }
 has_permission = {
 	"Board Message": "setu.envision.doctype.board_message.board_message.has_permission",
 	"Envision View": "setu.envision.doctype.envision_view.envision_view.has_permission",
 	"Envision GitHub Project Settings": "setu.envision.doctype.envision_github_project_settings.envision_github_project_settings.has_permission",
 	"Envision GitHub Issue Sync": "setu.envision.doctype.envision_github_issue_sync.envision_github_issue_sync.has_permission",
-	"Envision GitHub Operation": "setu.envision.doctype.envision_github_operation.envision_github_operation.has_permission",
 }
 
 # Document Events
@@ -265,6 +263,15 @@ scheduler_events = {
 		],
 	},
 }
+
+# Envision Retry Job (docs/adr/0008). A row's handler must be in this allowlist,
+# because the retry cron calls it by name. When the cron empties a row's delta it
+# calls the row's integration's on-done hook.
+retry_job_handlers = [
+	"setu.github.inbound.apply_issue_delta",
+	"setu.github.outbound.push_task_delta",
+]
+retry_job_on_done = {"GitHub": "setu.github.links.mark_synced"}
 
 # scheduler_events = {
 # 	"all": [
@@ -362,11 +369,10 @@ extend_doctype_class = {
 # ]
 
 # Automatically update python controller files with type annotations for this app.
-# export_python_type_annotations = True
+export_python_type_annotations = True
 
-# Webhook receipt metadata and finished sync operations contain no Issue
-# bodies or credentials. Open and failed operations are kept.
-default_log_clearing_doctypes = {"Envision GitHub Delivery": 30, "Envision GitHub Operation": 30}
+# Webhook receipt metadata contains no Issue bodies or credentials.
+default_log_clearing_doctypes = {"Envision GitHub Delivery": 30}
 
 # Translation
 # ------------

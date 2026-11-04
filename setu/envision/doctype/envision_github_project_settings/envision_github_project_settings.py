@@ -15,6 +15,32 @@ from setu.github import projects
 
 
 class EnvisionGitHubProjectSettings(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		activated_at_utc: DF.Data | None
+		activated_by: DF.Link | None
+		activated_on: DF.Datetime | None
+		activation_import_page: DF.Int
+		activation_import_state: DF.Literal["", "Queued", "Running", "Done", "Failed"]
+		connected_by: DF.Link | None
+		connected_on: DF.Datetime | None
+		deletion_acknowledged_by: DF.Link | None
+		deletion_acknowledged_on: DF.Datetime | None
+		last_error: DF.SmallText | None
+		privacy_acknowledged_by: DF.Link | None
+		privacy_acknowledged_on: DF.Datetime | None
+		project: DF.Link
+		publication_acknowledged: DF.Check
+		repository: DF.Link
+		sync_enabled: DF.Check
+	# end: auto-generated types
+
 	def before_insert(self):
 		# Server-controlled attribution: whatever a caller sent is replaced.
 		self.connected_by = frappe.session.user

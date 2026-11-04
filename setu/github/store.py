@@ -28,6 +28,7 @@ from frappe.utils import add_to_date, now_datetime, strip_html
 ISSUE_SYNC = "Envision GitHub Issue Sync"
 OPERATION = "Envision GitHub Operation"
 SYNC_CONFLICT = "Envision GitHub Sync Conflict"
+RETRY_JOB = "Envision Retry Job"
 # Records whose Link to a Task, Project or link never blocks deleting them.
 GITHUB_LINK_DOCTYPES = frozenset({ISSUE_SYNC, OPERATION})
 

@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:job_key",
+ "creation": "2026-11-03 12:00:00.000000",
+ "description": "Work that failed and waits for the retry cron. Generic across integrations. A row exists only while its delta is non-empty and is deleted when the delta empties. Holds IDs only: no titles, bodies or payloads.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_run",
+  "job_key",
+  "handler",
+  "target",
+  "delta",
+  "section_belongs",
+  "integration",
+  "reference_doctype",
+  "reference_name",
+  "section_retry",
+  "status",
+  "attempts",
+  "next_retry_at",
+  "started_at",
+  "error_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_run",
+   "fieldtype": "Section Break",
+   "label": "What to run"
+  },
+  {
+   "description": "Also the row's name. github:issue:REPOSITORY_ID:ISSUE_ID runs GitHub to Envision; github:task:TASK_NAME runs Envision to GitHub.",
+   "fieldname": "job_key",
+   "fieldtype": "Data",
+   "label": "Job Key",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "The function the cron calls. Must be in the retry_job_handlers hook.",
+   "fieldname": "handler",
+   "fieldtype": "Data",
+   "label": "Handler",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "The IDs the handler needs, and nothing else.",
+   "fieldname": "target",
+   "fieldtype": "JSON",
+   "label": "Target",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "The work left to do, as {resource: action}.",
+   "fieldname": "delta",
+   "fieldtype": "JSON",
+   "label": "Delta",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_belongs",
+   "fieldtype": "Section Break",
+   "label": "What it belongs to"
+  },
+  {
+   "description": "Which integration owns the row. Selects its on-done hook, retry_job_on_done.",
+   "fieldname": "integration",
+   "fieldtype": "Select",
+   "label": "Integration",
+   "options": "GitHub",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "description": "Empty for an Issue not imported yet, and once the referenced record is deleted.",
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_retry",
+   "fieldtype": "Section Break",
+   "label": "Retry state"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Only for backoff and alerting, never a limit.",
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Attempts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Next Retry At",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "description": "The lease: a Running row older than the job timeout goes back to Pending.",
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "description": "The latest traceback.",
+   "fieldname": "error_log",
+   "fieldtype": "Link",
+   "label": "Error Log",
+   "options": "Error Log",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision Retry Job",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

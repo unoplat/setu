@@ -3,51 +3,36 @@
  "allow_rename": 0,
  "autoname": "hash",
  "creation": "2026-10-24 18:00:00.000000",
- "description": "One Task's link to one GitHub Issue: stable identity, sync state, last synchronized values per field and open conflicts. Kept as a minimal tombstone when the Task is deleted.",
+ "description": "One Task's link to one GitHub Issue: stable identity, sync state and the Envision to GitHub work that has not failed yet. Work that failed moves to Envision Retry Job.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_link",
   "task",
-  "deleted_task_name",
   "project",
   "repository_id",
   "repository_full_name",
   "origin",
-  "column_break_identity",
+  "section_work",
   "sync_state",
-  "paused_reason",
-  "error",
-  "hierarchy_error",
-  "last_synced_at",
-  "last_actor_login",
+  "delta",
   "section_issue",
-  "issue_id",
+  "repository_provider_issue_id",
   "issue_node_id",
   "issue_number",
   "issue_url",
-  "column_break_issue",
-  "create_marker",
+  "section_timing",
   "create_requested_at",
-  "remote_updated_at",
-  "section_baselines",
-  "base_title_local",
-  "base_title_remote",
-  "base_description_hash",
-  "base_body_hash",
-  "remote_body_markdown",
-  "column_break_baselines",
-  "base_status",
-  "base_state",
-  "base_state_reason",
-  "base_parent_issue_id",
-  "remote_parent_issue_id",
-  "remote_parent_issue_number",
-  "section_conflicts",
-  "conflicts"
+  "last_synced_at"
  ],
  "fields": [
   {
-   "description": "Empty once the Task is deleted (a tombstone).",
+   "fieldname": "section_link",
+   "fieldtype": "Section Break",
+   "label": "What it links"
+  },
+  {
+   "description": "Empty once the Task is deleted: the row then waits for its Issue to be deleted, or stays unlinked.",
    "fieldname": "task",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -55,12 +40,6 @@
    "options": "Task",
    "read_only": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "deleted_task_name",
-   "fieldtype": "Data",
-   "label": "Deleted Task",
-   "read_only": 1
   },
   {
    "fieldname": "project",
@@ -86,71 +65,51 @@
    "read_only": 1
   },
   {
+   "description": "The side that created the pair.",
    "fieldname": "origin",
    "fieldtype": "Select",
    "label": "Created In",
    "options": "Envision\nGitHub",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
-   "fieldname": "column_break_identity",
-   "fieldtype": "Column Break"
+   "fieldname": "section_work",
+   "fieldtype": "Section Break",
+   "label": "Sync work"
   },
   {
-   "default": "Pending",
+   "default": "not_synced",
    "fieldname": "sync_state",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "State",
-   "options": "Pending\nSynced\nConflict\nError\nPaused\nTombstoned",
+   "options": "not_synced\nsynced\nto_be_updated\ncron_sync\nto_be_deleted\nunlinked",
    "read_only": 1,
    "search_index": 1
   },
   {
-   "fieldname": "paused_reason",
-   "fieldtype": "Select",
-   "label": "Paused Because",
-   "options": "\nroute_cleared\napp_disconnected\nproject_changed\ntask_ineligible\ntransferred\nremote_deleted\naccess_lost\ndestination_changed\nlegacy_disconnected",
-   "read_only": 1
-  },
-  {
-   "fieldname": "error",
-   "fieldtype": "Small Text",
-   "label": "Error",
-   "read_only": 1
-  },
-  {
-   "fieldname": "hierarchy_error",
-   "fieldtype": "Small Text",
-   "label": "Sub-issue Error",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_synced_at",
-   "fieldtype": "Datetime",
-   "label": "Last Synced",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_actor_login",
-   "fieldtype": "Data",
-   "label": "Last GitHub Actor",
+   "description": "Envision to GitHub work that has not failed yet, as {resource: action}. Empty while a Retry Job row exists, because the work lives in that row's delta.",
+   "fieldname": "delta",
+   "fieldtype": "JSON",
+   "label": "Delta",
    "read_only": 1
   },
   {
    "fieldname": "section_issue",
    "fieldtype": "Section Break",
-   "label": "Issue"
+   "label": "The GitHub Issue"
   },
   {
-   "description": "Stable GitHub Issue ID.",
-   "fieldname": "issue_id",
+   "description": "GitHub's stable Issue ID.",
+   "fieldname": "repository_provider_issue_id",
    "fieldtype": "Data",
-   "label": "Issue ID",
+   "label": "Repository Provider Issue ID",
    "read_only": 1,
    "unique": 1
   },
   {
+   "description": "Only used by GraphQL deleteIssue, which needs the node ID.",
    "fieldname": "issue_node_id",
    "fieldtype": "Data",
    "label": "Issue Node ID",
@@ -170,124 +129,28 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_issue",
-   "fieldtype": "Column Break"
+   "fieldname": "section_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing"
   },
   {
-   "description": "Opaque marker in the Issue body, used to find an Issue whose creation timed out.",
-   "fieldname": "create_marker",
-   "fieldtype": "Data",
-   "label": "Create Marker",
-   "read_only": 1,
-   "unique": 1
-  },
-  {
-   "description": "Set while an Issue create may have reached GitHub and is not linked yet. Every later create, from any operation, first looks for that Issue by its marker.",
+   "description": "Committed before a create is sent; cleared once linked.",
    "fieldname": "create_requested_at",
    "fieldtype": "Datetime",
    "label": "Create Sent At",
    "read_only": 1
   },
   {
-   "fieldname": "remote_updated_at",
-   "fieldtype": "Data",
-   "label": "Issue Updated At (UTC)",
-   "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_baselines",
-   "fieldtype": "Section Break",
-   "label": "Last Synchronized Values"
-  },
-  {
-   "fieldname": "base_title_local",
-   "fieldtype": "Small Text",
-   "label": "Task Title",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_title_remote",
-   "fieldtype": "Small Text",
-   "label": "Issue Title",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_description_hash",
-   "fieldtype": "Data",
-   "label": "Description Hash",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_body_hash",
-   "fieldtype": "Data",
-   "label": "Issue Body Hash",
-   "read_only": 1
-  },
-  {
-   "description": "The Issue body exactly as GitHub last returned it.",
-   "fieldname": "remote_body_markdown",
-   "fieldtype": "Long Text",
-   "label": "Issue Body",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_baselines",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "base_status",
-   "fieldtype": "Data",
-   "label": "Task Status",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_state",
-   "fieldtype": "Data",
-   "label": "Issue State",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_state_reason",
-   "fieldtype": "Data",
-   "label": "Issue State Reason",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_parent_issue_id",
-   "fieldtype": "Data",
-   "label": "Parent Issue ID",
-   "read_only": 1
-  },
-  {
-   "description": "The parent Issue last seen on GitHub.",
-   "fieldname": "remote_parent_issue_id",
-   "fieldtype": "Data",
-   "label": "Parent on GitHub",
-   "read_only": 1
-  },
-  {
-   "fieldname": "remote_parent_issue_number",
-   "fieldtype": "Int",
-   "label": "Parent Number on GitHub",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_conflicts",
-   "fieldtype": "Section Break",
-   "label": "Conflicts"
-  },
-  {
-   "fieldname": "conflicts",
-   "fieldtype": "Table",
-   "label": "Conflicts",
-   "options": "Envision GitHub Sync Conflict",
+   "description": "Time of the last completed sync.",
+   "fieldname": "last_synced_at",
+   "fieldtype": "Datetime",
+   "label": "Last Synced",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-26 12:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Envision",
  "name": "Envision GitHub Issue Sync",

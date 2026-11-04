@@ -11,7 +11,6 @@
   "repository",
   "column_break_route",
   "sync_enabled",
-  "paused",
   "connected_by",
   "connected_on",
   "section_activation",
@@ -22,6 +21,8 @@
   "privacy_acknowledged_by",
   "privacy_acknowledged_on",
   "publication_acknowledged",
+  "deletion_acknowledged_by",
+  "deletion_acknowledged_on",
   "section_progress",
   "activation_import_state",
   "activation_import_page",
@@ -61,14 +62,6 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Sync Enabled",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "description": "Paused by a manager: webhooks are deferred and queued work waits.",
-   "fieldname": "paused",
-   "fieldtype": "Check",
-   "label": "Paused",
    "read_only": 1
   },
   {
@@ -136,6 +129,20 @@
    "read_only": 1
   },
   {
+   "description": "A manager's acknowledgement, required to turn sync on, that deleting a linked Task or Issue permanently deletes the other.",
+   "fieldname": "deletion_acknowledged_by",
+   "fieldtype": "Link",
+   "label": "Deletion Acknowledged By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deletion_acknowledged_on",
+   "fieldtype": "Datetime",
+   "label": "Deletion Acknowledged On",
+   "read_only": 1
+  },
+  {
    "fieldname": "section_progress",
    "fieldtype": "Section Break",
    "label": "Progress"
@@ -168,7 +175,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-26 12:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Envision",
  "name": "Envision GitHub Project Settings",

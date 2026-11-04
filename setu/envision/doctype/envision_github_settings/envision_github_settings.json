@@ -3,7 +3,7 @@
  "module": "Envision",
  "engine": "InnoDB",
  "creation": "2026-10-23 12:00:00.000000",
- "modified": "2026-10-24 18:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "owner": "Administrator",
  "modified_by": "Administrator",
  "actions": [],
@@ -33,6 +33,7 @@
   "site_url_at_creation",
   "site_binding",
   "subscribed_events",
+  "redelivery_cursor",
   "connected_by",
   "connected_on"
  ],
@@ -110,6 +111,13 @@
    "fieldname": "subscribed_events",
    "fieldtype": "Small Text",
    "label": "Subscribed Events",
+   "read_only": 1
+  },
+  {
+   "description": "How far the redelivery cron has read GitHub's webhook deliveries.",
+   "fieldname": "redelivery_cursor",
+   "fieldtype": "Data",
+   "label": "Redelivery Cursor",
    "read_only": 1
   },
   {
