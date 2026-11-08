@@ -21,8 +21,8 @@ turn-on, because sync being off stored nothing from GitHub:
 1. Links to another repository go, with their Retry Job rows. Their Issues stay.
 2. Every Issue, open or closed, labelled or not, takes one branch: skipped, merged
    field by field into its link's Task, re-linked by marker, or, if it is open, imported
-   as a new Task. A closed Issue with no link is not imported. The ``github`` tag gates
-   only Envision → GitHub.
+   as a new Task. A closed Issue with no link is not imported, and a closed ancestor
+   skips the whole branch below it. The ``github`` tag gates only Envision → GitHub.
 3. Waiting pushes and creates are enqueued, and the backlog publishes.
 
 The route row is the job's state. It looks again after every commit, so turning sync
@@ -522,6 +522,8 @@ def queue_issue(target: dict[str, str | int], link: frappe._dict | None, error_l
 
 def place_issue(route: dict, issue: IssueData, link: frappe._dict | None) -> None:
 	"""The branches of G→E 2 part 4, for an Issue that isn't skipped."""
+	if (link or issue["state"] == "open") and inbound.has_closed_ancestor(route, issue):
+		return
 	if link:
 		merge_linked(route, link, issue)
 		return

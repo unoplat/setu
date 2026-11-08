@@ -7,9 +7,9 @@ per-Issue lock is busy, and goes there too when applying it fails. Only an
 infrastructure outage replies 5xx, so GitHub records the delivery as failed and
 the redelivery cron gets it back. Rows hold identifiers only, never payloads.
 
-Which Issues become Tasks (docs/adr/0008): every Issue in the routed repository,
-open or closed, labelled or not. Never a pull request, or Envision's own Issue
-(this site's app bot opened it and its body carries a Task-name marker). The
+Which Issues become Tasks (docs/adr/0008): open Issues in the routed repository,
+labelled or not, except those under a closed ancestor. Never a pull request, or
+Envision's own Issue (this site's app bot opened it and its body carries a Task-name marker). The
 ``github`` tag gates only Envision → GitHub publication (setu.github.links).
 
 An import inserts the Task and its link in one transaction. The link's unique
@@ -328,6 +328,8 @@ class KeyRun:
 	fetched: tuple[dict, IssueData] | None = None
 	"""The Issue's route and the one GET of the Issue."""
 	read_failure: Exception | None = None
+	skipped: bool | None = None
+	"""Whether the Issue is gone or has a closed ancestor; checked once per run."""
 	task: str | None = None
 	applied: list[str] = field(default_factory=list)
 	"""What this run changed on ``task``, for its Activity comment."""
@@ -397,12 +399,16 @@ def undo_key(run: KeyRun, done: set[str]) -> None:
 
 
 def apply_key(run: KeyRun, resource: str, action: str) -> None:
-	if resource == delta.ISSUE_RESOURCE and action == delta.SYNC:
-		apply_issue_sync(run)
-	elif resource == delta.ISSUE_RESOURCE and action == delta.TRANSFERRED:
+	# Signed Issue deletions and transfers still finish their existing links. Other
+	# work under a closed ancestor is deliberately skipped, so its retry keys finish.
+	if resource == delta.ISSUE_RESOURCE and action == delta.TRANSFERRED:
 		apply_transferred(run)
 	elif resource == delta.ISSUE_RESOURCE and action == delta.DELETE:
 		apply_issue_deleted(run)
+	elif skip_issue(run):
+		return
+	elif resource == delta.ISSUE_RESOURCE and action == delta.SYNC:
+		apply_issue_sync(run)
 	elif resource in delta.FIELD_RESOURCES and action == delta.SYNC:
 		apply_field_key(run, resource)
 	elif resource == delta.COMMENTS_RESOURCE and action == delta.SYNC:
@@ -411,6 +417,16 @@ def apply_key(run: KeyRun, resource: str, action: str) -> None:
 		comments.apply_comment(run.target, resource.removeprefix(delta.COMMENT_PREFIX), action)
 	else:
 		raise NotImplementedError(f"Applying {resource}: {action} is not built.")
+
+
+def skip_issue(run: KeyRun) -> bool:
+	if run.skipped is None:
+		if issue_gone(run):
+			run.skipped = True
+		else:
+			route, issue = read_issue(run)
+			run.skipped = has_closed_ancestor(route, issue)
+	return run.skipped
 
 
 def read_issue(run: KeyRun) -> tuple[dict, IssueData]:
@@ -812,6 +828,26 @@ def stated_parent(route: dict, issue: IssueData) -> issues.ParentData:
 	if issue["parent_known"]:
 		return {"full_name": issue["parent_full_name"], "number": issue["parent_number"]}
 	return issues.get_parent(route["repository_row"].installation, issue["node_id"])
+
+
+def has_closed_ancestor(route: dict, issue: IssueData) -> bool:
+	"""Skip the whole branch below a closed Issue, including deeper descendants.
+
+	Only a confirmed closed ancestor skips work. A failed read still raises and
+	retries, and no Task or link already imported is deleted.
+	"""
+	installation = route["repository_row"].installation
+	seen = {issue["id"]}
+	while True:
+		parent = stated_parent(route, issue)
+		if not parent["number"]:
+			return False
+		issue = issues.get_issue(installation, parent["full_name"] or "", parent["number"])
+		if issue["id"] in seen:
+			raise GitHubError("GitHub returned a cycle in the Issue's parent chain.")
+		if issue["state"] == "closed":
+			return True
+		seen.add(issue["id"])
 
 
 def field_label(resource: str) -> str:
