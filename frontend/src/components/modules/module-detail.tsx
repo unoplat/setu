@@ -15,14 +15,23 @@ import {
 } from "@/components/record-activity"
 import { DetailLayout, KindRow, RailGroup } from "@/components/record-detail"
 import { RelatedTasks } from "@/components/tasks/related-tasks"
-import { moduleActivityKey, type ModuleDetail } from "@/lib/modules"
-import { useRelatedTasks } from "@/lib/tasks"
+import {
+  moduleActivityKey,
+  moduleKey,
+  modulesKey,
+  type ModuleDetail,
+} from "@/lib/modules"
+import { projectTasksKey, useRelatedTasks } from "@/lib/tasks"
 
 const MODULE_ACTIVITY: ActivitySource = {
   doctype: "Envision Module",
   method: "setu.api.module.get_module_activity",
   commentMethod: "setu.api.module.add_module_comment",
   key: moduleActivityKey,
+  dataKeys: (name, project) => [
+    moduleKey(name),
+    ...(project ? [modulesKey(project), projectTasksKey(project)] : []),
+  ],
   commentScope: "module-comment",
   commentCommand: "module.comment",
   createdLabel: "this module",
@@ -50,7 +59,11 @@ export function ModuleSections({
         emptyText={`Add a task here, or pick ${module.module_name} in a task’s Module field.`}
         canAdd={module.can_write}
       />
-      <RecordComments record={module.name} source={MODULE_ACTIVITY} />
+      <RecordComments
+        record={module.name}
+        project={module.project}
+        source={MODULE_ACTIVITY}
+      />
     </>
   )
 }

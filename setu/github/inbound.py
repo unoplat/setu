@@ -773,17 +773,15 @@ def apply_parent(run: KeyRun, route: dict, link: frappe._dict, issue: IssueData)
 def current_parent_task(route: dict, link: frappe._dict, issue: IssueData) -> str | None:
 	"""The Task of the Issue's parent; None for no parent. A parent with no Task in this
 	Project, in this repository or not, fails and the key stays: the tree is never
-	flattened, and a key's Error Log is where a sub-issue error shows now. So does an
-	Issue that doesn't say: GitHub's field is optional, and silence isn't "no parent"."""
-	if not issue["parent_known"]:
-		raise GitHubError("GitHub did not say which Issue is this Issue's parent.")
-	if not issue["parent_number"]:
+	flattened, and a key's Error Log is where a sub-issue error shows now."""
+	stated = stated_parent(route, issue)
+	number = stated["number"]
+	if not number:
 		return None
-	number = issue["parent_number"]
-	if (issue["parent_full_name"] or "").lower() != route["repository_row"].full_name.lower():
+	if (stated["full_name"] or "").lower() != route["repository_row"].full_name.lower():
 		raise frappe.ValidationError(
 			_("On GitHub this Issue is a sub-issue of {0}#{1}, in another repository.").format(
-				issue["parent_full_name"], number
+				stated["full_name"], number
 			)
 		)
 	parent = frappe.db.get_value(
@@ -804,6 +802,16 @@ def current_parent_task(route: dict, link: frappe._dict, issue: IssueData) -> st
 			)
 		)
 	return parent.task
+
+
+def stated_parent(route: dict, issue: IssueData) -> issues.ParentData:
+	"""The parent GitHub states now. REST's ``parent_issue_url`` is optional and silence
+	isn't "no parent", so an Issue read without it asks GraphQL's ``Issue.parent``, which
+	states null for none. A read that fails raises, and the key stays: a removal is only
+	ever applied from GitHub saying so, never from an error or the event."""
+	if issue["parent_known"]:
+		return {"full_name": issue["parent_full_name"], "number": issue["parent_number"]}
+	return issues.get_parent(route["repository_row"].installation, issue["node_id"])
 
 
 def field_label(resource: str) -> str:

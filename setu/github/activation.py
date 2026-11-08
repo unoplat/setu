@@ -552,14 +552,15 @@ def merge_linked(route: dict, link: frappe._dict, issue: IssueData) -> None:
 
 def parent_moved(route: dict, link: frappe._dict, issue: IssueData) -> bool:
 	"""Whether GitHub's parent isn't the Task's. A parent Task with no Issue here is no
-	parent on GitHub (``outbound.parent_issue_number``), and silence says nothing."""
-	if not issue["parent_known"]:
-		return False
+	parent on GitHub (``outbound.parent_issue_number``). Silence says nothing, so a Task
+	with a parent Issue gets the key, which asks GitHub (``inbound.stated_parent``)."""
 	parent = frappe.db.get_value("Task", link.task, "parent_task")
 	parent_link = links.link_for_task(parent) if parent else None
 	current = None
 	if links.publishing(parent_link) and parent_link.repository_id == route["repository"]:
 		current = parent_link.issue_number or None
+	if not issue["parent_known"]:
+		return current is not None
 	in_repository = (issue["parent_full_name"] or "").lower() == route["repository_row"].full_name.lower()
 	return issue["parent_number"] != current or bool(issue["parent_number"] and not in_repository)
 

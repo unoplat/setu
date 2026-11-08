@@ -208,10 +208,23 @@ def installation_mutation(installation_id: str, query: str, variables: dict[str,
 	send(installation_id, True, partial(graphql_request, github, query, variables))
 
 
+def installation_query[M: pydantic.BaseModel](
+	installation_id: str, query: str, variables: dict[str, JSONValue], model: type[M]
+) -> M:
+	"""A GraphQL read through ``installation_client(installation_id)``, its ``data``
+	validated as ``model``. Any error GitHub reports, even next to partial data, fails it."""
+	github = installation_client(installation_id)
+	response = send(installation_id, False, partial(graphql_request, github, query, variables))
+	try:
+		return model.model_validate(parsed(response).data)
+	except pydantic.ValidationError:
+		raise GitHubError(INVALID) from None
+
+
 def graphql_request(
 	github: GitHub[AppInstallationAuthStrategy], query: str, variables: dict[str, JSONValue]
 ) -> Response[GraphQLResponse]:
-	"""POST the query. GitHub reports GraphQL errors with status 200, so they are
+	"""POST the query or mutation. GitHub reports GraphQL errors with status 200, so they are
 	raised here, inside ``send``, for it to map."""
 	response = github.request(
 		"POST",

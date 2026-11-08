@@ -3,6 +3,7 @@ import {
   useFrappeAuth,
   useFrappeGetDoc,
   useFrappePostCall,
+  useSWRConfig,
 } from "frappe-react-sdk"
 import {
   ArrowUpIcon,
@@ -67,6 +68,11 @@ export interface ActivitySource {
   commentMethod: string
   /** The timeline's SWR key, which the page revalidates after a save. */
   key: (name: string) => readonly string[]
+  /** Record and related queries refreshed by this document's events. */
+  dataKeys: (
+    name: string,
+    project: string | null
+  ) => readonly (string | readonly string[])[]
   /** The comment box's own scope, and the command that posts from it. */
   commentScope: CommandScope
   commentCommand: CommandId
@@ -77,20 +83,32 @@ export interface ActivitySource {
 /** The timeline's comments and the comment box, closing the content column. */
 export function RecordComments({
   record,
+  project = null,
   source,
 }: {
   /** The record's name (its id). */
   record: string
+  project?: string | null
   source: ActivitySource
 }) {
+  const { mutate: revalidate } = useSWRConfig()
   const { data, error, isLoading, mutate } = useActivity(
     source.method,
     record,
     source.key(record)
   )
-  // Subscribe once here; the rail shares this timeline cache. Refreshing it
-  // does not remount the composer or replace its unsent draft.
-  useActivityRealtime(source.doctype, record, mutate)
+  // One document subscription refreshes both the timeline and the record
+  // behind its form. Parent docinfo events also change subtask lists. Keep
+  // the form and composer mounted so pending edits and comments survive.
+  const refresh = React.useCallback(
+    () =>
+      Promise.all([
+        mutate(),
+        ...source.dataKeys(record, project).map((key) => revalidate(key)),
+      ]),
+    [mutate, revalidate, source, record, project]
+  )
+  useActivityRealtime(source.doctype, record, refresh)
   const activity = data?.message
 
   // The server sends newest first; comments read oldest first.

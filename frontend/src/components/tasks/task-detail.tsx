@@ -19,15 +19,18 @@ import {
   type ActivitySource,
 } from "@/components/record-activity"
 import { DetailLayout, KindRow, RailGroup } from "@/components/record-detail"
+import { taskGitHubKey } from "@/lib/github"
 import { dueHint, formatShortDay, useMilestones } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
 import {
   BOARD_COLUMNS,
   BOARD_PALETTE,
   directParent,
+  projectTasksKey,
   PRIORITY_CLASS,
   TASK_PRIORITIES,
   taskActivityKey,
+  taskKey,
   type TaskAncestor,
   type TaskDetail,
 } from "@/lib/tasks"
@@ -41,6 +44,11 @@ const TASK_ACTIVITY: ActivitySource = {
   method: "setu.api.task.get_task_activity",
   commentMethod: "setu.api.task.add_task_comment",
   key: taskActivityKey,
+  dataKeys: (name, project) => [
+    taskKey(name),
+    taskGitHubKey(name),
+    ...(project ? [projectTasksKey(project)] : []),
+  ],
   commentScope: "task-comment",
   commentCommand: "task.comment",
   createdLabel: "this task",
@@ -48,7 +56,13 @@ const TASK_ACTIVITY: ActivitySource = {
 
 /** 09's Comments, closing the content column under the description. */
 export function TaskComments({ task }: { task: TaskDetail }) {
-  return <RecordComments record={task.name} source={TASK_ACTIVITY} />
+  return (
+    <RecordComments
+      record={task.name}
+      project={task.project}
+      source={TASK_ACTIVITY}
+    />
+  )
 }
 
 /** 09's Activity, closing the rail under the Tags. */

@@ -25,8 +25,11 @@ import {
   dueHint,
   formatShortDay,
   milestoneActivityKey,
+  milestoneKey,
+  milestonesKey,
   type MilestoneDetail,
 } from "@/lib/milestones"
+import { projectTasksKey } from "@/lib/tasks"
 
 import {
   PROGRESS_LABELS,
@@ -39,6 +42,10 @@ const MILESTONE_ACTIVITY: ActivitySource = {
   method: "setu.api.milestone.get_milestone_activity",
   commentMethod: "setu.api.milestone.add_milestone_comment",
   key: milestoneActivityKey,
+  dataKeys: (name, project) => [
+    milestoneKey(name),
+    ...(project ? [milestonesKey(project), projectTasksKey(project)] : []),
+  ],
   commentScope: "milestone-comment",
   commentCommand: "milestone.comment",
   createdLabel: "this milestone",
@@ -75,7 +82,11 @@ export function MilestoneSections({
         emptyText="Add a task here, or pick this milestone in a task’s Milestone field."
         canAdd={milestone.can_write}
       />
-      <RecordComments record={milestone.name} source={MILESTONE_ACTIVITY} />
+      <RecordComments
+        record={milestone.name}
+        project={project}
+        source={MILESTONE_ACTIVITY}
+      />
     </>
   )
 }

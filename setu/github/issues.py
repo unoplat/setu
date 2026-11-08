@@ -20,6 +20,11 @@ Endpoints (API version 2022-11-28):
 - ``GET /app`` (app JWT): the events the app is subscribed to.
 - ``GET /repos/{owner}/{repo}``: whether the repository can still be read.
 - GraphQL ``deleteIssue``, which takes the Issue's node id. REST has no equivalent.
+- GraphQL ``node(id:) { ... on Issue { parent } }``: an Issue's current parent when
+  REST's optional ``parent_issue_url`` is left out. ``GET .../issues/{number}/parent``
+  documents no reply for "no parent", only 404 (Resource not found), which losing
+  access looks like too (https://docs.github.com/en/rest/issues/sub-issues#get-parent-issue,
+  https://docs.github.com/en/graphql/reference/objects#issue).
 - ``GET/POST /repos/{owner}/{repo}/issues/{number}/comments`` and
   ``GET/PATCH/DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}``: Issue
   comments (https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28).
@@ -35,7 +40,7 @@ from githubkit.compat import type_validate_json
 from githubkit.utils import UNSET
 from githubkit_schemas.v2022_11_28.models import Issue, IssueComment
 from githubkit_schemas.v2022_11_28.types import ReposOwnerRepoIssuesIssueNumberPatchBodyType
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from setu.github import client, clock
 from setu.github.client import GitHubError
@@ -55,6 +60,22 @@ DELETE_ISSUE = """
 mutation DeleteIssue($issueId: ID!) {
   deleteIssue(input: {issueId: $issueId}) {
     clientMutationId
+  }
+}
+"""
+# ``Issue.parent`` is nullable: null, with no errors, is GitHub saying "no parent".
+ISSUE_PARENT = """
+query IssueParent($issueId: ID!) {
+  node(id: $issueId) {
+    ... on Issue {
+      id
+      parent {
+        number
+        repository {
+          nameWithOwner
+        }
+      }
+    }
   }
 }
 """
@@ -87,6 +108,33 @@ class IssueData(TypedDict):
 	# Whether GitHub said: ``parent_issue_url`` is optional, and only null means no parent.
 	parent_known: bool
 	comment_count: int
+
+
+class ParentData(TypedDict):
+	"""An Issue's parent as GitHub states it; both None for no parent."""
+
+	full_name: str | None
+	number: int | None
+
+
+class ParentRepositoryNode(BaseModel):
+	name_with_owner: str = Field(alias="nameWithOwner")
+
+
+class ParentIssueNode(BaseModel):
+	# Strict and positive: a parent named with no usable number must never read as "no parent".
+	number: int = Field(strict=True, gt=0)
+	repository: ParentRepositoryNode
+
+
+class ChildIssueNode(BaseModel):
+	id: str
+	# Required, so a reply that leaves it out never reads as "no parent".
+	parent: ParentIssueNode | None
+
+
+class IssueParentReply(BaseModel):
+	node: ChildIssueNode
 
 
 class CommentData(TypedDict):
@@ -128,6 +176,22 @@ def get_issue(installation_id: str, full_name: str, number: int) -> IssueData:
 			installation_id, github.rest(client.API_VERSION).issues.get, owner, repo, number
 		)
 	)
+
+
+def get_parent(installation_id: str, node_id: str) -> ParentData:
+	"""The Issue's current parent, from GraphQL's ``Issue.parent``, for when REST's
+	optional ``parent_issue_url`` says nothing. Read by node id, so it is this Issue.
+	Any GraphQL error fails the read, even beside partial data, and so does a reply
+	that leaves the parent out or names another node: only a stated null is no parent."""
+	reply = client.installation_query(installation_id, ISSUE_PARENT, {"issueId": node_id}, IssueParentReply)
+	if reply.node.id != node_id:
+		raise GitHubError("GitHub returned another Issue when asked for this Issue's parent.")
+	parent = reply.node.parent
+	if parent is None:
+		return {"full_name": None, "number": None}
+	if not FULL_NAME.fullmatch(parent.repository.name_with_owner):
+		raise GitHubError(client.INVALID)
+	return {"full_name": parent.repository.name_with_owner, "number": parent.number}
 
 
 def create_issue(installation_id: str, full_name: str, title: str, body: str) -> IssueData:
