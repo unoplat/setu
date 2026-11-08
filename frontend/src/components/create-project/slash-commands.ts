@@ -15,7 +15,7 @@ type Command = CommandList[number]["commands"][number]
 // SlashCommandList sees one stable array instead of re-registering it on
 // every render.
 
-const HEADING_LEVELS = [1, 2, 3] as const
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const
 
 // Opening the image dialog goes through an event the package keeps internal,
 // so borrow that one action from its default list.

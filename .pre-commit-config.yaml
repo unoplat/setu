@@ -1,5 +1,10 @@
 exclude: 'node_modules|\.git/'
 default_stages: [pre-commit]
+default_language_version:
+  # Match Frappe v16 and CI; Python 3.10 cannot parse the app's syntax.
+  python: python3.14
+  # Use installed Node (24 for Frappe v16), not nodeenv's moving latest release.
+  node: system
 fail_fast: false
 
 

@@ -255,8 +255,9 @@ export function MyTasksBoard({
     []
   )
 
+  // Bound the page so the board scrolls vertically instead of growing with its rows.
   return (
-    <>
+    <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden">
       <MyTasksHeader
         page={view?.view_name}
         badge={view ? <OnlyYouBadge /> : undefined}
@@ -306,6 +307,6 @@ export function MyTasksBoard({
           />
         )}
       </main>
-    </>
+    </div>
   )
 }

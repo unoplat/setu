@@ -97,15 +97,19 @@ add_to_apps_screen = [
 # before_install = "setu.install.before_install"
 # Custom Fields and Property Setters on ERPNext DocTypes, and the built-in
 # Link Types (setu/setup/).
+# The GitHub integration user that changes from GitHub are saved as
+# (setu.github.bot); created once, disabled and without roles.
 after_install = [
 	"setu.setup.custom_fields.create_envision_custom_fields",
 	"setu.setup.property_setters.create_envision_property_setters",
 	"setu.setup.link_types.create_envision_link_types",
+	"setu.github.bot.ensure_bot_user",
 ]
 after_migrate = [
 	"setu.setup.custom_fields.create_envision_custom_fields",
 	"setu.setup.property_setters.create_envision_property_setters",
 	"setu.setup.link_types.create_envision_link_types",
+	"setu.github.bot.ensure_bot_user",
 ]
 
 # Uninstallation
@@ -157,10 +161,14 @@ before_uninstall = "setu.setup.uninstall.before_uninstall"
 permission_query_conditions = {
 	"Board Message": "setu.envision.doctype.board_message.board_message.get_permission_query_conditions",
 	"Envision View": "setu.envision.doctype.envision_view.envision_view.get_permission_query_conditions",
+	"Envision GitHub Project Settings": "setu.envision.doctype.envision_github_project_settings.envision_github_project_settings.get_permission_query_conditions",
+	"Envision GitHub Issue Sync": "setu.envision.doctype.envision_github_issue_sync.envision_github_issue_sync.get_permission_query_conditions",
 }
 has_permission = {
 	"Board Message": "setu.envision.doctype.board_message.board_message.has_permission",
 	"Envision View": "setu.envision.doctype.envision_view.envision_view.has_permission",
+	"Envision GitHub Project Settings": "setu.envision.doctype.envision_github_project_settings.envision_github_project_settings.has_permission",
+	"Envision GitHub Issue Sync": "setu.envision.doctype.envision_github_issue_sync.envision_github_issue_sync.has_permission",
 }
 
 # Document Events
@@ -188,6 +196,7 @@ _search_index_events = {
 }
 doc_events = {
 	"Project": {
+		"before_rename": "setu.github.projects.guard_project_rename",
 		"on_trash": "setu.api.project.guard_project_delete",
 		"on_change": "setu.search_maintenance.on_project_change",
 		"after_rename": [
@@ -195,8 +204,16 @@ doc_events = {
 			"setu.search_maintenance.on_project_rename",
 		],
 	},
+	# GitHub Issue sync (setu.github.links, docs/adr/0008): Subtasks of
+	# published Tasks publish, changes record their delta keys and push after
+	# commit, and deleting a linked Task deletes its Issue too.
+	# A linked Task can't be renamed: its name is the marker in its Issue's body.
 	"Task": {
+		"before_rename": "setu.github.links.guard_task_rename",
 		"validate": "setu.api.task.validate_task_links",
+		"after_insert": "setu.github.links.on_task_insert",
+		"on_update": "setu.github.links.on_task_update",
+		"on_trash": "setu.github.links.on_task_trash",
 		**_search_index_events,
 	},
 	"Envision Module": _search_index_events,
@@ -205,14 +222,25 @@ doc_events = {
 	"Tag": {
 		"after_rename": "setu.api.task.rename_tag",
 	},
+	# Frappe's tag API (Envision, Desk and REST alike) inserts a Tag Link as a
+	# tag is added, after the Task's own save: the github tag publishes here.
+	"Tag Link": {
+		"after_insert": "setu.github.links.on_tag_link_insert",
+	},
 	"User": {
 		"after_rename": "setu.api.view.rename_user_filters",
 	},
 	# A reply's quote is copied from the original when it is posted and kept
-	# when the original goes (setu.api.timeline).
+	# when the original goes (setu.api.timeline). A comment on a published Task is
+	# sent to its GitHub Issue (setu.github.comments).
 	"Comment": {
 		"validate": "setu.api.timeline.validate_quote",
-		"on_trash": "setu.api.timeline.release_quotes",
+		"after_insert": "setu.github.comments.on_comment_insert",
+		"on_update": "setu.github.comments.on_comment_update",
+		"on_trash": [
+			"setu.api.timeline.release_quotes",
+			"setu.github.comments.on_comment_trash",
+		],
 	},
 }
 
@@ -232,6 +260,34 @@ sqlite_search = ["setu.search.EnvisionSearch"]
 
 # Scheduled Tasks
 # ---------------
+
+# Webhook receipts whose job was lost, the retry cron (which only enqueues itself in the
+# long queue: setu.retry_jobs), the scan for what no event brings back, and GitHub's
+# failed deliveries.
+scheduler_events = {
+	"cron": {
+		"*/5 * * * *": [
+			"setu.github.events.retry_pending_deliveries",
+			"setu.github.recovery.run_recovery",
+			"setu.retry_jobs.enqueue_cron",
+		],
+		"*/15 * * * *": [
+			"setu.github.redelivery.run_redelivery",
+		],
+	},
+}
+
+# Envision Retry Job (docs/adr/0008). A row's handler must be in this allowlist,
+# because the retry cron calls it by name. By the row's integration: the gate says the
+# row must wait, the lock hook takes what comes before the row's own lock, and the
+# on-done hook runs when the cron empties the row's delta.
+retry_job_handlers = [
+	"setu.github.inbound.apply_issue_delta",
+	"setu.github.outbound.push_task_delta",
+]
+retry_job_gate = {"GitHub": "setu.github.retry.job_gated"}
+retry_job_lock = {"GitHub": "setu.github.links.lock_for_job"}
+retry_job_on_done = {"GitHub": "setu.github.links.mark_synced"}
 
 # scheduler_events = {
 # 	"all": [
@@ -329,11 +385,10 @@ extend_doctype_class = {
 # ]
 
 # Automatically update python controller files with type annotations for this app.
-# export_python_type_annotations = True
+export_python_type_annotations = True
 
-# default_log_clearing_doctypes = {
-# 	"Logging DocType Name": 30  # days to retain logs
-# }
+# Webhook receipt metadata contains no Issue bodies or credentials.
+default_log_clearing_doctypes = {"Envision GitHub Delivery": 30}
 
 # Translation
 # ------------

@@ -14,6 +14,7 @@ import {
   DeleteProjectDialog,
   type DeleteDialogKind,
 } from "@/components/project-settings/delete-project-dialog"
+import { GitHubSection } from "@/components/project-settings/github-section"
 import {
   deleteDialogFor,
   saveState,
@@ -223,6 +224,10 @@ function ProjectSettingsScreen({
             error={update.error ? frappeErrorMessage(update.error) : null}
             onExpand={() => setExpanded(true)}
             onCollapse={() => setExpanded(false)}
+          />
+          <GitHubSection
+            project={settings.name}
+            projectName={settings.project_name}
           />
           {settings.can_delete ? (
             <DangerZone

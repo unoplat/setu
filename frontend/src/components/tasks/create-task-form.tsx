@@ -5,6 +5,10 @@ import { FlagIcon, LayoutGridIcon, XIcon } from "lucide-react"
 import { ActionButton } from "@/components/app-ui/action-button"
 import { PanelCloseButton, PanelTitle } from "@/components/app-ui/editor-panel"
 import { CompactField, FieldInput } from "@/components/app-ui/field-controls"
+import {
+  applyTags,
+  type ConfirmTags,
+} from "@/components/github/use-github-tag-confirm"
 import { HotkeyText } from "@/components/hotkey-hint"
 import { DatePicker } from "@/components/milestones/date-picker"
 import { Button } from "@/components/ui/button"
@@ -53,6 +57,10 @@ export const CreateTaskForm = withForm({
     error: null as string | null,
     /** Opened from a Task's Subtasks (09m): the Parent task field shows. */
     withParent: false,
+    /** A tags change, which adding `github` may first confirm. */
+    confirmTags: applyTags as ConfirmTags,
+    /** Where the new task publishes on GitHub, when it will. */
+    githubNotice: null as React.ReactNode,
   },
   render: function CreateTaskFormView({
     form,
@@ -60,6 +68,8 @@ export const CreateTaskForm = withForm({
     projectName,
     error,
     withParent,
+    confirmTags,
+    githubNotice,
   }) {
     const subject = useSelector(form.store, (state) => state.values.subject)
     const status = useSelector(form.store, (state) => state.values.status)
@@ -344,7 +354,9 @@ export const CreateTaskForm = withForm({
                   <TagsCombobox
                     id="task-tags"
                     value={field.state.value}
-                    onChange={field.handleChange}
+                    onChange={(next) =>
+                      confirmTags(field.state.value, next, field.handleChange)
+                    }
                     onBlur={field.handleBlur}
                   />
                 </CompactField>
@@ -373,6 +385,7 @@ export const CreateTaskForm = withForm({
             </form.Field>
           </div>
 
+          {githubNotice}
           {error ? <FieldError>{error}</FieldError> : null}
         </FieldGroup>
 

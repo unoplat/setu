@@ -1,0 +1,91 @@
+{
+ "doctype": "DocType",
+ "module": "Envision",
+ "engine": "InnoDB",
+ "creation": "2026-10-23 12:00:00.000000",
+ "modified": "2026-10-23 12:00:00.000000",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "actions": [],
+ "links": [],
+ "states": [],
+ "index_web_pages_for_search": 0,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "name": "Envision GitHub Installation",
+ "issingle": 0,
+ "field_order": [
+  "account_login",
+  "account_id",
+  "account_type",
+  "repository_selection",
+  "suspended",
+  "removed",
+  "permissions",
+  "last_synced_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "account_login",
+   "fieldtype": "Data",
+   "label": "Account",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_id",
+   "fieldtype": "Data",
+   "label": "Account ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_type",
+   "fieldtype": "Data",
+   "label": "Account Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "repository_selection",
+   "fieldtype": "Data",
+   "label": "Repository Selection",
+   "read_only": 1
+  },
+  {
+   "fieldname": "suspended",
+   "fieldtype": "Check",
+   "label": "Suspended",
+   "default": "0",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "removed",
+   "fieldtype": "Check",
+   "label": "Removed",
+   "default": "0",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "permissions",
+   "fieldtype": "JSON",
+   "label": "Permissions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_synced_at",
+   "fieldtype": "Datetime",
+   "label": "Last Synced At",
+   "read_only": 1
+  }
+ ],
+ "autoname": "prompt",
+ "naming_rule": "Set by user",
+ "allow_rename": 0
+}

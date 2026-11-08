@@ -3,12 +3,24 @@ import { useSelector } from "@tanstack/react-form"
 import { useFrappePostCall } from "frappe-react-sdk"
 import { toast } from "sonner"
 
+import {
+  CreatePublishNotice,
+  type PublishTarget,
+} from "@/components/github/publish-dialog"
+import { useGitHubTagConfirm } from "@/components/github/use-github-tag-confirm"
 import { DATE_PICKER_POPUP } from "@/components/milestones/date-picker"
 import { DiscardDraftDialog } from "@/components/milestones/discard-draft-dialog"
 import { CreateSheetContent } from "@/components/app-ui/editor-panel"
 import { Sheet } from "@/components/ui/sheet"
 import { useCommand, useScope } from "@/lib/commands"
 import { frappeErrorMessage } from "@/lib/frappe-error"
+import {
+  hasGitHubTag,
+  isActiveLink,
+  repositoryView,
+  useProjectGitHub,
+  useTaskGitHub,
+} from "@/lib/github"
 import type { CreateStatus } from "@/lib/tasks"
 
 import { CreateTaskForm } from "./create-task-form"
@@ -120,6 +132,50 @@ export function CreateTaskSheet({
   })
   const submitting = useSelector(form.store, (state) => state.isSubmitting)
 
+  // GitHub (components/github/publish-dialog): a Subtask of a syncing Task
+  // publishes with it; otherwise adding the github tag asks first when the
+  // Project syncs. Until the Project's state has loaded, the tag asks
+  // without knowing the repository.
+  const tags = useSelector(form.store, (state) => state.values.tags)
+  const parentTask = useSelector(
+    form.store,
+    (state) => state.values.parent_task
+  )
+  const projectGitHub = useProjectGitHub(open ? project : null)
+  const parentGitHub = useTaskGitHub(open && parentTask ? parentTask : null)
+  const route = projectGitHub.data?.message
+  const parentView = parentTask ? parentGitHub.data?.message : undefined
+  const parentPublishing = Boolean(
+    parentView?.link &&
+    isActiveLink(parentView.link.state) &&
+    parentView.route.sync_enabled
+  )
+  const repository = route ? repositoryView(route.repository) : null
+  const publishTarget = React.useMemo<PublishTarget | null>(() => {
+    if (parentPublishing) return null
+    if (!route) return { repository: null, subtasks: 0 }
+    return route.sync_enabled ? { repository, subtasks: 0 } : null
+  }, [parentPublishing, route, repository])
+  const { confirmTags, dialog: publishDialog } = useGitHubTagConfirm(
+    publishTarget,
+    { creating: true }
+  )
+  let githubNotice: React.ReactNode = null
+  if (parentPublishing) {
+    githubNotice = (
+      <CreatePublishNotice
+        kind="subtask"
+        repository={parentView?.route.repository ?? null}
+      />
+    )
+  } else if (hasGitHubTag(tags) && route?.sync_enabled) {
+    githubNotice = <CreatePublishNotice kind="tagged" repository={repository} />
+  } else if (hasGitHubTag(tags) && route?.connected) {
+    githubNotice = (
+      <CreatePublishNotice kind="backlog" repository={repository} />
+    )
+  }
+
   // Each open starts from an empty form in the column's Status. Before paint,
   // so the Status field never shows the previous column's.
   React.useLayoutEffect(() => {
@@ -194,6 +250,8 @@ export function CreateTaskSheet({
           projectName={projectName}
           error={error ? frappeErrorMessage(error) : null}
           withParent={parent !== undefined}
+          confirmTags={confirmTags}
+          githubNotice={githubNotice}
         />
         <DiscardDraftDialog
           open={confirmingDiscard}
@@ -201,6 +259,7 @@ export function CreateTaskSheet({
           onDiscard={close}
           record="task"
         />
+        {publishDialog}
       </CreateSheetContent>
     </Sheet>
   )

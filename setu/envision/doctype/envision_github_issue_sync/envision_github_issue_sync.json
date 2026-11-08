@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-24 18:00:00.000000",
+ "description": "One Task's link to one GitHub Issue: stable identity, sync state and the Envision to GitHub work that has not failed yet. Work that failed moves to Envision Retry Job.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_link",
+  "task",
+  "project",
+  "repository_id",
+  "repository_full_name",
+  "origin",
+  "section_work",
+  "sync_state",
+  "delta",
+  "section_issue",
+  "repository_provider_issue_id",
+  "issue_node_id",
+  "issue_number",
+  "issue_url",
+  "section_timing",
+  "create_requested_at",
+  "last_synced_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_link",
+   "fieldtype": "Section Break",
+   "label": "What it links"
+  },
+  {
+   "description": "Empty once the Task is deleted: the row then waits for its Issue to be deleted, or stays unlinked.",
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task",
+   "options": "Task",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "description": "The destination, fixed when the link is made. Plain data, so it outlives a disconnected repository.",
+   "fieldname": "repository_id",
+   "fieldtype": "Data",
+   "label": "Repository ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "repository_full_name",
+   "fieldtype": "Data",
+   "label": "Repository",
+   "read_only": 1
+  },
+  {
+   "description": "The side that created the pair.",
+   "fieldname": "origin",
+   "fieldtype": "Select",
+   "label": "Created In",
+   "options": "Envision\nGitHub",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_work",
+   "fieldtype": "Section Break",
+   "label": "Sync work"
+  },
+  {
+   "default": "not_synced",
+   "fieldname": "sync_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "State",
+   "options": "not_synced\nsynced\nto_be_updated\ncron_sync\nto_be_deleted\nunlinked",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "description": "Envision to GitHub work that has not failed yet, as {resource: action}. Empty while a Retry Job row exists, because the work lives in that row's delta.",
+   "fieldname": "delta",
+   "fieldtype": "JSON",
+   "label": "Delta",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_issue",
+   "fieldtype": "Section Break",
+   "label": "The GitHub Issue"
+  },
+  {
+   "description": "GitHub's stable Issue ID.",
+   "fieldname": "repository_provider_issue_id",
+   "fieldtype": "Data",
+   "label": "Repository Provider Issue ID",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "description": "Only used by GraphQL deleteIssue, which needs the node ID.",
+   "fieldname": "issue_node_id",
+   "fieldtype": "Data",
+   "label": "Issue Node ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issue_number",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Issue Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issue_url",
+   "fieldtype": "Data",
+   "label": "Issue URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing"
+  },
+  {
+   "description": "Committed before a create is sent; cleared once linked.",
+   "fieldname": "create_requested_at",
+   "fieldtype": "Datetime",
+   "label": "Create Sent At",
+   "read_only": 1
+  },
+  {
+   "description": "Time of the last completed sync.",
+   "fieldname": "last_synced_at",
+   "fieldtype": "Datetime",
+   "label": "Last Synced",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-03 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision GitHub Issue Sync",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

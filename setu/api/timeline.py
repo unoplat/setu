@@ -8,6 +8,8 @@ from frappe.desk.form.document_follow import _follow_document
 from frappe.desk.form.load import add_comments, get_versions
 from frappe.utils import get_datetime, get_fullname, get_system_timezone, markdown, sanitize_html, strip_html
 
+from setu.github import store
+
 # The Activity section of Envision's record pages (Paper: 06d, 07d): the same
 # records Desk's form timeline reads, for any document, plus commenting on it.
 
@@ -42,6 +44,7 @@ def document_activity(doc) -> dict:
 		if docinfo.comments
 		else {}
 	)
+	synced = github_comments([comment.name for comment in docinfo.comments])
 
 	entries = [
 		{
@@ -61,6 +64,7 @@ def document_activity(doc) -> dict:
 				# Sanitised by Comment.validate when it was saved.
 				"content": comment.content,
 				"quote": quote_entry(quotes.get(comment.name)),
+				"github": synced.get(comment.name),
 			}
 		)
 	for kind, rows in (
@@ -96,6 +100,21 @@ def document_activity(doc) -> dict:
 	people = {entry["owner"] for entry in entries}
 	people.update(entry["quote"]["owner"] for entry in entries if entry.get("quote"))
 	return {"entries": entries, "users": people_details(people)}
+
+
+def github_comments(names: list[str]) -> dict[str, dict[str, str | None]]:
+	"""Each comment synced with a GitHub Issue: where it was written, the GitHub
+	author of one written there (it is saved as the integration user) and its URL."""
+	if not names:
+		return {}
+	return {
+		row.comment: {"origin": row.origin, "author_login": row.author_login, "url": row.github_url}
+		for row in frappe.get_all(
+			store.COMMENT_SYNC,
+			filters={"comment": ("in", names)},
+			fields=["comment", "origin", "author_login", "github_url"],
+		)
+	}
 
 
 def quote_entry(row) -> dict | None:

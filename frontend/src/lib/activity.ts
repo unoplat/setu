@@ -31,6 +31,20 @@ export interface ActivityEntry {
   content?: string
   /** The one comment a reply quotes (Paper: Comments 01 to 04). */
   quote?: ActivityQuote | null
+  /** A comment synced with the Task's GitHub Issue. */
+  github?: ActivityGitHub | null
+}
+
+/**
+ * Where a synced comment was written. One written on GitHub is saved as the
+ * integration user, so its GitHub author is shown instead.
+ */
+export interface ActivityGitHub {
+  origin: "Envision" | "GitHub"
+  /** The GitHub login of a comment written there. */
+  author_login: string | null
+  /** The comment on GitHub, once it exists there. */
+  url: string | null
 }
 
 /**
