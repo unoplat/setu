@@ -130,19 +130,27 @@ COMMENT_ACTIONS: dict[str, Action] = {"created": SYNC, "edited": SYNC, "deleted"
 SUB_ISSUE_ACTIONS = frozenset(
 	{"sub_issue_added", "sub_issue_removed", "parent_issue_added", "parent_issue_removed"}
 )
-# What an action changes on an Issue that has a link. With no link, it imports.
+# What a state action changes on an Issue that has a link. With no link, it imports.
 LINKED_UPDATES: dict[str, tuple[FieldResource, ...]] = {
-	"edited": ("title", "description"),
 	"closed": ("status",),
 	"reopened": ("status",),
 }
+# An edit names only the fields GitHub includes in its webhook's changes object.
+EDITED_FIELDS: dict[str, FieldResource] = {"title": "title", "body": "description"}
 
 
 def comment_key(comment_id: str) -> str:
 	return f"{COMMENT_PREFIX}{comment_id}"
 
 
-def webhook_delta(event: str, action: str, *, linked: bool, comment_id: str | None = None) -> dict[str, str]:
+def webhook_delta(
+	event: str,
+	action: str,
+	*,
+	linked: bool,
+	comment_id: str | None = None,
+	changed_fields: Collection[str] = (),
+) -> dict[str, str]:
 	"""Which resources an Issue event made stale, never their content (ADR "Webhook
 	catalogue"). ``linked``: the Issue has a link.
 
@@ -151,7 +159,8 @@ def webhook_delta(event: str, action: str, *, linked: bool, comment_id: str | No
 	an Issue is never imported in order to delete it. A sub_issues delta belongs on
 	the child's row. An ``issue_comment`` names its comment (``comment_id``); one
 	created or edited on an Issue with no link imports the Issue first, and a
-	deleted one there has nothing to delete.
+	deleted one there has nothing to delete. A linked ``issues.edited`` syncs only
+	the title/body fields named in ``changed_fields``, never an unchanged sibling.
 	"""
 	if event == COMMENT_EVENT:
 		comment_action = COMMENT_ACTIONS.get(action)
@@ -170,6 +179,10 @@ def webhook_delta(event: str, action: str, *, linked: bool, comment_id: str | No
 		return {ISSUE_RESOURCE: DELETE} if linked else {}
 	if action == "transferred":
 		return {ISSUE_RESOURCE: TRANSFERRED}
+	if action == "edited":
+		if not linked:
+			return {ISSUE_RESOURCE: SYNC}
+		return {resource: SYNC for field, resource in EDITED_FIELDS.items() if field in changed_fields}
 	if action not in LINKED_UPDATES:
 		return {}
 	return dict.fromkeys(LINKED_UPDATES[action], SYNC) if linked else {ISSUE_RESOURCE: SYNC}
