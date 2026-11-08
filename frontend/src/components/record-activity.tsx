@@ -4,7 +4,12 @@ import {
   useFrappeGetDoc,
   useFrappePostCall,
 } from "frappe-react-sdk"
-import { ArrowUpIcon, CornerDownLeftIcon, XIcon } from "lucide-react"
+import {
+  ArrowUpIcon,
+  CornerDownLeftIcon,
+  ExternalLinkIcon,
+  XIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { HotkeyText } from "@/components/hotkey-hint"
@@ -437,6 +442,11 @@ function CommentRow({
   onJump: (id: string) => void
 }) {
   const quote = entry.quote
+  const github = entry.github
+  const githubAuthor =
+    github?.origin === "GitHub" && github.author_login
+      ? `@${github.author_login}`
+      : null
   return (
     <article
       data-comment-id={entry.id}
@@ -452,9 +462,24 @@ function CommentRow({
       <div className="flex min-w-0 grow flex-col gap-1">
         <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
           <span className="text-compact font-semibold text-foreground">
-            {person.full_name || person.name}
+            {githubAuthor ?? (person.full_name || person.name)}
           </span>
           <RelativeTime value={entry.creation} />
+          {github?.url ? (
+            <a
+              href={github.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 underline-offset-4 hover:underline"
+            >
+              {githubAuthor ? "on GitHub" : "Synced to GitHub"}
+              <ExternalLinkIcon
+                aria-hidden="true"
+                className="size-3 shrink-0"
+              />
+              <span className="sr-only">(opens GitHub)</span>
+            </a>
+          ) : null}
         </p>
         {quote ? (
           <CommentQuote
