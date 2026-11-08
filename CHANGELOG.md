@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.4.0](https://github.com/unoplat/setu/compare/v0.3.0...v0.4.0) (2026-11-08)
+
+
+### Features
+
+* **editor:** support all heading levels ([891f773](https://github.com/unoplat/setu/commit/891f773c8c24194056eda923a6e68f2e0645a650))
+* **frontend:** add GitHub connection, project sync and task Issue UI ([faff18d](https://github.com/unoplat/setu/commit/faff18d8d94ea71df514913afa086fbfa732af24))
+* **github:** improve repository selection and settings ([a825d68](https://github.com/unoplat/setu/commit/a825d680351cfc54863a61621a01a58bd23b1b26))
+* **github:** rewrite Issue sync on deltas and sync comments ([0b902c6](https://github.com/unoplat/setu/commit/0b902c69706a3cba69616a4039e99bbbdb6ce5af))
+* **github:** show GitHub author and link on synced comments ([a60b1bf](https://github.com/unoplat/setu/commit/a60b1bf56a5583db0b45ee815a1ef548697f4240))
+* **github:** streamline issue synchronization ([60ebda4](https://github.com/unoplat/setu/commit/60ebda49498886d027f281f6562e7a82e1b518f6))
+* **github:** sync Envision tasks with GitHub Issues ([db80051](https://github.com/unoplat/setu/commit/db800512886a0c54e31df25086bdb6409b035774))
+* **settings:** organize settings into tabs ([b09ba29](https://github.com/unoplat/setu/commit/b09ba29b22ff7aefa0349ede6577be3ada609ab8))
+
+
+### Bug Fixes
+
+* **deps:** pin Hishel and sync locked dependencies in CI ([24441c2](https://github.com/unoplat/setu/commit/24441c28d8f9b65c5b6fe2d7c28b88319feca9d8))
+* **github:** respect Frappe transaction boundaries ([38d8492](https://github.com/unoplat/setu/commit/38d8492e696c52e47804d92679a59e0b2076f4d4))
+* **kanban:** constrain board height and scrolling ([19086a3](https://github.com/unoplat/setu/commit/19086a3b8f8d3a837c63b78235feeb8a1b16aeb1))
+
+
+### Documentation
+
+* **github:** add ADRs, plans and research for the GitHub integration ([2c801d3](https://github.com/unoplat/setu/commit/2c801d3c1f93d79b42d0670140029327f23f1b42))
+
+
+### Code Refactoring
+
+* **github:** add data model and link state for delta sync ([6c0ab93](https://github.com/unoplat/setu/commit/6c0ab93e5adad714f368427bbd394bae935526a7))
+* **github:** remove per-task disconnect support ([bd2ae9c](https://github.com/unoplat/setu/commit/bd2ae9cc1478b7932d52bbbf25cf71f3f64023da))
+* **github:** show delta sync state and retries in the UI ([15e70c3](https://github.com/unoplat/setu/commit/15e70c353d44745a19ec9dacd0fe80ffc4027404))
+
 ## [0.3.0](https://github.com/unoplat/setu/compare/v0.2.0...v0.3.0) (2026-10-19)
 
 
