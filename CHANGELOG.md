@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/unoplat/setu/compare/v0.4.0...v0.4.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **github:** sync only changed Issue fields ([e245260](https://github.com/unoplat/setu/commit/e245260e822ef34d44dfdd85ab9fa13703b070b0))
+
 ## [0.4.0](https://github.com/unoplat/setu/compare/v0.3.0...v0.4.0) (2026-11-08)
 
 
