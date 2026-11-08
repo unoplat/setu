@@ -33,7 +33,7 @@ export interface ManagedGitHubConnection {
   repositories: GitHubRepository[]
   /** Project ↔ repository routes that Disconnect would remove. */
   project_routes: number
-  /** Syncing Task links that Disconnect would pause (never delete). */
+  /** Task links that Disconnect would keep waiting, Issues and all. */
   sync_links: number
   /** This looks like a restored or copied site: sync stops until confirmed. */
   binding_changed: boolean
@@ -118,11 +118,7 @@ export type InactiveReason =
   | "installation_not_owned"
 
 /** Why Issues cannot move through a Project's route now. */
-export type SyncBlocker =
-  | "not_connected"
-  | "sync_not_enabled"
-  | "sync_paused"
-  | InactiveReason
+export type SyncBlocker = "not_connected" | "sync_not_enabled" | InactiveReason
 
 /** A repository the GitHub App lists, as a Project reader may see it. */
 export interface RepositoryDetails {
@@ -147,13 +143,14 @@ export function isRepositoryDetails(
 
 export type ActivationImportState = "Queued" | "Running" | "Done" | "Failed"
 
+/** Task links by `sync_state` (setu.github.activation.SyncCounts). */
 export interface SyncCounts {
-  /** Links that sync now: Pending, Synced, Conflict and Error. */
-  linked: number
-  pending: number
-  conflict: number
-  error: number
-  paused: number
+  not_synced: number
+  synced: number
+  to_be_updated: number
+  cron_sync: number
+  to_be_deleted: number
+  unlinked: number
 }
 
 /** setu.api.github.get_project_github, for anyone who can read the Project. */
@@ -167,7 +164,6 @@ export interface ProjectGitHub {
   inactive_reason: InactiveReason | null
   inactive_message: string | null
   sync_enabled: boolean
-  paused: boolean
   blocker: SyncBlocker | null
   blocker_message: string | null
   activated_on: string | null
@@ -211,71 +207,44 @@ export interface SyncPreview {
 }
 
 export type LinkState =
-  | "Pending"
-  | "Synced"
-  | "Conflict"
-  | "Error"
-  | "Paused"
-  | "Tombstoned"
+  | "not_synced"
+  | "synced"
+  | "to_be_updated"
+  | "cron_sync"
+  | "to_be_deleted"
+  | "unlinked"
 
-export type PauseReason =
-  | "route_cleared"
-  | "app_disconnected"
-  | "project_changed"
-  | "task_ineligible"
-  | "transferred"
-  | "remote_deleted"
-  | "access_lost"
-  | "destination_changed"
-  | "legacy_disconnected"
-
-export type ConflictField = "title" | "status" | "parent"
-
-export type ConflictKind =
-  | "both_changed"
-  | "title_too_long"
-  | "remote_reopened"
-  | "closed_not_planned"
-  | "closed_while_blocked"
-
-export type ConflictChoice = "envision" | "github"
-
-export interface SyncConflict {
-  field: ConflictField
-  kind: ConflictKind
-  /** Additional context, such as a missing title-continuation marker. */
-  detail: string[]
-  /** Envision and GitHub values for a title, status or parent conflict. */
-  local_value: string
-  remote_value: string
-  allowed_choices: ConflictChoice[]
-  detected_on: string | null
-  /** A choice already made, waiting for the next sync to apply it. */
-  resolution: ConflictChoice | null
+/** One of the link's Retry Job rows: work the retry cron owns. */
+export interface TaskRetry {
+  /** To GitHub (outbound) or from GitHub (inbound). */
+  direction: "outbound" | "inbound"
+  /** The cron is trying it now. */
+  running: boolean
+  attempts: number
+  next_retry_at: string | null
+  /** The latest failure; null for a row that hasn't failed. */
+  error: string | null
 }
 
 export interface TaskLink {
   state: LinkState
-  paused_reason: PauseReason | null
+  /** The state in plain words; null when the label says enough. */
   message: string | null
   issue_number: number | null
   issue_url: string | null
   repository_full_name: string | null
   origin: "Envision" | "GitHub" | null
   last_synced_at: string | null
-  /** Work that will run without anyone acting; 0 while paused or blocked. */
-  pending_operations: number
+  /** Work that will run without anyone acting; false while sync is stopped. */
+  pending: boolean
   /** A create was sent and Envision is checking GitHub for its Issue. */
   uncertain: boolean
-  error: string | null
-  hierarchy_error: string | null
-  conflicts: SyncConflict[]
+  retries: TaskRetry[]
 }
 
 export interface TaskRoute {
   connected: boolean
   sync_enabled: boolean
-  paused: boolean
   blocker: SyncBlocker | null
   blocker_message: string | null
   repository: RepositoryView | null
@@ -294,10 +263,9 @@ export interface TaskGitHub {
   eligible: boolean
   ineligible_reason: IneligibleReason | null
   /**
-   * A tagged, unlinked Task: a route blocker, "publishing", or "completed"
-   * (it publishes once reopened).
+   * A tagged, unlinked Task: a route blocker, or "publishing".
    */
-  waiting_reason: SyncBlocker | "publishing" | "completed" | null
+  waiting_reason: SyncBlocker | "publishing" | null
   waiting_message: string | null
   route: TaskRoute
   link: TaskLink | null
@@ -305,8 +273,6 @@ export interface TaskGitHub {
   /** Which controls the server allows this user now; show only those. */
   actions: {
     retry: boolean
-    resume: boolean
-    resolve: boolean
   }
 }
 
@@ -329,24 +295,24 @@ export function isTaskGitHubKey(key: unknown): boolean {
   return Array.isArray(key) && key[0] === taskGitHubKey("")[0]
 }
 
+/** Links whose work runs by itself, so it moves on with no one acting. */
+export function waitingLinks(counts: SyncCounts): number {
+  return counts.not_synced + counts.to_be_updated
+}
+
 /** Work the server is still doing, which the screen follows until it ends. */
 function projectBusy(view: ProjectGitHub | undefined): boolean {
   return Boolean(
     view &&
     (view.activation_import_state === "Queued" ||
       view.activation_import_state === "Running" ||
-      (view.sync_enabled &&
-        !view.paused &&
-        !view.blocker &&
-        view.counts.pending > 0))
+      (view.sync_enabled && !view.blocker && waitingLinks(view.counts) > 0))
   )
 }
 
 function taskBusy(view: TaskGitHub | undefined): boolean {
   return Boolean(
-    view &&
-    (view.waiting_reason === "publishing" ||
-      (view.link && (view.link.pending_operations > 0 || view.link.uncertain)))
+    view && (view.waiting_reason === "publishing" || view.link?.pending)
   )
 }
 
@@ -399,17 +365,10 @@ export function useTaskGitHub(task: string | null) {
   )
 }
 
-/** States whose work runs (store.ACTIVE_STATES); a parent in one carries
+/** Every state but the two marks (links.publishing); a parent in one carries
  *  its new Subtasks to GitHub. */
-const ACTIVE_LINK_STATES: readonly LinkState[] = [
-  "Pending",
-  "Synced",
-  "Conflict",
-  "Error",
-]
-
 export function isActiveLink(state: LinkState): boolean {
-  return ACTIVE_LINK_STATES.includes(state)
+  return state !== "to_be_deleted" && state !== "unlinked"
 }
 
 /** A Project's repository as the publish confirm shows it. */
@@ -453,114 +412,12 @@ export function audienceText(isPrivate: boolean | null | undefined) {
 }
 
 export const LINK_STATE_LABELS: Record<LinkState, string> = {
-  Pending: "Pending",
-  Synced: "Synced",
-  Conflict: "Conflict",
-  Error: "Error",
-  Paused: "Paused",
-  Tombstoned: "Deleted",
-}
-
-export const CONFLICT_FIELD_LABELS: Record<ConflictField, string> = {
-  title: "Title",
-  status: "Status",
-  parent: "Parent",
-}
-
-/** What happened, in a sentence, for each kind of conflict. */
-export const CONFLICT_KIND_TEXT: Record<ConflictKind, string> = {
-  both_changed: "Changed differently in Envision and on GitHub.",
-  title_too_long: "GitHub's title is longer than Envision allows.",
-  remote_reopened: "The Issue was reopened on GitHub, but this task is Done.",
-  closed_not_planned:
-    "The Issue was closed on GitHub as not planned or a duplicate.",
-  closed_while_blocked:
-    "The Issue was closed on GitHub while this task is Blocked.",
-}
-
-/** What each choice does, where it is more than "use that side's value". */
-export function choiceEffect(
-  conflict: Pick<SyncConflict, "field" | "kind">,
-  choice: ConflictChoice
-): string {
-  const field = CONFLICT_FIELD_LABELS[conflict.field].toLowerCase()
-  if (conflict.field === "status") {
-    if (conflict.kind === "remote_reopened") {
-      return choice === "github"
-        ? "Reopens this task in Envision."
-        : "Closes the Issue on GitHub again."
-    }
-    if (
-      conflict.kind === "closed_not_planned" ||
-      conflict.kind === "closed_while_blocked"
-    ) {
-      return choice === "github"
-        ? "Marks this task Done. Refused if it still has open subtasks."
-        : "Reopens the Issue on GitHub; the task keeps its status."
-    }
-  }
-  if (conflict.kind === "title_too_long" && choice === "github") {
-    return "Uses GitHub's whole title. What doesn't fit the task title continues at the top of its description."
-  }
-  return choice === "envision"
-    ? `Replaces the Issue's ${field} with this task's.`
-    : `Replaces this task's ${field} with the Issue's.`
-}
-
-/** Loss codes from docs/github-description-fidelity.md, as people read them. */
-const LOSS_LABELS: Partial<Record<string, string>> = {
-  underline: "Underline",
-  highlight: "Highlight",
-  text_color: "Text colour",
-  font: "Font",
-  alignment: "Alignment",
-  indent: "Indentation",
-  line_height: "Line height",
-  text_direction: "Text direction",
-  image_size: "Image size or float",
-  image_transform: "Flipped image",
-  table_column_width: "Table column widths",
-  subscript: "Subscript",
-  superscript: "Superscript",
-  task_list: "Checklist",
-  mixed_list: "Mixed list",
-  details: "Details block",
-  columns: "Columns",
-  table_header: "Table without a header row",
-  table_span: "Merged table cells",
-  table_cell_blocks: "Several lines in a table cell",
-  table_alignment: "Table column alignment",
-  math: "Math",
-  unsupported_element: "Unsupported formatting",
-  roundtrip_mismatch: "Formatting Markdown can't hold exactly",
-  private_attachment: "Attachment (never copied)",
-  local_url: "Link to this site",
-  inline_data_image: "Embedded image",
-  unsupported_url: "Unsupported link",
-  body_too_long: "Too long for GitHub",
-  heading_level: "Heading level",
-  task_item_blocks: "Checklist item with several blocks",
-  mixed_task_list: "Checklist mixed with plain items",
-  raw_html: "HTML",
-  linked_image: "Image inside a link",
-  footnote: "Footnote",
-  alert: "GitHub alert block",
-  sanitizer_removed: "Content removed for safety",
-  title_continuation_marker_missing:
-    "The title continuation lost its marker or was split. Review the title; description text is preserved.",
-}
-
-export function lossLabel(code: string): string {
-  return LOSS_LABELS[code] ?? code.replaceAll("_", " ")
-}
-
-/** How a conflict's Status value reads ("closed (not_planned)" from GitHub). */
-export function remoteStatusLabel(value: string): string {
-  const match = /^closed \((\w+)\)$/.exec(value)
-  if (match) return `Closed as ${match[1].replaceAll("_", " ")}`
-  if (value === "closed") return "Closed"
-  if (value === "open") return "Open"
-  return value
+  not_synced: "Not on GitHub yet",
+  synced: "Synced",
+  to_be_updated: "Update waiting",
+  cron_sync: "Retrying",
+  to_be_deleted: "Deleting",
+  unlinked: "Unlinked",
 }
 
 /**

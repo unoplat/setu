@@ -30,9 +30,9 @@ import {
 
 /**
  * Turning on GitHub sync for a Project (docs/adr/0008): never automatic.
- * The manager reads the repository, who can read it, the privacy and
- * publication disclaimer and the open Tasks already tagged `github`; turning
- * sync on accepts the disclaimer and publishes them. Enable sends the
+ * The manager reads the repository, who can read it, the privacy, publication
+ * and deletion disclaimers and the open Tasks already tagged `github`; turning
+ * sync on accepts the disclaimers and publishes them. Enable sends the
  * preview's token, so a backlog that changed since is refused rather than
  * published unseen; the dialog then shows the current one and asks again.
  */
@@ -55,6 +55,7 @@ export function EnableGitHubSyncDialog({
     project: string
     acknowledge_private_data: boolean
     acknowledge_publication: boolean
+    acknowledge_deletion: boolean
     backlog_token: string
   }) => Promise<{ message: ProjectGitHub }>
 }) {
@@ -88,11 +89,12 @@ export function EnableGitHubSyncDialog({
       setError(null)
       let response: { message: ProjectGitHub }
       try {
-        // Turning sync on is accepting the disclaimer the dialog shows.
+        // Turning sync on is accepting the disclaimers the dialog shows.
         response = await latest.current.enable({
           project,
           acknowledge_private_data: true,
           acknowledge_publication: true,
+          acknowledge_deletion: true,
           backlog_token: reviewed.backlog_token,
         })
       } catch (failure) {
@@ -196,11 +198,9 @@ export function EnableGitHubSyncDialog({
                 Into Envision
               </h3>
               <p className="text-sm leading-5 text-muted-foreground">
-                Every open Issue in this repository imports now with its
-                sub-issues, closed ones included, labelled or not, and every new
-                Issue imports as it arrives. A closed Issue, with everything
-                under it, imports only once reopened. Pull requests never
-                import.
+                Every open Issue in this repository, labelled or not, imports
+                now with its comments, and every new Issue imports as it
+                arrives. Closed Issues and pull requests don't import.
               </p>
               <Disclaimer>
                 Issues from this repository, private ones included, become tasks
@@ -219,13 +219,27 @@ export function EnableGitHubSyncDialog({
               <p className="text-sm leading-5 text-muted-foreground">
                 Open tasks tagged github publish with their subtasks, completed
                 ones included: title, description and status, kept in sync both
-                ways. A completed tagged task publishes once reopened. Each
-                Issue gets the envision-erpnext label. Deleting on one side
-                never deletes on the other.
+                ways. Comments written after a task publishes go to its Issue,
+                and edits and deletes go both ways. A completed tagged task
+                publishes once reopened. Each Issue gets the envision-erpnext
+                label.
               </p>
               <MentionsWarning />
               <Disclaimer>
-                {`Tagged tasks' titles and descriptions are copied to ${current.repository.full_name ?? "this repository"}${publicRepository ? ", where anyone may be able to read them" : ""}.`}
+                {`Tagged tasks' titles, descriptions and new comments are copied to ${current.repository.full_name ?? "this repository"}${publicRepository ? ", where anyone may be able to read them" : ""}.`}
+              </Disclaimer>
+            </section>
+
+            <section
+              className="flex flex-col gap-2.5"
+              aria-labelledby="github-sync-delete"
+            >
+              <h3 id="github-sync-delete" className="text-sm font-semibold">
+                Deleting
+              </h3>
+              <Disclaimer>
+                Deleting a linked task or Issue permanently deletes the other,
+                with the whole tree under it. Neither can be restored.
               </Disclaimer>
             </section>
 

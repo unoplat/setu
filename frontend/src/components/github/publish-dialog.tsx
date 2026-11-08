@@ -81,6 +81,7 @@ export function PublishToGitHubDialog({
       <div className="flex flex-col gap-2">
         <p className="text-sm leading-5">
           {subtaskText(subtasks)} Removing the github tag doesn't stop sync.
+          Deleting the task or its Issue later permanently deletes the other.
         </p>
         <MentionsWarning />
       </div>

@@ -7,8 +7,7 @@ import {
 } from "frappe-react-sdk"
 import {
   GitBranchIcon,
-  PauseIcon,
-  PlayIcon,
+  PowerOffIcon,
   RefreshCwIcon,
   UnlinkIcon,
 } from "lucide-react"
@@ -38,6 +37,7 @@ import {
   repositoryCandidatesKey,
   useProjectGitHub,
   useRepositoryCandidates,
+  waitingLinks,
   type ActivationImportState,
   type ProjectGitHub,
 } from "@/lib/github"
@@ -51,10 +51,10 @@ import {
 // the Project sees its repository and how sync is doing. Only a System
 // Manager or Projects Manager with write access to it (`can_manage`, which
 // the server checks again on every action) connects a repository, turns
-// sync on after the warnings, pauses, retries or disconnects. Connecting
+// sync on after the warnings, turns it off, retries or disconnects. Connecting
 // never turns sync on, and nothing here changes a Task's repository.
 
-type ProjectAction = "pause" | "resume" | "retry"
+type ProjectAction = "disable" | "retry"
 
 const IMPORT_TEXT: Record<ActivationImportState, string> = {
   Queued: "Existing Issues: waiting to import.",
@@ -278,11 +278,8 @@ function ConnectedRepository({
   projectName: string
   onChange: (view: ProjectGitHub) => Promise<void>
 }) {
-  const pause = useFrappePostCall<{ message: ProjectGitHub }>(
-    "setu.api.github.pause_project_sync"
-  )
-  const resume = useFrappePostCall<{ message: ProjectGitHub }>(
-    "setu.api.github.resume_project_sync"
+  const disable = useFrappePostCall<{ message: ProjectGitHub }>(
+    "setu.api.github.disable_project_sync"
   )
   const retry = useFrappePostCall<{ message: ProjectGitHub }>(
     "setu.api.github.retry_project_sync"
@@ -293,7 +290,7 @@ function ConnectedRepository({
   const disconnect = useFrappePostCall<{ message: ProjectGitHub }>(
     "setu.api.github.disconnect_project_repository"
   )
-  const calls = { pause, resume, retry }
+  const calls = { disable, retry }
 
   const [running, setRunning] = React.useState<ProjectAction | null>(null)
   const runningRef = React.useRef(false)
@@ -325,13 +322,19 @@ function ConnectedRepository({
     repository && isRepositoryDetails(repository) ? repository : null
   const fullName = details?.full_name ?? null
   const counts = view.counts
-  const linkedTasks = counts.linked + counts.paused
+  const linkedTasks =
+    waitingLinks(counts) +
+    counts.synced +
+    counts.cron_sync +
+    counts.to_be_deleted
   const failedImport = view.activation_import_state === "Failed"
-  // Blockers other than sync being off or paused: access, site or app.
+  // Anything still to sync, including keys whose job was lost.
+  const canRetry =
+    failedImport ||
+    waitingLinks(counts) + counts.cron_sync + counts.to_be_deleted > 0
+  // Blockers other than sync being off: access, site or app.
   const problem =
-    view.blocker &&
-    view.blocker !== "sync_not_enabled" &&
-    view.blocker !== "sync_paused"
+    view.blocker && view.blocker !== "sync_not_enabled"
       ? view.blocker_message
       : null
   const busy = running !== null
@@ -406,37 +409,26 @@ function ConnectedRepository({
             >
               Turn on sync…
             </ActionButton>
-          ) : view.paused ? (
-            <ActionButton
-              type="button"
-              size="md"
-              className="gap-2"
-              disabled={busy}
-              onClick={() => void act("resume", "GitHub sync resumed")}
-            >
-              <PlayIcon className="size-3.5" />
-              {running === "resume" ? "Resuming…" : "Resume sync"}
-            </ActionButton>
           ) : (
             <Button
               type="button"
               variant="outline"
               disabled={busy}
-              onClick={() => void act("pause", "GitHub sync paused")}
+              onClick={() => void act("disable", "GitHub sync turned off")}
             >
-              <PauseIcon />
-              {running === "pause" ? "Pausing…" : "Pause sync"}
+              <PowerOffIcon />
+              {running === "disable" ? "Turning off…" : "Turn off sync"}
             </Button>
           )}
-          {view.sync_enabled && (counts.error > 0 || failedImport) ? (
+          {view.sync_enabled && canRetry ? (
             <Button
               type="button"
               variant="outline"
               disabled={busy}
-              onClick={() => void act("retry", "Retrying failed GitHub sync")}
+              onClick={() => void act("retry", "Retrying GitHub sync")}
             >
               <RefreshCwIcon />
-              {running === "retry" ? "Retrying…" : "Retry failed"}
+              {running === "retry" ? "Retrying…" : "Retry now"}
             </Button>
           ) : null}
           <Button
@@ -494,11 +486,11 @@ function ConnectedRepository({
             />
             <p className="text-sm leading-5">
               {linkedTasks
-                ? `${linkedTasks === 1 ? "1 task linked to an Issue pauses" : `${linkedTasks} tasks linked to Issues pause`} and keeps its Issue. `
+                ? `${linkedTasks === 1 ? "1 task stays linked to its Issue" : `${linkedTasks} tasks stay linked to their Issues`}, and changes made here wait. `
                 : "No tasks are linked to Issues yet. "}
-              Connecting the same repository and turning sync on again resumes
-              them after comparing both sides; another repository leaves them
-              paused.
+              Connecting the same repository and turning sync on again merges
+              both sides. Turning sync on for another repository removes these
+              links and drops what is waiting; their Issues stay on GitHub.
             </p>
             <ConfirmFooter
               tone="destructive"
@@ -516,21 +508,26 @@ function ConnectedRepository({
 function syncText(view: ProjectGitHub): string {
   if (!view.sync_enabled) {
     return view.can_manage
-      ? "Sync is off. Nothing moves between Envision and GitHub until you turn it on."
+      ? "Sync is off. Nothing moves between Envision and GitHub until you turn it on. Changes to linked tasks wait for that."
       : "Sync is off. Nothing moves between Envision and GitHub."
   }
-  if (view.paused) {
-    return "Sync is paused. Changes on GitHub wait until it resumes."
-  }
-  return "Sync is on: every Issue imports as a task, and tasks tagged github publish as Issues. Linked ones stay in sync both ways."
+  return "Sync is on: every Issue imports as a task, and tasks tagged github publish as Issues. Linked ones stay in sync both ways, and deleting one deletes the other."
 }
 
 function countsText(view: ProjectGitHub): string {
-  const { linked, pending, conflict, error, paused } = view.counts
-  const parts = [`${linked} syncing`]
-  if (pending) parts.push(`${pending} pending`)
-  if (conflict) parts.push(`${conflict} in conflict`)
-  if (error) parts.push(`${error} with errors`)
-  if (paused) parts.push(`${paused} paused`)
+  const {
+    not_synced: notSynced,
+    synced,
+    to_be_updated: toBeUpdated,
+    cron_sync: cronSync,
+    to_be_deleted: toBeDeleted,
+    unlinked,
+  } = view.counts
+  const parts = [`${synced} synced`]
+  if (notSynced) parts.push(`${notSynced} not on GitHub yet`)
+  if (toBeUpdated) parts.push(`${toBeUpdated} with updates waiting`)
+  if (cronSync) parts.push(`${cronSync} retrying`)
+  if (toBeDeleted) parts.push(`${toBeDeleted} being deleted`)
+  if (unlinked) parts.push(`${unlinked} unlinked`)
   return parts.join(" · ")
 }

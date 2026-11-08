@@ -602,7 +602,7 @@ function ManageGitHub({
                 : `${connection.project_routes} projects' repository connections`}
               .{" "}
               {connection.sync_links > 0
-                ? `${connection.sync_links === 1 ? "1 synced task pauses" : `${connection.sync_links} synced tasks pause`} and keeps its Issue. Reconnecting the same repositories and turning sync on again resumes them.`
+                ? `${connection.sync_links === 1 ? "1 synced task stays linked to its Issue" : `${connection.sync_links} synced tasks stay linked to their Issues`}. Reconnecting the same repositories and turning sync on again merges both sides.`
                 : "No tasks sync through them."}
             </p>
           ) : null}

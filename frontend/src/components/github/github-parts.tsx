@@ -84,6 +84,22 @@ export function GitHubTime({ value }: { value: string }) {
   )
 }
 
+/** When a retry is due, in words. One already due waits for the cron's next pass. */
+export function NextRetry({ value }: { value: string | null }) {
+  const date = value ? parseFrappeDateTime(value) : null
+  if (!date || differenceInSeconds(date, new Date()) < 1) {
+    return <span>Retrying within 5 minutes</span>
+  }
+  return (
+    <span>
+      Next retry{" "}
+      <time dateTime={date.toISOString()} title={format(date, "PPpp")}>
+        {formatDistanceToNowStrict(date, { addSuffix: true })}
+      </time>
+    </span>
+  )
+}
+
 /** Every publication confirm says this (docs/plans/github-issue-sync.md). */
 export function MentionsWarning() {
   return (

@@ -8,55 +8,57 @@ import {
   CheckIcon,
   CircleAlertIcon,
   ClockIcon,
-  GitMergeIcon,
-  PauseIcon,
-  PlayIcon,
   RefreshCwIcon,
+  Trash2Icon,
   UnlinkIcon,
 } from "lucide-react"
 
 import { StatusBadge } from "@/components/app-ui/status-badge"
-import { ConflictDialog } from "@/components/github/conflict-dialog"
-import { GitHubTime, RepositoryLink } from "@/components/github/github-parts"
+import {
+  GitHubTime,
+  NextRetry,
+  RepositoryLink,
+} from "@/components/github/github-parts"
 import { RailGroup } from "@/components/record-detail"
 import { Button } from "@/components/ui/button"
 import { frappeErrorMessage } from "@/lib/frappe-error"
 import {
-  CONFLICT_FIELD_LABELS,
-  CONFLICT_KIND_TEXT,
   LINK_STATE_LABELS,
   isActiveLink,
   useTaskGitHub,
-  type ConflictChoice,
-  type ConflictField,
   type LinkState,
   type TaskGitHub,
+  type TaskLink,
+  type TaskRetry,
 } from "@/lib/github"
 import { projectTasksKey, taskActivityKey, taskKey } from "@/lib/tasks"
 import { cn } from "@/lib/utils"
 
 // The Task page's GitHub block, in the rail above the Activity: where the
-// Task is on GitHub, how its sync is doing, its conflicts, and the actions
-// the server allows this user (`actions`). Sync runs on the server; every
-// action here asks it and shows what it answers.
-
-type TaskAction = "retry" | "resume"
+// Task is on GitHub, how its sync is doing, what failed and when it retries,
+// and the actions the server allows this user (`actions`). Sync runs on the
+// server; every action here asks it and shows what it answers.
 
 const STATE_ICONS: Record<LinkState, React.ReactNode> = {
-  Pending: <ClockIcon />,
-  Synced: <CheckIcon className="text-success" />,
-  Conflict: <GitMergeIcon className="text-destructive" />,
-  Error: <CircleAlertIcon className="text-destructive" />,
-  Paused: <PauseIcon />,
-  Tombstoned: <UnlinkIcon />,
+  not_synced: <ClockIcon />,
+  synced: <CheckIcon className="text-success" />,
+  to_be_updated: <ClockIcon />,
+  cron_sync: <CircleAlertIcon className="text-destructive" />,
+  to_be_deleted: <Trash2Icon />,
+  unlinked: <UnlinkIcon />,
 }
 
 const INELIGIBLE_TEXT = {
   milestone: "Milestones don't sync with GitHub.",
   template: "Templates don't sync with GitHub.",
-  cancelled: "Cancelled tasks don't sync with GitHub.",
+  cancelled: "Cancelled tasks don't publish to GitHub.",
   no_project: "Only tasks in a project sync with GitHub.",
 } as const
+
+const RETRY_DIRECTION: Record<TaskRetry["direction"], string> = {
+  outbound: "To GitHub",
+  inbound: "From GitHub",
+}
 
 export function TaskGitHubPanel({
   task,
@@ -73,21 +75,12 @@ export function TaskGitHubPanel({
   const retry = useFrappePostCall<{ message: TaskGitHub }>(
     "setu.api.github.retry_task_sync"
   )
-  const resume = useFrappePostCall<{ message: TaskGitHub }>(
-    "setu.api.github.resume_task_sync"
-  )
-  const resolve = useFrappePostCall<{ message: TaskGitHub }>(
-    "setu.api.github.resolve_task_conflict"
-  )
-  const calls = { retry, resume }
 
-  const [running, setRunning] = React.useState<TaskAction | null>(null)
+  const [running, setRunning] = React.useState(false)
   const runningRef = React.useRef(false)
   const [actionError, setActionError] = React.useState<string | null>(null)
-  const [reviewing, setReviewing] = React.useState<ConflictField | null>(null)
 
-  // A sync that changed the Task (from GitHub, or a chosen resolution) shows
-  // on the rest of the page too.
+  // A sync that changed the Task from GitHub shows on the rest of the page too.
   const lastSynced = view?.link?.last_synced_at ?? null
   const seen = React.useRef<string | null | undefined>(undefined)
   React.useEffect(() => {
@@ -100,26 +93,22 @@ export function TaskGitHubPanel({
     void revalidate(projectTasksKey(project))
   }, [view, lastSynced, revalidate, task, project])
 
-  async function show(response: { message: TaskGitHub }) {
-    await mutate(response, { revalidate: false })
-    void revalidate(taskActivityKey(task))
-  }
-
-  /** One action at a time, its refusal shown below. */
-  async function act(action: TaskAction) {
+  /** One retry at a time, its refusal shown below. */
+  async function retryNow() {
     if (runningRef.current) return
     runningRef.current = true
-    setRunning(action)
+    setRunning(true)
     setActionError(null)
     try {
-      await show(await calls[action].call({ task }))
+      await mutate(await retry.call({ task }), { revalidate: false })
+      void revalidate(taskActivityKey(task))
     } catch (failure) {
       setActionError(frappeErrorMessage(failure as FrappeError))
       // A refusal usually means the state moved on: show the current one.
       void mutate()
     } finally {
       runningRef.current = false
-      setRunning(null)
+      setRunning(false)
     }
   }
 
@@ -148,11 +137,6 @@ export function TaskGitHubPanel({
   const { link, route, actions } = view
   // Untagged, unlinked Tasks in a Project without sync have nothing to show.
   if (!link && !view.tagged && !route.sync_enabled) return null
-
-  const conflict =
-    link?.conflicts.find((row) => row.field === reviewing) ?? null
-  const active = link !== null && isActiveLink(link.state)
-  const busy = running !== null
 
   return (
     <RailGroup className="gap-2.5">
@@ -190,7 +174,7 @@ export function TaskGitHubPanel({
             ) : (
               "never"
             )}
-            {active && link.pending_operations > 0 ? " · Syncing…" : ""}
+            {link.pending && !link.retries.length ? " · Syncing…" : ""}
           </p>
           {link.uncertain ? (
             <p className="text-sm leading-5">
@@ -199,41 +183,10 @@ export function TaskGitHubPanel({
               two.
             </p>
           ) : null}
-          {link.error ? (
-            <p className="text-sm leading-5 text-destructive">{link.error}</p>
-          ) : null}
-          {link.hierarchy_error ? (
-            <p className="text-sm leading-5 text-destructive">
-              {link.hierarchy_error}
-            </p>
-          ) : null}
-          {link.conflicts.length ? (
-            <ul className="flex flex-col gap-1.5">
-              {link.conflicts.map((row) => (
-                <li key={row.field}>
-                  <button
-                    type="button"
-                    className="flex w-full flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-start outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50"
-                    onClick={() => {
-                      resolve.reset()
-                      setReviewing(row.field)
-                    }}
-                  >
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                      <GitMergeIcon className="size-3.5 text-destructive" />
-                      {CONFLICT_FIELD_LABELS[row.field]} conflict
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {row.resolution
-                        ? `${row.resolution === "envision" ? "Keep Envision" : "Keep GitHub"} chosen; applies at the next sync.`
-                        : CONFLICT_KIND_TEXT[row.kind]}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {active ? (
+          {link.retries.map((job) => (
+            <RetryStatus key={job.direction} job={job} link={link} />
+          ))}
+          {isActiveLink(link.state) ? (
             <p className="text-xs leading-4.5 text-muted-foreground">
               New subtasks publish too. Removing the github tag doesn't stop
               sync.
@@ -255,78 +208,45 @@ export function TaskGitHubPanel({
         </p>
       ) : null}
 
-      <TaskGitHubActions
-        view={view}
-        running={running}
-        busy={busy}
-        onAct={(action) => void act(action)}
-      />
-
-      <ConflictDialog
-        conflict={conflict}
-        onOpenChange={(open) => {
-          if (!open) setReviewing(null)
-        }}
-        canResolve={actions.resolve}
-        onResolve={async (choice: ConflictChoice) => {
-          if (!conflict) return
-          try {
-            await show(
-              await resolve.call({ task, field: conflict.field, choice })
-            )
-          } catch (failure) {
-            void mutate()
-            throw failure
-          }
-        }}
-      />
+      {actions.retry ? (
+        <div className="flex flex-wrap gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={running}
+            onClick={() => void retryNow()}
+          >
+            <RefreshCwIcon className={cn(running && "animate-spin")} />
+            {running ? "Retrying…" : "Retry"}
+          </Button>
+        </div>
+      ) : null}
     </RailGroup>
   )
 }
 
-function TaskGitHubActions({
-  view,
-  running,
-  busy,
-  onAct,
-}: {
-  view: TaskGitHub
-  running: TaskAction | null
-  busy: boolean
-  onAct: (action: TaskAction) => void
-}) {
-  const { actions } = view
-  if (!actions.retry && !actions.resume) {
-    return null
-  }
+/** A Retry Job row: its latest failure, and when it is tried again. */
+function RetryStatus({ job, link }: { job: TaskRetry; link: TaskLink }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {actions.retry ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => onAct("retry")}
-        >
-          <RefreshCwIcon
-            className={cn(running === "retry" && "animate-spin")}
-          />
-          {running === "retry" ? "Retrying…" : "Retry"}
-        </Button>
+    <div className="flex flex-col gap-0.5">
+      {job.error ? (
+        <p className="text-sm leading-5 text-destructive">{job.error}</p>
       ) : null}
-      {actions.resume ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => onAct("resume")}
-        >
-          <PlayIcon />
-          {running === "resume" ? "Resuming…" : "Resume"}
-        </Button>
-      ) : null}
+      <p className="text-xs text-muted-foreground">
+        {RETRY_DIRECTION[job.direction]}
+        {job.attempts
+          ? ` · Tried ${job.attempts} time${job.attempts === 1 ? "" : "s"}`
+          : ""}
+        {" · "}
+        {job.running ? (
+          "Retrying now"
+        ) : link.pending ? (
+          <NextRetry value={job.next_retry_at} />
+        ) : (
+          "Waiting for sync"
+        )}
+      </p>
     </div>
   )
 }
