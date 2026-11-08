@@ -21,6 +21,8 @@ dependencies = [
     # auth, cache and exception internals.
     "githubkit[auth-app]==0.16.1",
     "githubkit-schemas[2022-11-28]==26.10.21",
+    # GitHubKit 0.16.1 permits Hishel 2.0, which removed CachePolicy.
+    "hishel[async,httpx]==1.4.0",
 ]
 
 [build-system]
