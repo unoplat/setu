@@ -342,7 +342,8 @@ def run_import(project: str) -> None:
 	if frappe.db.get_value(connection.PROJECT_ROUTE, name, "activation_import_state") == DONE:
 		return
 	set_progress(name, {"activation_import_state": RUNNING})
-	frappe.db.commit()
+	# The recovery scan must see a running import even if this worker times out.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	try:
 		remove_other_links(route)
 		frappe.db.commit()
@@ -380,8 +381,8 @@ def fail_import(route_name: str, exc: Exception) -> None:
 
 
 def write_stop(route_name: str, state: str, error: str | None) -> None:
+	# run_import catches the failure and returns; Frappe commits this final job state.
 	set_progress(route_name, {"activation_import_state": state, "last_error": error})
-	frappe.db.commit()
 
 
 # Step 1.
@@ -422,7 +423,8 @@ def import_pages(route: dict) -> bool:
 			page=page,
 		)
 		if not import_page(route, result["issues"]):
-			frappe.db.commit()
+			# Save the retry row left after a page rollback before reading that page again.
+			frappe.db.commit()  # nosemgrep: frappe-manual-commit
 			continue
 		frappe.db.set_value(
 			connection.PROJECT_ROUTE,
@@ -430,7 +432,8 @@ def import_pages(route: dict) -> bool:
 			"activation_import_page",
 			page + 1,
 		)
-		frappe.db.commit()
+		# Keep each page and its checkpoint atomic and durable across a later timeout.
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit
 		if not result["more"] and live_page(route) == page + 1:
 			return True
 
@@ -446,8 +449,8 @@ def live_page(route: dict) -> int | None:
 	)
 	if values and values.sync_enabled:
 		return values.activation_import_page or 1
+	# No more pages run; Frappe commits the cleanup when run_import returns.
 	links.stop_sync(route["project"], route["repository"])
-	frappe.db.commit()
 	return None
 
 
@@ -640,13 +643,14 @@ def retry_project(route: dict) -> None:
 	"""Everything waiting in a Project that sync is on for: Retry Job rows come due, links
 	holding keys get their job, and a failed import resumes from the page it stopped on."""
 	retry.make_due(retry.project_rows(route["project"], route["repository"]))
-	frappe.db.commit()
+	# An enqueue failure rolls back its own work, not the request to retry existing rows.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	enqueue_waiting_links(route)
 	state = frappe.db.get_value(connection.PROJECT_ROUTE, route["name"], "activation_import_state")
 	if state == FAILED:
 		set_progress(route["name"], {"activation_import_state": QUEUED})
 		enqueue_import(route["project"])
-	frappe.db.commit()
+	# The successful POST commits this state and runs the deferred import enqueue.
 
 
 # What the Project Settings page shows.

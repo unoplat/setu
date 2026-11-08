@@ -253,7 +253,7 @@ def complete_manifest(code: str, state: str) -> str:
 		doc.save(ignore_permissions=True)
 		# GET callbacks are not auto-committed by Frappe. Keep the one-time
 		# credentials even if preparing the subsequent installation URL fails.
-		frappe.db.commit()
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	return install_url()
 
 
@@ -283,8 +283,8 @@ def complete_installation(installation_id: str | None, state: str | None, setup_
 	# trust the URL's ID to attach a new installation to the site.
 	elif not frappe.db.exists(INSTALLATION, {"name": installation_id, "removed": 0}):
 		raise GitHubError("Refresh this connection from Envision Settings.")
+	# manager_action commits this GET callback before releasing the connection lock.
 	sync_installation(installation_id)
-	frappe.db.commit()
 	return "connected"
 
 

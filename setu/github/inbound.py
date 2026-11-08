@@ -129,7 +129,6 @@ def apply_or_queue(
 		return
 	job_key = delta.inbound_job_key(str(target["repository_id"]), str(target["issue_id"]))
 	if retry.merge_into_row(job_key, entries, None):
-		frappe.db.commit()
 		return
 	lock = store.issue_lock_nowait(str(target["issue_id"]))
 	if not lock.acquire():
@@ -211,7 +210,9 @@ def queue_event(
 	error_log: str | None = None,
 	failed: bool = False,
 ) -> None:
-	"""Upsert the Issue's Retry Job row and settle its link, if it has one, and commit.
+	"""Upsert the Issue's Retry Job row and settle its link, if it has one.
+
+	Commit writes before a caller releases the per-Issue Redis lock.
 
 	A link that went, or became unlinked or to_be_deleted, while this waited for its
 	lock ignores the change, so nothing is stored, except a refused delete, which only
@@ -220,14 +221,14 @@ def queue_event(
 	link = links.locked_link(link_name) if link_name else None
 	refused = failed and entries.get(delta.ISSUE_RESOURCE) == delta.DELETE
 	if link_name and (not link or not keeps_event(link.sync_state, refused)):
-		frappe.db.commit()
 		return
 	write_row(target, entries, link.task if link else None, error_log)
 	if link and refused:
 		mark_delete_refused(link)
 	elif link:
 		links.settle(link.name)
-	frappe.db.commit()
+	# A concurrent webhook must see the queued delta when the Issue lock is released.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def mark_delete_refused(link: frappe._dict) -> None:
@@ -310,7 +311,8 @@ def run_cron(target: dict[str, str | int], entries: dict[str, str]) -> HandlerRe
 		locked = links.locked_link(link.name)
 		if locked:
 			mark_delete_refused(locked)
-	frappe.db.commit()
+	# Persist the refusal/error before releasing the Issue lock and settling its lease.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	return HandlerResult(frozenset(done), error=error)
 
 

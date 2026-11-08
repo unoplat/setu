@@ -106,8 +106,8 @@ def locked_cron(link_name: str, entries: dict[str, str]) -> HandlerResult:
 def enqueue_again(link_name: str) -> None:
 	link = read_link(link_name)
 	if link and delta.parse_delta(link.delta):
+		# Frappe runs the deferred enqueue when this background job commits.
 		links.enqueue_push(link_name, link.task or link_name, rerun=True)
-		frappe.db.commit()
 
 
 def read_link(link_name: str, *, for_update: bool = False) -> frappe._dict | None:
@@ -122,13 +122,15 @@ def run_job(link_name: str) -> HandlerResult:
 	while it was queued, so this read has to see its keys.
 	"""
 	link = read_link(link_name, for_update=True)
-	frappe.db.commit()
+	# Release the SQL row lock before GitHub I/O; the Redis link lock still serializes pushes.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	if not link:
 		return HandlerResult(frozenset())
 	copied = delta.parse_delta(link.delta) or {}
 	if not copied:
 		links.settle(link_name)
-		frappe.db.commit()
+		# The next Redis lock holder must see the settled state.
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit
 		return HandlerResult(frozenset())
 	done: set[str] = set()
 	try:
@@ -140,15 +142,16 @@ def run_job(link_name: str) -> HandlerResult:
 		return HandlerResult(
 			frozenset(done), error=move_to_retry_job(link_name, exc), rate_limited=is_rate_limited(exc)
 		)
-	# A fresh read: this transaction's snapshot is as old as the pushes.
-	frappe.db.commit()
+	# Refresh the snapshot so edits merged during GitHub I/O keep their delta keys.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	if copied.get(delta.ISSUE_RESOURCE) == delta.DELETE:
 		finish_delete(link_name)
 		return HandlerResult(frozenset(done))
 	if left_finished(link_name, copied, done, link.modified):
 		links.enqueue_push(link_name, link.task or link_name, rerun=True)
 	links.settle(link_name)
-	frappe.db.commit()
+	# Commit finished keys and any deferred rerun before releasing the Redis link lock.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	return HandlerResult(frozenset(done))
 
 
@@ -169,7 +172,8 @@ def run_cron(link_name: str, entries: dict[str, str]) -> HandlerResult:
 		error = retry.log_failure(exc, link_name)
 		frappe.db.commit()
 		return HandlerResult(frozenset(done), error=error)
-	frappe.db.commit()
+	# The retry cron handles more rows; persist this row's work before releasing its lock.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	return HandlerResult(frozenset(done))
 
 
@@ -188,7 +192,8 @@ def move_to_retry_job(link_name: str, exc: BaseException) -> str | None:
 			retry.upsert_task_job(link_name, links.job_task_name(link), entries, error_log)
 			frappe.db.set_value(store.ISSUE_SYNC, link_name, "delta", None, update_modified=False)
 		links.settle(link_name)
-	frappe.db.commit()
+	# Make the retry handoff durable before releasing the link lock or running another row.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	return error_log
 
 
@@ -376,7 +381,8 @@ def finish_delete(link_name: str) -> None:
 	link = links.locked_link(link_name)
 	if link:
 		links.delete_link(link)
-	frappe.db.commit()
+	# Publish the deletion before another worker acquires this link's Redis lock.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def left_finished(link_name: str, copied: dict[str, str], done: set[str], modified: datetime) -> bool:
@@ -431,7 +437,8 @@ def send_create(link_name: str, task: Document, found: links.Target) -> None:
 	frappe.db.set_value(
 		store.ISSUE_SYNC, link_name, "create_requested_at", now_datetime(), update_modified=False
 	)
-	frappe.db.commit()
+	# A crash or lost response must leave evidence of the non-idempotent create attempt.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	try:
 		issue = issues.create_issue(found["installation_id"], found["full_name"], title, body)
 	except GitHubError as exc:
@@ -565,7 +572,6 @@ def finish_create(link_name: str, issue: IssueData | None, task: Document, found
 	"""
 	link = links.locked_link(link_name)
 	if not link:
-		frappe.db.commit()
 		return
 	entries = delta.parse_delta(link.delta) or {}
 	if entries.get(delta.ISSUE_RESOURCE) == delta.CREATE:
@@ -582,7 +588,8 @@ def finish_create(link_name: str, issue: IssueData | None, task: Document, found
 			}
 		)
 	frappe.db.set_value(store.ISSUE_SYNC, link_name, values, update_modified=False)
-	frappe.db.commit()
+	# Preserve GitHub's identity across later key failures and release the link before Task writes.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	if recorded:
 		# After the link's commit: a comment writes the Task row, and a hook locks
 		# the Task and then the link. It is never worth the identity GitHub just gave us.
@@ -591,7 +598,8 @@ def finish_create(link_name: str, issue: IssueData | None, task: Document, found
 			"Info",
 			_("Published to GitHub as {0}#{1}").format(found["full_name"], issue["number"]),
 		)
-		frappe.db.commit()
+		# Keep the publication breadcrumb if a later delta key rolls back its work.
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def body_size_error() -> str:

@@ -94,7 +94,9 @@ def setup_callback(
 	redirect_to_settings(result)
 
 
-@frappe.whitelist(allow_guest=True, methods=["POST"])
+# GitHub has no Frappe session: receive() verifies the raw-body HMAC before processing,
+# then enforces the app/installation/repository route. See docs/github-transaction-boundaries.md.
+@frappe.whitelist(allow_guest=True, methods=["POST"])  # nosemgrep: guest-whitelisted-method
 def webhook():
 	return events.receive()
 
@@ -203,7 +205,8 @@ def retry_link(link: frappe._dict) -> None:
 	with no outbound row get their job. Commits: the enqueue runs after commit, and its
 	failure moves the keys to a row (``activation.enqueue_waiting``)."""
 	retry.make_due(links.retry_jobs(link))
-	frappe.db.commit()
+	# An enqueue failure rolls back its work, but must not undo retrying the existing rows.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	if delta.parse_delta(link.delta) and not links.outbound_job(link.name):
 		activation.enqueue_waiting(link)
 

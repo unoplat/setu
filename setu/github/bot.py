@@ -57,10 +57,13 @@ def as_bot() -> Iterator[None]:
 	previous_user = frappe.session.user
 	previous_flag = frappe.flags.get(INBOUND_FLAG)
 	ensure_bot_user()
-	frappe.set_user(BOT_USER)
+	# Fixed attribution identity, never supplied by a request; callers gate the routed Task.
+	# No roles or login are granted here. See docs/github-transaction-boundaries.md.
+	frappe.set_user(BOT_USER)  # nosemgrep: frappe-setuser
 	frappe.flags[INBOUND_FLAG] = True
 	try:
 		yield
 	finally:
 		frappe.flags[INBOUND_FLAG] = previous_flag
-		frappe.set_user(previous_user)
+		# Always restore the caller's identity, including when validation or GitHub sync fails.
+		frappe.set_user(previous_user)  # nosemgrep: frappe-setuser

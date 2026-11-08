@@ -253,16 +253,14 @@ def fill_created_issue(target: dict[str, str | int], payload: dict[str, JSONValu
 		"issue_number": target["issue_number"],
 		"issue_url": url,
 	}
-	if links.fill_issue_identity(marker, str(target["repository_id"]), identity):
-		frappe.db.commit()
+	links.fill_issue_identity(marker, str(target["repository_id"]), identity)
 
 
 def fill_created_comment(link_name: str, payload: dict[str, JSONValue]) -> None:
 	"""The bot's own issue_comment.created: give the marker's row its GitHub comment, if
 	the create hasn't recorded one yet, so a create whose response was lost finds it
 	there (``comments.ensure_created``). Never imports."""
-	if comments.fill_created(link_name, payload.get("comment")):
-		frappe.db.commit()
+	comments.fill_created(link_name, payload.get("comment"))
 
 
 def finish_pending_delete(link_name: str) -> None:
@@ -274,7 +272,6 @@ def finish_pending_delete(link_name: str) -> None:
 	link = links.locked_link(link_name)
 	if link and link.sync_state == link_state.TO_BE_DELETED and not link.task:
 		links.delete_link(link)
-	frappe.db.commit()
 
 
 def end_pending_import(target: dict[str, str | int]) -> None:
@@ -283,8 +280,7 @@ def end_pending_import(target: dict[str, str | int]) -> None:
 	would otherwise get a 404 on every retry: ``issue: delete`` replaces its keys, and
 	finishes with no link to act on."""
 	job_key = delta.inbound_job_key(str(target["repository_id"]), str(target["issue_id"]))
-	if retry.merge_into_row(job_key, {delta.ISSUE_RESOURCE: delta.DELETE}, None):
-		frappe.db.commit()
+	retry.merge_into_row(job_key, {delta.ISSUE_RESOURCE: delta.DELETE}, None)
 
 
 def identifier(value: JSONValue) -> str | None:
@@ -337,7 +333,8 @@ def process_delivery(delivery_id: str):
 			doc.status = "Processing"
 			doc.attempts += 1
 			doc.save(ignore_permissions=True)
-			frappe.db.commit()
+			# Keep the attempt durable even if this worker dies during the GitHub request.
+			frappe.db.commit()  # nosemgrep: frappe-manual-commit
 			try:
 				if doc.event == "installation" and doc.action == "deleted":
 					connection.remove_installation(doc.installation_id)
@@ -364,7 +361,8 @@ def process_delivery(delivery_id: str):
 				)
 		doc.processed_at = now_datetime()
 		doc.save(ignore_permissions=True)
-		frappe.db.commit()
+		# Publish connection changes before releasing the shared Redis connection lock.
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def log_processing_error(exc: Exception, delivery_id: str):

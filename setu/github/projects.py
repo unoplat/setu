@@ -246,9 +246,13 @@ def get_project_route(project: str) -> dict:
 	doc = frappe.get_doc("Project", project)
 	doc.check_permission("read")
 	route = route_for(project=doc.name)
+	can_manage = False
+	if is_route_manager():
+		# This is a capability flag, not enforcement: read-only viewers must not raise.
+		can_manage = frappe.has_permission("Project", "write", doc=doc)
 	result = {
 		"project": doc.name,
-		"can_manage": is_route_manager() and bool(frappe.has_permission("Project", "write", doc=doc)),
+		"can_manage": bool(can_manage),
 		"connected": bool(route),
 		"repository": None,
 		"routable": False,

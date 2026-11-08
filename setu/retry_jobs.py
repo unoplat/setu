@@ -116,7 +116,8 @@ def release_stale_leases() -> None:
 		{"status": PENDING, "started_at": None},
 		update_modified=False,
 	)
-	frappe.db.commit()
+	# Release stale-row SQL locks before the picker acquires a batch in due-time order.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def release_leases(leases: list[frappe._dict]) -> None:
@@ -128,7 +129,7 @@ def release_leases(leases: list[frappe._dict]) -> None:
 		{"status": PENDING, "started_at": None},
 		update_modified=False,
 	)
-	frappe.db.commit()
+	# run_cron now returns; Frappe commits these unused leases with the job.
 
 
 def pick_due() -> list[frappe._dict]:
@@ -144,7 +145,8 @@ def pick_due() -> list[frappe._dict]:
 		limit = BATCH - len(leases)
 		rows = select_due(limit)
 		leases.extend(lease_rows(rows))
-		frappe.db.commit()
+		# Publish lease claims and release SKIP LOCKED row locks before running handlers.
+		frappe.db.commit()  # nosemgrep: frappe-manual-commit
 		if len(rows) < limit or len(leases) == BATCH:
 			break
 	return leases
@@ -263,7 +265,8 @@ def finish_row(lease: frappe._dict, result: HandlerResult) -> None:
 
 	Read without a lock first: locking a missing key takes a gap lock. The commit gives
 	that read a current snapshot, and the handler has committed its own work."""
-	frappe.db.commit()
+	# Start settlement with a fresh snapshot, separate from the handler's transaction.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	if not frappe.db.exists(RETRY_JOB, lease.name):
 		return
 	for path in hook_paths("retry_job_lock", lease):
@@ -273,7 +276,8 @@ def finish_row(lease: frappe._dict, result: HandlerResult) -> None:
 	)
 	if row:
 		settle_row(lease, row, result)
-	frappe.db.commit()
+	# Each lease finishes independently; a later row's failure must not undo this one.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def settle_row(lease: frappe._dict, row: frappe._dict, result: HandlerResult) -> None:

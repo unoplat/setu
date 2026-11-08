@@ -264,7 +264,8 @@ def send_create(
 	frappe.db.set_value(
 		store.COMMENT_SYNC, mapping.name, "create_requested_at", now_datetime(), update_modified=False
 	)
-	frappe.db.commit()
+	# A lost response must leave the marker and attempt durable to prevent duplicate comments.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 	try:
 		remote = issues.create_comment(found["installation_id"], found["full_name"], link.issue_number, body)
 	except GitHubError as exc:
@@ -285,7 +286,8 @@ def record_created(mapping_name: str, remote: CommentData) -> None:
 		{"github_comment_id": remote["id"], "github_url": remote["html_url"], "create_requested_at": None},
 		update_modified=False,
 	)
-	frappe.db.commit()
+	# A later delta key can roll back; the remote comment identity must survive it.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def find_created(link: frappe._dict, found: links.Target, marker: str | None) -> CommentData | None:
@@ -327,7 +329,8 @@ def delete_remote(link: frappe._dict, found: links.Target, comment_name: str) ->
 			if exc.status not in MISSING_STATUSES:
 				raise
 	frappe.db.delete(store.COMMENT_SYNC, {"name": mapping.name})
-	frappe.db.commit()
+	# Do not resurrect a mapping to a deleted remote comment if a later key fails.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 # Bodies.

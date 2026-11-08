@@ -202,12 +202,12 @@ def next_cursor(
 
 
 def store_cursor(value: datetime) -> None:
+	# Frappe commits the cursor when the scheduled job completes successfully.
 	frappe.db.set_single_value(client.SETTINGS, CURSOR_FIELD, value.isoformat(), update_modified=False)
-	frappe.db.commit()
 
 
 def log_failure(exc: Exception) -> None:
 	"""A GitHub error's message is safe to store: errors carry no credentials or bodies."""
 	detail = store.error_text(exc) if isinstance(exc, GitHubError) else None
+	# run_redelivery catches failures and returns, so the scheduled job commits the log.
 	store.log_safe(exc, FAILURE_TITLE, client.SETTINGS, client.SETTINGS, detail=detail)
-	frappe.db.commit()
