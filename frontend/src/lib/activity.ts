@@ -83,7 +83,7 @@ export function useActivityRealtime(
     if (!socket) return
 
     const refresh = () => {
-      // SWR exposes failures through the existing timeline error state.
+      // SWR exposes failures through each query's existing error state.
       void revalidate().catch(() => {})
     }
     const subscribe = () => {

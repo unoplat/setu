@@ -20,6 +20,8 @@ import {
   displayHost,
   hostOf,
   linkActivityKey,
+  linkKey,
+  linksKey,
   type LinkDetail,
 } from "@/lib/links"
 import { cn } from "@/lib/utils"
@@ -35,6 +37,10 @@ const LINK_ACTIVITY: ActivitySource = {
   method: "setu.api.link.get_link_activity",
   commentMethod: "setu.api.link.add_link_comment",
   key: linkActivityKey,
+  dataKeys: (name, project) => [
+    linkKey(name),
+    ...(project ? [linksKey(project)] : []),
+  ],
   commentScope: "link-comment",
   commentCommand: "link.comment",
   createdLabel: "this link",
@@ -42,7 +48,13 @@ const LINK_ACTIVITY: ActivitySource = {
 
 /** What follows the description in the content column: the comments. */
 export function LinkSections({ link }: { link: LinkDetail }) {
-  return <RecordComments record={link.name} source={LINK_ACTIVITY} />
+  return (
+    <RecordComments
+      record={link.name}
+      project={link.project}
+      source={LINK_ACTIVITY}
+    />
+  )
 }
 
 /** 04a's Activity, closing the rail. */

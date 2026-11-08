@@ -686,9 +686,10 @@ def delete_task(name: str) -> dict:
 	"""Permanently delete a Task and its entire subtree after confirmation.
 
 	Require delete permission on every Task before any mutation. Internal
-	dependency rows go first, then children before parents. External links
-	(including other Tasks' dependencies and Timesheets) keep Frappe's normal
-	delete protections: any failure rolls back the entire operation. No
+	dependency rows go first, then children before parents. The surviving parent's
+	automatic subtask dependency is removed through ERPNext's normal cleanup.
+	Other external links (including Tasks' dependencies and Timesheets) keep
+	Frappe's normal delete protections: any failure rolls back the entire operation. No
 	archive, grace period, or Deleted Document recovery copy is created. A linked
 	GitHub Issue is deleted too, after commit (setu.github.links.on_task_trash).
 	"""
@@ -713,11 +714,19 @@ def delete_task_tree(documents: list[Document], *, ignore_permissions: bool = Fa
 	person's delete keeps Frappe's own permission check here as well as the caller's.
 	"""
 	tree = [doc.name for doc in documents]
-	check_tree_links(documents, set(tree))
+	tree_names = set(tree)
 	frappe.db.savepoint("delete_task_tree")
 	try:
-		# Only dependencies owned by the deleted tree may be removed. Never
-		# silently modify a surviving Task to bypass a linked-record check.
+		# ERPNext's on_trash removes this automatic dependency from the parent.
+		# Do that cleanup before our preflight, which would otherwise refuse a
+		# subtask's deletion before on_trash can run. A later refusal rolls this
+		# parent save back too; unrelated dependencies still block deletion.
+		for doc in documents:
+			if doc.parent_task and doc.parent_task not in tree_names:
+				doc.remove_from_parent_depends_on(doc.parent_task)
+		check_tree_links(documents, tree_names)
+		# Dependencies internal to the deleted tree can go as well. References
+		# from any other surviving Task remain subject to the preflight above.
 		frappe.db.delete(
 			"Task Depends On",
 			{"parenttype": "Task", "parent": ["in", tree], "task": ["in", tree]},
