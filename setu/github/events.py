@@ -168,7 +168,16 @@ def receive_issue_event(
 	if deleted and not link:
 		end_pending_import(target)
 		return reply(200, accepted=True)
-	entries = delta.webhook_delta(event, action, linked=bool(link), comment_id=comment_id)
+	changes = payload.get("changes")
+	if event == delta.ISSUE_EVENT and action == "edited" and not isinstance(changes, dict):
+		return reply(400, accepted=False)
+	entries = delta.webhook_delta(
+		event,
+		action,
+		linked=bool(link),
+		comment_id=comment_id,
+		changed_fields=tuple(changes) if isinstance(changes, dict) else (),
+	)
 	if entries:
 		inbound.apply_or_queue(target, entries, link, sender_login(payload.get("sender")))
 	return reply(200, accepted=True)
