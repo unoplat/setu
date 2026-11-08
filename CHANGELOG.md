@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.2](https://github.com/unoplat/setu/compare/v0.4.1...v0.4.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* **github:** skip issues under closed ancestors ([6ad361f](https://github.com/unoplat/setu/commit/6ad361f2fad16c267842eac5187e16be73d7bb07))
+* synchronize GitHub issue parents and record updates ([685fc66](https://github.com/unoplat/setu/commit/685fc667c258a3a19833657ea1fc53d9a3545769))
+* synchronize GitHub issue parents and record updates ([041967a](https://github.com/unoplat/setu/commit/041967a4be2dca1775c6d71ed6342a0a7e7dae9e))
+
 ## [0.4.1](https://github.com/unoplat/setu/compare/v0.4.0...v0.4.1) (2026-11-08)
 
 
