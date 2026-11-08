@@ -4,6 +4,9 @@ A planning and knowledge engine for teams building SaaS products.
 
 Today, Envision helps teams plan work with a board organized by product area, milestones that track linked tasks, and a personal view across projects. We are building toward connecting that work to code, releases, and shared knowledge. See the [roadmap](#roadmap) for what's next.
 
+> [!WARNING]
+> Envision is in alpha. Release can include breaking changes, such as changes to data models, APIs, settings, or integrations.
+
 ## What you can do today
 
 ### Plan by product area and milestone
