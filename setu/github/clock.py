@@ -6,10 +6,6 @@ from zoneinfo import ZoneInfo
 from frappe.utils import get_datetime, get_system_timezone
 
 
-def utc_now() -> datetime:
-	return datetime.now(UTC)
-
-
 def parse(value: str | None) -> datetime | None:
 	"""A GitHub timestamp ("2026-01-02T03:04:05Z") as an aware UTC datetime."""
 	if not value:
@@ -26,15 +22,6 @@ def iso(value: datetime) -> str:
 	return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def to_system(value: datetime) -> datetime:
-	"""An aware datetime as the naive system-time value Frappe stores."""
-	return value.astimezone(ZoneInfo(get_system_timezone())).replace(tzinfo=None)
-
-
-def from_epoch(seconds: float) -> datetime:
-	return to_system(datetime.fromtimestamp(seconds, UTC))
-
-
 def site_iso(value: datetime | str | None) -> str | None:
 	"""A stored system-time value as ISO with its offset, for the browser to
 	show in its own time zone (as setu.api.timeline.timestamp)."""
@@ -47,3 +34,8 @@ def to_utc(value: datetime | str) -> datetime:
 	"""A naive system-time value Frappe stored, as an aware UTC datetime."""
 	naive = get_datetime(value)
 	return naive.replace(tzinfo=ZoneInfo(get_system_timezone())).astimezone(UTC)
+
+
+def to_site(value: datetime) -> datetime:
+	"""An aware datetime as the naive system-time value Frappe stores."""
+	return value.astimezone(ZoneInfo(get_system_timezone())).replace(tzinfo=None)

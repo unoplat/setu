@@ -12,7 +12,7 @@ from frappe.utils import now_datetime
 from frappe.utils.password import remove_encrypted_password
 from githubkit_schemas.v2022_11_28.models import Installation, SimpleUser
 
-from setu.github import client, issues, store
+from setu.github import client, issues, link_state, store
 from setu.github.client import GitHubError
 
 INSTALLATION = "Envision GitHub Installation"
@@ -21,9 +21,9 @@ DELIVERY = "Envision GitHub Delivery"
 PROJECT_ROUTE = "Envision GitHub Project Settings"
 STATE_TTL = 3600
 CALLBACK_PATH = "/api/method/setu.api.github."
-# Webhook events Issue sync needs. Apps registered before sub_issues was added
-# must subscribe to it on GitHub (docs/github-connection.md).
-REQUIRED_EVENTS = ("issues", "sub_issues")
+# Webhook events Issue sync needs. Apps registered before sub_issues or
+# issue_comment was added must subscribe to them on GitHub (docs/github-connection.md).
+REQUIRED_EVENTS = ("issues", "sub_issues", "issue_comment")
 # Reserve access for planned comment/PR sync, CI and release visibility at registration.
 # These are not requirements for today's Issue sync; existing installations
 # must keep working until their owners approve the additional permissions.
@@ -38,7 +38,6 @@ DEFAULT_PERMISSIONS = {
 }
 DEFAULT_EVENTS = (
 	*REQUIRED_EVENTS,
-	"issue_comment",
 	"pull_request",
 	"pull_request_review",
 	"pull_request_review_comment",
@@ -90,7 +89,7 @@ def public_url() -> str:
 
 def site_binding() -> str:
 	"""This site and database. A restored copy under another site or database
-	name differs, so it pauses instead of competing with the original."""
+	name differs, so it stops instead of competing with the original."""
 	return hashlib.sha256(f"{frappe.local.site}:{frappe.conf.db_name}".encode()).hexdigest()
 
 
@@ -450,10 +449,13 @@ def rebind_site():
 def disconnect():
 	"""Uninstall remotely before discarding local secrets. Failure leaves credentials intact.
 
-	Issue links are kept, paused (``app_disconnected``): Tasks keep their Issue
-	identity and tombstones, and nothing is deleted on either side. Connecting
-	again and turning sync on for the same repository resumes them after a
-	fresh comparison."""
+	Every route's sync turns off, as for a repository disconnect, and the routes go.
+	Issue links are kept, with their Issue identity and waiting work, and nothing is
+	deleted on either side. Connecting again and turning sync on for the same repository
+	merges them."""
+	# Local: links imports projects, which reads this module's constants at import.
+	from setu.github import links
+
 	require_manager()
 	require_current_site()
 	for installation_id in frappe.get_all(INSTALLATION, filters={"removed": 0}, pluck="name"):
@@ -479,7 +481,8 @@ def disconnect():
 	repository = frappe.qb.DocType(REPOSITORY)
 	frappe.qb.from_(repository).select(repository.name).for_update().run()
 	# Links store the repository ID as plain data, so they outlive the catalog.
-	store.pause_links({}, "app_disconnected")
+	for route in frappe.get_all(PROJECT_ROUTE, fields=["project", "repository"]):
+		links.stop_sync(route.project, route.repository)
 	frappe.db.delete(PROJECT_ROUTE)
 	# Keep receipt metadata for diagnostics; stale jobs compare their app ID.
 	frappe.db.delete(REPOSITORY)
@@ -525,9 +528,9 @@ def get_connection() -> dict:
 		"installations": installations,
 		"repositories": repositories,
 		"last_delivery": last[0] if last else None,
-		# Disconnect removes these routes and pauses these links.
+		# Disconnect removes these routes and stops syncing these links.
 		"project_routes": frappe.db.count(PROJECT_ROUTE),
-		"sync_links": frappe.db.count(store.ISSUE_SYNC, {"sync_state": ["in", list(store.ACTIVE_STATES)]}),
+		"sync_links": frappe.db.count(store.ISSUE_SYNC, {"sync_state": ["!=", link_state.UNLINKED]}),
 		"binding_changed": binding_changed(doc),
 		"missing_events": missing_events(doc),
 		"callback_urls": {

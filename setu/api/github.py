@@ -13,7 +13,7 @@ import frappe
 from frappe import _
 
 from setu.api.task import task_doc
-from setu.github import activation, connection, events, links, projects, store
+from setu.github import activation, connection, delta, events, links, projects, retry
 from setu.github.activation import ProjectGitHub, SyncPreview
 from setu.github.client import GitHubError
 from setu.github.links import TaskGitHub
@@ -140,6 +140,7 @@ def enable_project_sync(
 	project: str,
 	acknowledge_private_data: bool = False,
 	acknowledge_publication: bool = False,
+	acknowledge_deletion: bool = False,
 	backlog_token: str = "",
 ) -> ProjectGitHub:
 	return github_errors(
@@ -147,44 +148,32 @@ def enable_project_sync(
 		project,
 		acknowledge_private_data,
 		acknowledge_publication,
+		acknowledge_deletion,
 		backlog_token,
 	)
 
 
 @frappe.whitelist(methods=["POST"])
-def pause_project_sync(project: str) -> ProjectGitHub:
-	return activation.set_paused(project, True)
-
-
-@frappe.whitelist(methods=["POST"])
-def resume_project_sync(project: str) -> ProjectGitHub:
-	return activation.set_paused(project, False)
+def disable_project_sync(project: str) -> ProjectGitHub:
+	return activation.disable(project)
 
 
 @frappe.whitelist(methods=["POST"])
 def disconnect_project_repository(project: str) -> ProjectGitHub:
-	"""Clear the route. Links pause and keep their Issues; nothing is deleted."""
+	"""Clear the route, which turns sync off. Links keep their Issues; nothing is deleted."""
 	projects.clear_repository(project)
 	return activation.project_view(project)
 
 
 @frappe.whitelist(methods=["POST"])
 def retry_project_sync(project: str) -> ProjectGitHub:
-	"""Retry the Project's failed imports and failed Task syncs, and a failed
-	import of the repository's Issues at activation. A link whose state changed
-	meanwhile is skipped rather than failing the rest."""
+	"""Bring forward everything waiting in the Project, and a failed import of the
+	repository's Issues. A row that is running now is left to finish."""
 	projects.require_route_permission(project)
-	for name in frappe.get_all(
-		store.ISSUE_SYNC, filters={"project": project, "sync_state": "Error"}, pluck="name"
-	):
-		store.attempt(retry_link, name)
 	route = projects.route_for(project=project)
-	if route:
-		state = frappe.db.get_value(connection.PROJECT_ROUTE, route["name"], "activation_import_state")
-		if state == "Failed":
-			frappe.db.set_value(connection.PROJECT_ROUTE, route["name"], "activation_import_state", "Queued")
-			# It resumes from the page it stopped on.
-			activation.enqueue_import(project)
+	if not route or not route["sync_enabled"]:
+		frappe.throw(_("Turn on GitHub sync for this project first."))
+	activation.retry_project(route)
 	return activation.project_view(project)
 
 
@@ -200,62 +189,23 @@ def get_task_github(task: str) -> TaskGitHub:
 def retry_task_sync(task: str) -> TaskGitHub:
 	"""Retry now. An uncertain create still looks for its Issue first."""
 	doc = task_doc(task, "write")
-	retry_link(require_link(doc.name))
-	return links.task_projection(doc)
-
-
-@frappe.whitelist(methods=["POST"])
-def resume_task_sync(task: str) -> TaskGitHub:
-	"""Resume a paused Task: both sides are compared first."""
-	doc = task_doc(task, "write")
-	links.resume(require_link(doc.name))
-	return links.task_projection(doc)
-
-
-@frappe.whitelist(methods=["POST"])
-def resolve_task_conflict(task: str, field: str, choice: str) -> TaskGitHub:
-	"""Keep Envision's or GitHub's value of one field. The next sync applies
-	it through the normal Task save and records who chose."""
-	doc = task_doc(task, "write")
-	if field == "description":
-		frappe.throw(_("Descriptions sync automatically and do not need a manual choice."))
-	link = frappe.get_doc(store.ISSUE_SYNC, require_link(doc.name), for_update=True)
-	row = next((row for row in link.conflicts if row.field == field), None)
-	if not row:
-		frappe.throw(_("This conflict was already resolved."))
-	if choice not in links.allowed_choices():
-		frappe.throw(_("Choose Keep Envision or Keep GitHub."))
-	row.resolution = choice
-	row.resolved_by = frappe.session.user
-	link.save(ignore_permissions=True)
-	store.queue_op(link.name, "reconcile", link.project)
-	return links.task_projection(doc)
-
-
-def require_link(task: str) -> str:
-	link = links.link_for_task(task)
+	link = links.link_for_task(doc.name)
 	if not link:
 		frappe.throw(_("This task isn't linked to GitHub."))
-	return link.name
+	if not links.can_retry(link, projects.route_for(project=link.project)):
+		frappe.throw(_("This task has no GitHub sync to retry right now."))
+	retry_link(link)
+	return links.task_projection(doc)
 
 
-def retry_link(name: str) -> None:
-	link = frappe.db.get_value(
-		store.ISSUE_SYNC, name, ["project", "sync_state", "issue_id", "task"], as_dict=True, for_update=True
-	)
-	if link.sync_state not in store.ACTIVE_STATES:
-		frappe.throw(_("Resume this task's GitHub sync instead."))
-	store.retry_ops(name)
-	if link.sync_state == "Error":
-		frappe.db.set_value(
-			store.ISSUE_SYNC,
-			name,
-			{"sync_state": "Synced" if link.issue_id and link.task else "Pending", "error": None},
-		)
-	if not link.task:
-		store.queue_op(name, "import_issue", link.project)
-	else:
-		store.queue_op(name, "reconcile" if link.issue_id else "create_issue", link.project)
+def retry_link(link: frappe._dict) -> None:
+	"""The link's Retry Job rows come due, with the same delta, and keys on link.delta
+	with no outbound row get their job. Commits: the enqueue runs after commit, and its
+	failure moves the keys to a row (``activation.enqueue_waiting``)."""
+	retry.make_due(links.retry_jobs(link))
+	frappe.db.commit()
+	if delta.parse_delta(link.delta) and not links.outbound_job(link.name):
+		activation.enqueue_waiting(link)
 
 
 def redirect_to_settings(result: str):

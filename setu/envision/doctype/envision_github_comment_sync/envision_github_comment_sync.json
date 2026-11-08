@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-11-08 12:00:00.000000",
+ "description": "One Task comment's copy on its GitHub Issue: the two identities, kept until both copies are gone. Comment sync work itself lives in the Issue link's delta and Retry Job rows.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "issue_sync",
+  "comment",
+  "origin",
+  "section_github",
+  "github_comment_id",
+  "github_url",
+  "author_login",
+  "section_create",
+  "create_marker",
+  "create_requested_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "issue_sync",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Issue Link",
+   "options": "Envision GitHub Issue Sync",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "description": "The Envision Comment's name. Plain data, so it outlives the Comment until its GitHub copy is deleted too.",
+   "fieldname": "comment",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Comment",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "The side the comment was written on.",
+   "fieldname": "origin",
+   "fieldtype": "Select",
+   "label": "Written In",
+   "options": "Envision\nGitHub",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_github",
+   "fieldtype": "Section Break",
+   "label": "The GitHub comment"
+  },
+  {
+   "description": "GitHub's stable comment ID. Empty until Envision's create is confirmed.",
+   "fieldname": "github_comment_id",
+   "fieldtype": "Data",
+   "label": "GitHub Comment ID",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "github_url",
+   "fieldtype": "Data",
+   "label": "GitHub URL",
+   "read_only": 1
+  },
+  {
+   "description": "Who wrote it on GitHub, for a comment written there. Empty for a deleted GitHub account.",
+   "fieldname": "author_login",
+   "fieldtype": "Data",
+   "label": "GitHub Author",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_create",
+   "fieldtype": "Section Break",
+   "label": "Creating it on GitHub"
+  },
+  {
+   "description": "Random token in the GitHub copy's hidden trailer, so a create whose reply was lost can be found again.",
+   "fieldname": "create_marker",
+   "fieldtype": "Data",
+   "label": "Create Marker",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "description": "Committed before a create is sent; cleared once the GitHub comment is known.",
+   "fieldname": "create_requested_at",
+   "fieldtype": "Datetime",
+   "label": "Create Sent At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-08 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Envision",
+ "name": "Envision GitHub Comment Sync",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

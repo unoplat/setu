@@ -28,17 +28,17 @@ CRON_SYNC: LinkState = "cron_sync"
 TO_BE_DELETED: LinkState = "to_be_deleted"
 UNLINKED: LinkState = "unlinked"
 
-STATES: tuple[LinkState, ...] = (NOT_SYNCED, SYNCED, TO_BE_UPDATED, CRON_SYNC, TO_BE_DELETED, UNLINKED)
 MARKS: frozenset[LinkState] = frozenset({TO_BE_DELETED, UNLINKED})
-DERIVED: frozenset[LinkState] = frozenset(STATES) - MARKS
 
 # None is "no row": before a link is inserted, or after its row is deleted.
 # Staying in the same state is always allowed and not listed.
 TRANSITIONS: dict[LinkState | None, frozenset[LinkState | None]] = {
 	# Task published (not_synced), or Issue imported / re-linked by marker (synced).
 	None: frozenset({NOT_SYNCED, SYNCED}),
-	# Create succeeded, create failed, Task moved or converted, Task deleted with no Issue id.
-	NOT_SYNCED: frozenset({SYNCED, CRON_SYNC, UNLINKED, None}),
+	# Create succeeded, create succeeded with keys merged during the run, create
+	# failed, Task moved or converted, Task deleted with no Issue id, or with one
+	# the create has just recorded and the job has not settled yet.
+	NOT_SYNCED: frozenset({SYNCED, TO_BE_UPDATED, CRON_SYNC, TO_BE_DELETED, UNLINKED, None}),
 	# Edit saved, apply failed, Task deleted or delete refused, moved or converted,
 	# issues.deleted applied inline or issues.transferred.
 	SYNCED: frozenset({TO_BE_UPDATED, CRON_SYNC, TO_BE_DELETED, UNLINKED, None}),
@@ -92,11 +92,6 @@ def settled_state(current: LinkState, facts: Facts) -> LinkState:
 	return current if current in MARKS else derived_state(facts)
 
 
-def is_synced(facts: Facts) -> bool:
-	"""Nothing pending: link.delta empty and no Retry Job row in either direction."""
-	return facts.has_issue and not facts.link_delta and not facts.has_retry_job
-
-
 # Events.
 
 
@@ -113,19 +108,17 @@ def accepts_import(state: LinkState | None) -> bool:
 	return state not in MARKS
 
 
-IssueAction = Literal["deleted", "transferred"]
-
-
-def accepts_webhook(state: LinkState, action: str) -> bool:
+def accepts_webhook(state: LinkState, *, issue_deleted: bool) -> bool:
 	"""Whether a linked Issue's webhook is stored or applied.
 
 	An unlinked link ignores everything (200, nothing stored). A to_be_deleted
-	link ignores everything but issues.deleted, which finishes it.
+	link ignores everything but issues.deleted, which finishes it. A deleted
+	comment is not that: it is ignored like any other event.
 	"""
 	if state == UNLINKED:
 		return False
 	if state == TO_BE_DELETED:
-		return action == "deleted"
+		return issue_deleted
 	return True
 
 
@@ -142,50 +135,22 @@ class Outcome(StrEnum):
 	"""to_be_deleted; delta becomes {"issue": "delete"} in link.delta or the outbound Retry Job."""
 	MARK_UNLINKED = "mark_unlinked"
 	"""unlinked; link.delta cleared, Retry Job rows deleted, github tag removed."""
-	DELETE_TASK_TREE = "delete_task_tree"
-	"""Delete the Task tree as the integration user, then the link row. If refused: to_be_deleted."""
 	QUEUE_FOR_CRON = "queue_for_cron"
 	"""Merge the event into the link's inbound Retry Job delta; the cron applies it."""
 
 
-def on_task_deleted(state: LinkState, *, has_issue: bool, deletion_acknowledged: bool) -> Outcome:
+def on_task_deleted(state: LinkState, *, has_issue: bool) -> Outcome:
 	"""Envision → GitHub 3a/3b. Sync off changes nothing: a to_be_deleted link waits.
 
-	The no-Issue check runs before the acknowledgement check: a link with no
+	A link that still holds a Task and carries a mark keeps it: unlinked, or
+	to_be_deleted after GitHub's delete of that Task was refused. A link with no
 	Issue (not_synced, or cron_sync after a failed create) is just deleted.
 	"""
-	if state == UNLINKED:
+	if state in MARKS:
 		return Outcome.CLEAR_TASK
-	if state == TO_BE_DELETED:
-		# Its Task was already deleted.
-		return Outcome.IGNORE
 	if not has_issue:
 		return Outcome.DELETE_ROW
-	if not deletion_acknowledged:
-		return Outcome.MARK_UNLINKED
 	return Outcome.MARK_TO_BE_DELETED
-
-
-def on_issue_deleted(state: LinkState, *, deletion_acknowledged: bool, has_inbound_job: bool) -> Outcome:
-	"""GitHub → Envision 3a/3b: a signed issues.deleted for a linked Issue.
-
-	A to_be_deleted link is finished by it whatever the sender, and never
-	becomes unlinked. A 404 or 410 on a read is never proof of deletion.
-
-	``has_inbound_job``: a github:issue Retry Job row exists for this Issue.
-	Only that row can take the event; cron_sync alone doesn't say which row
-	exists, so an outbound row alone means the delete runs now.
-	"""
-	if state == UNLINKED or state == NOT_SYNCED:
-		# not_synced has no Issue, so no webhook can name it.
-		return Outcome.IGNORE
-	if state == TO_BE_DELETED:
-		return Outcome.DELETE_ROW
-	if not deletion_acknowledged:
-		return Outcome.MARK_UNLINKED
-	if has_inbound_job:
-		return Outcome.QUEUE_FOR_CRON
-	return Outcome.DELETE_TASK_TREE
 
 
 def on_issue_transferred(state: LinkState, *, has_inbound_job: bool) -> Outcome:

@@ -14,7 +14,7 @@ import frappe
 BOT_USER = "envision-github@bot.invalid"
 # Set while a GitHub change is being saved, so the Task hooks do not send the
 # same change straight back to GitHub.
-INBOUND_FLAG = "envision_github_inbound"
+INBOUND_FLAG = "in_github_sync"
 
 
 def ensure_bot_user() -> None:
@@ -37,6 +37,18 @@ def ensure_bot_user() -> None:
 
 def inbound() -> bool:
 	return bool(frappe.flags.get(INBOUND_FLAG))
+
+
+@contextmanager
+def syncing() -> Iterator[None]:
+	"""Apply a change from GitHub: the Task hooks do not send it straight back. The
+	flag is put back afterwards, also on failure."""
+	previous_flag = frappe.flags.get(INBOUND_FLAG)
+	frappe.flags[INBOUND_FLAG] = True
+	try:
+		yield
+	finally:
+		frappe.flags[INBOUND_FLAG] = previous_flag
 
 
 @contextmanager

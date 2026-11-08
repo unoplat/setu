@@ -1,9 +1,10 @@
-"""GitHub Issue and sub-issue REST calls for one installation's repository.
+"""GitHub Issue and sub-issue calls for one installation's repository.
 
 Reads and writes use githubkit's typed REST methods, so sync code never reads
 raw JSON. A create whose reply cannot be read is uncertain: the next attempt
-looks it up by its marker instead of creating it again. Issues endpoints also
-return pull requests; ``IssueData`` marks them and callers skip them.
+looks it up by its Task-name marker and the app bot as author instead of
+creating it again. Issues endpoints also return pull requests; ``IssueData``
+marks them and callers skip them.
 
 Endpoints (API version 2022-11-28):
 
@@ -17,6 +18,13 @@ Endpoints (API version 2022-11-28):
   ``DELETE /repos/{owner}/{repo}/issues/{number}/sub_issue``: the body names
   the child by its Issue **id**, not its number.
 - ``GET /app`` (app JWT): the events the app is subscribed to.
+- ``GET /repos/{owner}/{repo}``: whether the repository can still be read.
+- GraphQL ``deleteIssue``, which takes the Issue's node id. REST has no equivalent.
+- ``GET/POST /repos/{owner}/{repo}/issues/{number}/comments`` and
+  ``GET/PATCH/DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}``: Issue
+  comments (https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28).
+  A comment is found by its id across the whole repository, so ``CommentData``
+  carries its Issue's number for the caller to check.
 """
 
 import re
@@ -25,7 +33,7 @@ from typing import Literal, TypedDict
 
 from githubkit.compat import type_validate_json
 from githubkit.utils import UNSET
-from githubkit_schemas.v2022_11_28.models import Issue
+from githubkit_schemas.v2022_11_28.models import Issue, IssueComment
 from githubkit_schemas.v2022_11_28.types import ReposOwnerRepoIssuesIssueNumberPatchBodyType
 from pydantic import ValidationError
 
@@ -35,14 +43,21 @@ from setu.github.client import GitHubError
 FULL_NAME = re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+")
 # ``parent_issue_url``: https://api.github.com/repos/{owner}/{repo}/issues/{number}
 PARENT_URL = re.compile(r"/repos/([A-Za-z0-9-]+/[A-Za-z0-9._-]+)/issues/(\d+)$")
+# A comment's ``issue_url`` ends with its Issue's number.
+ISSUE_NUMBER_URL = re.compile(r"/issues/(\d+)$")
 PAGE_SIZE = 100
-# GitHub nests sub-issues at most eight levels deep.
-MAX_DEPTH = 8
 # Marks the Issues Envision publishes; never synced, so removing it on GitHub
 # changes nothing.
 ENVISION_LABEL = "envision-erpnext"
 ENVISION_LABEL_COLOR = "d4c5f9"
 ENVISION_LABEL_DESCRIPTION = "Published from Envision (ERPNext)"
+DELETE_ISSUE = """
+mutation DeleteIssue($issueId: ID!) {
+  deleteIssue(input: {issueId: $issueId}) {
+    clientMutationId
+  }
+}
+"""
 
 IssueState = Literal["open", "closed"]
 
@@ -69,6 +84,27 @@ class IssueData(TypedDict):
 	# when the Issue has no parent (or GitHub did not send it).
 	parent_full_name: str | None
 	parent_number: int | None
+	# Whether GitHub said: ``parent_issue_url`` is optional, and only null means no parent.
+	parent_known: bool
+	comment_count: int
+
+
+class CommentData(TypedDict):
+	id: str
+	html_url: str
+	body: str
+	# The number from the comment's ``issue_url``, so a caller can check it is this Issue's.
+	issue_number: int | None
+	created_at: str
+	updated_at: str
+	# Empty for a deleted GitHub account.
+	author_login: str
+	author_type: str
+
+
+class CommentPage(TypedDict):
+	comments: list[CommentData]
+	more: bool
 
 
 class IssuePage(TypedDict):
@@ -124,6 +160,28 @@ def update_issue(
 		return issue_data(type_validate_json(Issue, response.content))
 	except ValidationError:
 		raise GitHubError("GitHub returned an invalid Issue.") from None
+
+
+def delete_issue(installation_id: str, node_id: str) -> None:
+	"""Delete an Issue for good. A missing Issue raises with status 404."""
+	client.installation_mutation(installation_id, DELETE_ISSUE, {"issueId": node_id})
+
+
+def check_repository(installation_id: str, full_name: str) -> None:
+	"""Raise unless this installation can read the repository."""
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	client.installation_check(installation_id, github.rest(client.API_VERSION).repos.get, owner, repo)
+
+
+def state_patch(status: str | None) -> ReposOwnerRepoIssuesIssueNumberPatchBodyType:
+	"""The Issue state for a Task status (docs/adr/0008). Any status that is not
+	Completed or Cancelled is an open Issue."""
+	if status == "Completed":
+		return {"state": "closed", "state_reason": "completed"}
+	if status == "Cancelled":
+		return {"state": "closed", "state_reason": "not_planned"}
+	return {"state": "open"}
 
 
 def list_issues(
@@ -188,20 +246,6 @@ def ensure_label(installation_id: str, full_name: str) -> None:
 			raise
 
 
-def add_label(installation_id: str, full_name: str, number: int) -> None:
-	"""Add the Envision label to an Issue, keeping its other labels."""
-	owner, repo = repository_parts(full_name)
-	github = client.installation_client(installation_id)
-	client.installation_write(
-		installation_id,
-		github.rest(client.API_VERSION).issues.add_labels,
-		owner,
-		repo,
-		number,
-		data={"labels": [ENVISION_LABEL]},
-	)
-
-
 def list_sub_issues(installation_id: str, full_name: str, number: int) -> list[IssueData]:
 	"""Every sub-issue of an Issue, open and closed, all pages."""
 	owner, repo = repository_parts(full_name)
@@ -251,6 +295,90 @@ def remove_sub_issue(installation_id: str, full_name: str, parent_number: int, c
 	)
 
 
+def get_comment(installation_id: str, full_name: str, comment_id: str) -> CommentData:
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	return comment_data(
+		client.installation_call(
+			installation_id, github.rest(client.API_VERSION).issues.get_comment, owner, repo, int(comment_id)
+		)
+	)
+
+
+def list_comments(installation_id: str, full_name: str, number: int, page: int) -> CommentPage:
+	"""One page of an Issue's comments, oldest first (GitHub's order for this endpoint)."""
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	result = client.installation_call(
+		installation_id,
+		github.rest(client.API_VERSION).issues.list_comments,
+		owner,
+		repo,
+		number,
+		per_page=PAGE_SIZE,
+		page=page,
+	)
+	return {"comments": [comment_data(item) for item in result], "more": len(result) >= PAGE_SIZE}
+
+
+def create_comment(installation_id: str, full_name: str, number: int, body: str) -> CommentData:
+	"""A reply that can't be read leaves the create uncertain, as for an Issue."""
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	response = client.installation_write(
+		installation_id,
+		github.rest(client.API_VERSION).issues.create_comment,
+		owner,
+		repo,
+		number,
+		data={"body": body},
+	)
+	try:
+		return comment_data(response.parsed_data)
+	except ValidationError, GitHubError:
+		raise GitHubError("GitHub returned an invalid comment.", uncertain=True) from None
+
+
+def update_comment(installation_id: str, full_name: str, comment_id: str, body: str) -> None:
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	client.installation_write(
+		installation_id,
+		github.rest(client.API_VERSION).issues.update_comment,
+		owner,
+		repo,
+		int(comment_id),
+		data={"body": body},
+	)
+
+
+def delete_comment(installation_id: str, full_name: str, comment_id: str) -> None:
+	"""A missing comment raises with status 404."""
+	owner, repo = repository_parts(full_name)
+	github = client.installation_client(installation_id)
+	client.installation_write(
+		installation_id,
+		github.rest(client.API_VERSION).issues.delete_comment,
+		owner,
+		repo,
+		int(comment_id),
+	)
+
+
+def comment_data(comment: IssueComment) -> CommentData:
+	number = ISSUE_NUMBER_URL.search(comment.issue_url)
+	return {
+		"id": str(comment.id),
+		"html_url": comment.html_url,
+		"body": comment.body if isinstance(comment.body, str) else "",
+		"issue_number": int(number.group(1)) if number else None,
+		"created_at": clock.iso(comment.created_at),
+		"updated_at": clock.iso(comment.updated_at),
+		"author_login": comment.user.login if comment.user is not None else "",
+		"author_type": comment.user.type if comment.user is not None else "",
+	}
+
+
 def subscribed_events() -> list[str]:
 	github = client.app_client()
 	app = client.app_call(github.rest(client.API_VERSION).apps.get_authenticated)
@@ -285,4 +413,6 @@ def issue_data(issue: Issue) -> IssueData:
 		),
 		"parent_full_name": parent.group(1) if parent else None,
 		"parent_number": int(parent.group(2)) if parent else None,
+		"parent_known": issue.parent_issue_url is None or parent is not None,
+		"comment_count": issue.comments,
 	}

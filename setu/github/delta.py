@@ -10,7 +10,7 @@ comes from its ``job_key`` prefix.
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Literal, NamedTuple
 
 Direction = Literal["inbound", "outbound"]
@@ -31,6 +31,14 @@ class Vocabulary(NamedTuple):
 
 ISSUE_RESOURCE = "issue"
 COMMENT_PREFIX = "comment:"
+# Inbound only: read every comment the Issue has now. Never inline: the cron runs it,
+# so an Issue's whole history never has to fit in a webhook's 10 seconds.
+COMMENTS_RESOURCE = "comments"
+SYNC: InboundAction = "sync"
+CREATE: OutboundAction = "create"
+PUSH: OutboundAction = "push"
+DELETE: Action = "delete"
+TRANSFERRED: InboundAction = "transferred"
 FIELD_RESOURCES: frozenset[FieldResource] = frozenset({"title", "description", "status", "parent"})
 
 VOCABULARIES: dict[Direction, Vocabulary] = {
@@ -108,9 +116,100 @@ def parse_delta(value: object) -> dict[str, str] | None:
 	return entries if len(entries) == len(parsed) else None
 
 
+def dump_delta(entries: Mapping[str, str]) -> str | None:
+	"""A delta as a JSON field stores it; nothing for an empty one, which is how
+	``link.delta`` is cleared. A Document does not serialize JSON fields itself."""
+	return json.dumps(entries, sort_keys=True) if entries else None
+
+
+ISSUE_EVENT = "issues"
+SUB_ISSUE_EVENT = "sub_issues"
+COMMENT_EVENT = "issue_comment"
+# What an issue_comment action does to that one comment. pinned/unpinned change nothing.
+COMMENT_ACTIONS: dict[str, Action] = {"created": SYNC, "edited": SYNC, "deleted": DELETE}
+SUB_ISSUE_ACTIONS = frozenset(
+	{"sub_issue_added", "sub_issue_removed", "parent_issue_added", "parent_issue_removed"}
+)
+# What an action changes on an Issue that has a link. With no link, it imports.
+LINKED_UPDATES: dict[str, tuple[FieldResource, ...]] = {
+	"edited": ("title", "description"),
+	"closed": ("status",),
+	"reopened": ("status",),
+}
+
+
+def comment_key(comment_id: str) -> str:
+	return f"{COMMENT_PREFIX}{comment_id}"
+
+
+def webhook_delta(event: str, action: str, *, linked: bool, comment_id: str | None = None) -> dict[str, str]:
+	"""Which resources an Issue event made stale, never their content (ADR "Webhook
+	catalogue"). ``linked``: the Issue has a link.
+
+	Empty means nothing to store: a quiet action (assigned, labeled, pinned and the
+	like, or anything else not listed), and ``issues.deleted`` with no link, because
+	an Issue is never imported in order to delete it. A sub_issues delta belongs on
+	the child's row. An ``issue_comment`` names its comment (``comment_id``); one
+	created or edited on an Issue with no link imports the Issue first, and a
+	deleted one there has nothing to delete.
+	"""
+	if event == COMMENT_EVENT:
+		comment_action = COMMENT_ACTIONS.get(action)
+		if not comment_action or not comment_id or not NUMERIC_ID.fullmatch(comment_id):
+			return {}
+		if linked:
+			return {comment_key(comment_id): comment_action}
+		return {ISSUE_RESOURCE: SYNC, comment_key(comment_id): SYNC} if comment_action == SYNC else {}
+	if event == SUB_ISSUE_EVENT:
+		return {"parent": SYNC} if action in SUB_ISSUE_ACTIONS else {}
+	if event != ISSUE_EVENT:
+		return {}
+	if action == "opened":
+		return {ISSUE_RESOURCE: SYNC}
+	if action == "deleted":
+		return {ISSUE_RESOURCE: DELETE} if linked else {}
+	if action == "transferred":
+		return {ISSUE_RESOURCE: TRANSFERRED}
+	if action not in LINKED_UPDATES:
+		return {}
+	return dict.fromkeys(LINKED_UPDATES[action], SYNC) if linked else {ISSUE_RESOURCE: SYNC}
+
+
+def merge_delta(current: Mapping[str, str], incoming: Mapping[str, str]) -> dict[str, str]:
+	"""Merge new work into a delta, in either direction (ADR "Delta merge rules").
+
+	``issue: delete`` replaces every key and stays: deletion wins over everything.
+	``issue: transferred`` replaces every key too, unless the Issue is being
+	deleted. Any other key is added, and a key that holds ``delete`` keeps it: a
+	deleted comment does not come back.
+	"""
+	issue_actions = {current.get(ISSUE_RESOURCE), incoming.get(ISSUE_RESOURCE)}
+	if DELETE in issue_actions:
+		return {ISSUE_RESOURCE: DELETE}
+	if TRANSFERRED in issue_actions:
+		return {ISSUE_RESOURCE: TRANSFERRED}
+	merged = dict(current)
+	for resource, action in incoming.items():
+		merged[resource] = DELETE if merged.get(resource) == DELETE else action
+	return merged
+
+
+def remove_done(
+	current: Mapping[str, str], copied: Mapping[str, str], done: Collection[str]
+) -> dict[str, str]:
+	"""The delta after a run: finished keys go if they still hold the copied value."""
+	return {
+		resource: action
+		for resource, action in current.items()
+		if resource not in done or copied.get(resource) != action
+	}
+
+
 def allowed_actions(resource: str, direction: Direction) -> frozenset[Action]:
 	"""The actions a resource allows in this direction; none for an unknown resource."""
 	vocabulary = VOCABULARIES[direction]
+	if resource == COMMENTS_RESOURCE:
+		return frozenset({SYNC}) if direction == "inbound" else frozenset()
 	if resource == ISSUE_RESOURCE:
 		return vocabulary.issue
 	if resource in FIELD_RESOURCES:

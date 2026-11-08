@@ -205,9 +205,11 @@ doc_events = {
 		],
 	},
 	# GitHub Issue sync (setu.github.links, docs/adr/0008): Subtasks of
-	# published Tasks publish, changes queue a reconcile after commit, and a
-	# deleted Task leaves a tombstone instead of deleting its Issue.
+	# published Tasks publish, changes record their delta keys and push after
+	# commit, and deleting a linked Task deletes its Issue too.
+	# A linked Task can't be renamed: its name is the marker in its Issue's body.
 	"Task": {
+		"before_rename": "setu.github.links.guard_task_rename",
 		"validate": "setu.api.task.validate_task_links",
 		"after_insert": "setu.github.links.on_task_insert",
 		"on_update": "setu.github.links.on_task_update",
@@ -229,10 +231,16 @@ doc_events = {
 		"after_rename": "setu.api.view.rename_user_filters",
 	},
 	# A reply's quote is copied from the original when it is posted and kept
-	# when the original goes (setu.api.timeline).
+	# when the original goes (setu.api.timeline). A comment on a published Task is
+	# sent to its GitHub Issue (setu.github.comments).
 	"Comment": {
 		"validate": "setu.api.timeline.validate_quote",
-		"on_trash": "setu.api.timeline.release_quotes",
+		"after_insert": "setu.github.comments.on_comment_insert",
+		"on_update": "setu.github.comments.on_comment_update",
+		"on_trash": [
+			"setu.api.timeline.release_quotes",
+			"setu.github.comments.on_comment_trash",
+		],
 	},
 }
 
@@ -253,24 +261,32 @@ sqlite_search = ["setu.search.EnvisionSearch"]
 # Scheduled Tasks
 # ---------------
 
-# Recover committed webhook receipts and sync operations when queue
-# publication or a worker fails (setu.github.recovery).
+# Webhook receipts whose job was lost, the retry cron (which only enqueues itself in the
+# long queue: setu.retry_jobs), the scan for what no event brings back, and GitHub's
+# failed deliveries.
 scheduler_events = {
 	"cron": {
 		"*/5 * * * *": [
 			"setu.github.events.retry_pending_deliveries",
 			"setu.github.recovery.run_recovery",
+			"setu.retry_jobs.enqueue_cron",
+		],
+		"*/15 * * * *": [
+			"setu.github.redelivery.run_redelivery",
 		],
 	},
 }
 
 # Envision Retry Job (docs/adr/0008). A row's handler must be in this allowlist,
-# because the retry cron calls it by name. When the cron empties a row's delta it
-# calls the row's integration's on-done hook.
+# because the retry cron calls it by name. By the row's integration: the gate says the
+# row must wait, the lock hook takes what comes before the row's own lock, and the
+# on-done hook runs when the cron empties the row's delta.
 retry_job_handlers = [
 	"setu.github.inbound.apply_issue_delta",
 	"setu.github.outbound.push_task_delta",
 ]
+retry_job_gate = {"GitHub": "setu.github.retry.job_gated"}
+retry_job_lock = {"GitHub": "setu.github.links.lock_for_job"}
 retry_job_on_done = {"GitHub": "setu.github.links.mark_synced"}
 
 # scheduler_events = {

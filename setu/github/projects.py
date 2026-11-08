@@ -1,8 +1,8 @@
 """Project ↔ repository routing: one Envision-enabled Project, one repository.
 
 Routes are created with sync off (docs/adr/0007). Only
-``setu.github.activation`` turns sync on, after the privacy and publication
-acknowledgements (docs/adr/0008); ``validate_route_document`` refuses any
+``setu.github.activation`` turns sync on, after the privacy, publication and
+deletion acknowledgements (docs/adr/0008); ``validate_route_document`` refuses any
 other change to ``sync_enabled``. The DocType controller calls
 ``validate_route_document`` and ``require_route_permission``, so Desk and REST
 writes (which only Administrator can make) obey the same rules.
@@ -21,7 +21,7 @@ import re
 import frappe
 from frappe import _
 
-from setu.github import client, connection, store
+from setu.github import client, connection, delta, link_state, links, store
 from setu.github.client import GitHubError
 
 PROJECT_ROUTE = connection.PROJECT_ROUTE
@@ -30,9 +30,7 @@ ROUTE_FIELDS = [
 	"project",
 	"repository",
 	"sync_enabled",
-	"paused",
 	"activated_on",
-	"activated_at_utc",
 ]
 MANAGER_ROLES = ("System Manager", "Projects Manager")
 REPOSITORY_FIELDS = [
@@ -54,7 +52,6 @@ def inactive_message(reason: str) -> str:
 	return {
 		"not_connected": _("Connect a GitHub repository to this project first."),
 		"sync_not_enabled": _("GitHub sync is not turned on for this project yet."),
-		"sync_paused": _("GitHub sync is paused for this project."),
 		"site_binding_changed": _(
 			"This site looks like a copy of the site that connected GitHub. Confirm it in GitHub settings before syncing."
 		),
@@ -116,7 +113,7 @@ def validate_route_document(doc) -> None:
 		and doc.has_value_changed("sync_enabled")
 		and not doc.flags.envision_github_activation
 	):
-		# Only setu.github.activation, after both acknowledgements, sets it.
+		# Only setu.github.activation, after the acknowledgements, sets it.
 		frappe.throw(_("Turn GitHub sync on or off from Project Settings."), frappe.ValidationError)
 	if not doc.is_new():
 		# ``set_only_once`` keeps project and repository fixed: change a route
@@ -142,6 +139,14 @@ def validate_route_document(doc) -> None:
 	if frappe.db.exists(PROJECT_ROUTE, {"repository": doc.repository}):
 		frappe.throw(
 			_("This repository is already connected to another project."), frappe.DuplicateEntryError
+		)
+	if frappe.db.exists(store.ISSUE_SYNC, {"repository_id": doc.repository, "project": ["!=", doc.project]}):
+		# A link's Project is fixed, so this Project could never import those Issues.
+		frappe.throw(
+			_(
+				"Another project still has tasks linked to Issues in this repository. That project must turn on sync for a different repository, or be deleted, before this one can connect."
+			),
+			frappe.ValidationError,
 		)
 
 
@@ -188,8 +193,7 @@ def route_for(*, project: str | None = None, repository: str | None = None) -> d
 	"""A saved route by Project or by repository ID, without permission checks.
 
 	For internal callers only. ``routable`` says the pair could carry Issues
-	now; sync also needs ``sync_enabled`` and not ``paused``. ``sync_blocker``
-	combines all three.
+	now; sync also needs ``sync_enabled``. ``sync_blocker`` combines them.
 	"""
 	filters = {"project": project} if project else {"repository": repository}
 	if not any(filters.values()):
@@ -210,9 +214,7 @@ def route_for(*, project: str | None = None, repository: str | None = None) -> d
 		"routable": reason is None,
 		"inactive_reason": reason,
 		"sync_enabled": bool(route.sync_enabled),
-		"paused": bool(route.paused),
 		"activated_on": route.activated_on,
-		"activated_at_utc": route.activated_at_utc,
 	}
 
 
@@ -222,15 +224,13 @@ def sync_blocker(route: dict | None) -> str | None:
 		return "not_connected"
 	if not route["sync_enabled"]:
 		return "sync_not_enabled"
-	if route["paused"]:
-		return "sync_paused"
 	return route["inactive_reason"]
 
 
 def active_routes() -> list[dict]:
 	"""Every route syncing now, for the scheduled scans."""
 	routes = []
-	for name in frappe.get_all(PROJECT_ROUTE, filters={"sync_enabled": 1, "paused": 0}, pluck="project"):
+	for name in frappe.get_all(PROJECT_ROUTE, filters={"sync_enabled": 1}, pluck="project"):
 		route = route_for(project=name)
 		if route and sync_blocker(route) is None:
 			routes.append(route)
@@ -336,17 +336,18 @@ def clear_repository(project: str) -> dict:
 	"""Remove a Project's route. Same transaction contract as
 	``connect_repository``.
 
-	Its links are paused (``route_cleared``), never deleted: Tasks keep their
-	Issue identity and queued work. Connecting the same repository and turning
-	sync on again resumes them after a fresh comparison; a different
-	repository leaves them paused (``destination_changed``), never rerouted."""
+	This turns sync off (``links.stop_sync``): links stay, with their Issue identity
+	and waiting work. Connecting the same repository and turning sync on again merges
+	them; turning it on for a different repository deletes them, and their Issues stay."""
 	require_route_permission(project)
 	with connection.connection_lock():
 		try:
-			name = frappe.db.get_value(PROJECT_ROUTE, {"project": project}, "name", for_update=True)
-			if name:
-				store.pause_links({"project": project}, "route_cleared")
-				frappe.delete_doc(PROJECT_ROUTE, name, ignore_permissions=True, delete_permanently=True)
+			route = frappe.db.get_value(
+				PROJECT_ROUTE, {"project": project}, ["name", "repository"], as_dict=True, for_update=True
+			)
+			if route:
+				links.stop_sync(project, route.repository)
+				frappe.delete_doc(PROJECT_ROUTE, route.name, ignore_permissions=True, delete_permanently=True)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
@@ -376,8 +377,27 @@ def delete_project_route(project: str) -> None:
 	Project row serializes with a route insert, which locks it first, so the
 	delete cannot pass Frappe's link check while a route is being added.
 
-	A Project can only be deleted without Tasks, so its links are tombstones of
-	deleted Tasks or unfinished imports; they go with it."""
+	Refused while sync is on and an Issue's delete is pending, because this would
+	erase the only record of it. Otherwise the links and their Retry Job rows go, with
+	any row for an Issue not imported yet, which nothing could run without the route.
+	The Issues stay on GitHub."""
 	frappe.db.get_value("Project", project, "name", for_update=True)
+	route = frappe.db.get_value(
+		PROJECT_ROUTE, {"project": project}, ["sync_enabled", "repository"], as_dict=True
+	)
+	pending = frappe.db.count(store.ISSUE_SYNC, {"project": project, "sync_state": link_state.TO_BE_DELETED})
+	if link_state.project_delete_blocked(
+		{link_state.TO_BE_DELETED: pending}, sync_enabled=bool(route and route.sync_enabled)
+	):
+		frappe.throw(
+			_(
+				"This project still has GitHub Issues waiting to be deleted. Try again once they have gone, or turn off GitHub sync to leave them on GitHub."
+			),
+			frappe.ValidationError,
+		)
 	store.delete_project_links(project)
+	if route:
+		frappe.db.delete(
+			store.RETRY_JOB, {"job_key": ["like", f"{delta.INBOUND_KEY_PREFIX}{route.repository}:%"]}
+		)
 	frappe.db.delete(PROJECT_ROUTE, {"project": project})

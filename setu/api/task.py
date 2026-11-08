@@ -48,7 +48,7 @@ class EnvisionTask:
 		# ERPNext saves a subtask's parent without forwarding ignore_permissions.
 		# Inbound sync uses a disabled, role-less bot: carry its already-checked
 		# permission bypass into that nested save, but keep all normal validation.
-		if not frappe.flags.get("envision_github_inbound") or not self.flags.ignore_permissions:
+		if not frappe.flags.get("in_github_sync") or not self.flags.ignore_permissions:
 			return super().populate_depends_on()
 		if self.parent_task:
 			parent = frappe.get_doc("Task", self.parent_task)
@@ -289,7 +289,7 @@ def update_task(
 	if tags is not None:
 		replace_tags(task, clean_tags(tags))
 		# A github tag added later publishes too (docs/adr/0008); removing it
-		# never stops a published Task's sync (only Pause or Disconnect does).
+		# never stops a published Task's sync (only turning Project sync off does).
 		github_links.guarded(github_links.tags_changed, task.name)
 	if assignees is not None:
 		set_assignees(task, assignees)
@@ -326,7 +326,7 @@ def check_parent_task(task: Document, parent: str) -> None:
 def check_parent_rules(task: Document, doc: Document) -> None:
 	"""The rules for ``doc`` as the Task's parent, without the user's
 	permission checks: GitHub sub-issue changes are applied by the
-	integration user (setu.github.reconcile) under the same rules."""
+	integration user (setu.github.inbound) under the same rules."""
 	parent = doc.name
 	if doc.is_milestone:
 		frappe.throw(_("A milestone can't hold subtasks."))
@@ -689,28 +689,31 @@ def delete_task(name: str) -> dict:
 	dependency rows go first, then children before parents. External links
 	(including other Tasks' dependencies and Timesheets) keep Frappe's normal
 	delete protections: any failure rolls back the entire operation. No
-	archive, grace period, or Deleted Document recovery copy is created.
+	archive, grace period, or Deleted Document recovery copy is created. A linked
+	GitHub Issue is deleted too, after commit (setu.github.links.on_task_trash).
 	"""
 	task = task_doc(name, "delete")
-	tree = task_subtree(task)
-	documents = [frappe.get_doc("Task", task_name) for task_name in tree]
+	documents = subtree_documents(task)
 	for doc in documents:
 		doc.check_permission("delete")
-	# Check every external link before deleting anything: Frappe also removes
-	# attachments from disk, which a database rollback alone cannot restore.
-	tree_names = set(tree)
-	for doc in documents:
-		for link in [*get_linked_docs(doc), *get_dynamic_linked_docs(doc)]:
-			if link["reference_doctype"] == "Task" and link["reference_docname"] in tree_names:
-				continue
-			# A GitHub link becomes a tombstone as its Task is deleted
-			# (setu.github.links.on_task_trash); the Issue is never deleted.
-			if link["reference_doctype"] in GITHUB_LINK_DOCTYPES:
-				continue
-			raise_link_exists_exception(
-				doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
-			)
+	delete_task_tree(documents)
+	return {"name": task.name, "subject": task.subject, "subtasks": len(documents) - 1}
 
+
+def subtree_documents(task: Document) -> list[Document]:
+	"""The Task and every descendant, children before parents."""
+	return [frappe.get_doc("Task", task_name) for task_name in task_subtree(task)]
+
+
+def delete_task_tree(documents: list[Document], *, ignore_permissions: bool = False) -> None:
+	"""Delete ``subtree_documents`` through Frappe's normal delete, so its validation
+	and hooks run for each. One refusal raises and undoes the whole tree.
+
+	``ignore_permissions`` is for the GitHub integration user, which has no roles: a
+	person's delete keeps Frappe's own permission check here as well as the caller's.
+	"""
+	tree = [doc.name for doc in documents]
+	check_tree_links(documents, set(tree))
 	frappe.db.savepoint("delete_task_tree")
 	try:
 		# Only dependencies owned by the deleted tree may be removed. Never
@@ -720,11 +723,28 @@ def delete_task(name: str) -> dict:
 			{"parenttype": "Task", "parent": ["in", tree], "task": ["in", tree]},
 		)
 		for task_name in tree:
-			frappe.delete_doc("Task", task_name, delete_permanently=True)
+			frappe.delete_doc(
+				"Task", task_name, delete_permanently=True, ignore_permissions=ignore_permissions
+			)
 	except Exception:
 		frappe.db.rollback(save_point="delete_task_tree")
 		raise
-	return {"name": task.name, "subject": task.subject, "subtasks": len(tree) - 1}
+
+
+def check_tree_links(documents: list[Document], tree_names: set[str]) -> None:
+	"""Check every external link before deleting anything: Frappe also removes
+	attachments from disk, which a database rollback alone cannot restore."""
+	for doc in documents:
+		for link in [*get_linked_docs(doc), *get_dynamic_linked_docs(doc)]:
+			if link["reference_doctype"] == "Task" and link["reference_docname"] in tree_names:
+				continue
+			# A GitHub link and its Retry Job rows let go of the Task as it is
+			# deleted (setu.github.links.on_task_trash), before Frappe's own check.
+			if link["reference_doctype"] in GITHUB_LINK_DOCTYPES:
+				continue
+			raise_link_exists_exception(
+				doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
+			)
 
 
 def task_detail(task) -> dict:

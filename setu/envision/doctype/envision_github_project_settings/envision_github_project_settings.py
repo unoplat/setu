@@ -23,7 +23,6 @@ class EnvisionGitHubProjectSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		activated_at_utc: DF.Data | None
 		activated_by: DF.Link | None
 		activated_on: DF.Datetime | None
 		activation_import_page: DF.Int

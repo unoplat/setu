@@ -18,9 +18,7 @@ docs/github-description-fidelity.md is the contract. In short:
   when one of them changes what a reader sees. Sync uses the best-effort
   conversion automatically, without a manual description choice.
 - ``issue_body`` adds the integration marker and says whether the body differs
-  from GitHub's at all. Callers compare ``html_digest``/``markdown_digest``
-  with their stored baselines first, so a title or status change never
-  converts or rewrites a body.
+  from GitHub's at all.
 
 Nothing here fetches a URL. Addresses only this site can serve (relative,
 ``/private/…``, ``/api/method/…``) and ``data:`` images are never copied to
@@ -29,7 +27,6 @@ GitHub, and inbound images keep GitHub's address instead of being downloaded.
 
 import hashlib
 import re
-import secrets
 from html import escape
 from typing import Literal, TypedDict
 from urllib.parse import unquote, urlsplit
@@ -78,7 +75,7 @@ LossCode = Literal[
 	"footnote",
 	"alert",
 	"math",
-	"heading_level",  # Legacy conflicts from before the editor supported H1-H6.
+	"heading_level",
 	"task_item_blocks",
 	"mixed_task_list",
 	"table_alignment",
@@ -113,22 +110,6 @@ class IssueBody(TypedDict):
 MAX_BODY_LENGTH = 65536
 # Dropped but invisible on GitHub, so they never make a result lossy.
 HIDDEN_LOSSES: frozenset[LossCode] = frozenset({"html_comment"})
-# Presentation-only conversion diagnostics, distinct from content loss.
-PRESENTATION_LOSSES: frozenset[LossCode] = frozenset(
-	{
-		"underline",
-		"highlight",
-		"text_color",
-		"font",
-		"alignment",
-		"indent",
-		"line_height",
-		"text_direction",
-		"table_column_width",
-		"image_size",
-		"image_transform",
-	}
-)
 
 # GitHub shows a newline inside an Issue paragraph as a line break. Raw HTML is
 # parsed only so _neutralize_html can tell it from text; it is never rendered
@@ -137,6 +118,7 @@ _markdown = MarkdownIt("commonmark", options_update={"html": True, "breaks": Tru
 	["table", "strikethrough"]
 )
 
+# The marker's value is a Task name. ERPNext's default, TASK-.YYYY.-.#####, fits.
 _MARKER = re.compile(r"[ \t]*<!-- envision:([A-Za-z0-9_-]{8,64}) -->[ \t]*")
 _MARKER_VALUE = re.compile(r"[A-Za-z0-9_-]{8,64}")
 _RAW_SAFE = re.compile(r"<!--[\s\S]*?-->|<br\s*/?>|<img\b[^<>]*>", re.IGNORECASE)
@@ -319,16 +301,6 @@ def issue_body(
 	return {"body": body, "changed": changed, "lossy": _lossy(dropped), "dropped": dropped}
 
 
-def body_reproducible(markdown: str | None) -> bool:
-	"""Whether a description can show everything a reader sees in this body.
-
-	When it cannot (raw HTML, footnotes, math...), replacing the body with the
-	description's Markdown would lose that content on GitHub. This is diagnostic;
-	description sync does not wait for a manual choice.
-	"""
-	return not markdown_to_html(markdown)["lossy"]
-
-
 def normalize_markdown(markdown: str | None) -> str:
 	"""An Issue body for comparison: no marker, LF endings, no trailing spaces."""
 	lines = strip_marker(_unify_newlines(markdown or "")).split("\n")
@@ -352,28 +324,8 @@ def digest(text: str) -> str:
 
 
 def html_digest(html: str | None) -> str:
-	"""The baseline value for a Task description."""
+	"""A Task description's value, to compare two of them."""
 	return digest(normalize_html(html))
-
-
-def markdown_digest(markdown: str | None) -> str:
-	"""The baseline value for an Issue body."""
-	return digest(normalize_markdown(markdown))
-
-
-def description_changed(html: str | None, baseline: str | None) -> bool:
-	"""Whether the description differs from the last one synchronized."""
-	return html_digest(html) != baseline
-
-
-def body_changed(markdown: str | None, baseline: str | None) -> bool:
-	"""Whether the Issue body differs from the last one synchronized."""
-	return markdown_digest(markdown) != baseline
-
-
-def new_marker() -> str:
-	"""An opaque marker for one Issue create, used to find it after a timeout."""
-	return secrets.token_urlsafe(18)
 
 
 def find_marker(markdown: str | None) -> str | None:

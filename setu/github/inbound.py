@@ -1,480 +1,890 @@
-"""GitHub → Envision: Issue webhooks, new Issue imports and sub-issue changes.
+"""GitHub → Envision: apply what an Issue's webhooks made stale.
 
-Receipts (setu.github.events) store identifiers only. Issue events are
-processed by reading GitHub's current state rather than replaying payloads;
-a sub-issue change is taken from its payload (parent, child and action).
-Processing never holds the global connection lock: a per-Issue lock
-serializes it instead.
+A webhook that passed its gates (setu.github.events) is applied inline, in its
+request, when it can be. It waits in the Issue's ``github:issue`` Retry Job row
+instead when the site binding is unconfirmed, a row already exists, or the
+per-Issue lock is busy, and goes there too when applying it fails. Only an
+infrastructure outage replies 5xx, so GitHub records the delivery as failed and
+the redelivery cron gets it back. Rows hold identifiers only, never payloads.
 
-Which Issues become Tasks (docs/adr/0008): every Issue whose top-level
-Issue in this repository is open, labelled or not, whether it existed when
-sync was turned on (setu.github.activation imports those) or arrives later.
-A closed Issue under an open one comes along, but a closed ancestor or a
-completed parent Task keeps its descendants out until it is reopened. Never
-a pull request, an Issue Envision itself created (its body carries the create
-marker), or one already linked or tombstoned. The ``github`` label gates
-only Envision → GitHub publication (setu.github.links).
+Which Issues become Tasks (docs/adr/0008): every Issue in the routed repository,
+open or closed, labelled or not. Never a pull request, or Envision's own Issue
+(this site's app bot opened it and its body carries a Task-name marker). The
+``github`` tag gates only Envision → GitHub publication (setu.github.links).
 
-An import is recorded first: a link with the unique Issue id, then an
-``import_issue`` operation that creates the Task as the integration user.
-So concurrent deliveries and retries import an Issue once, and a refused Task
-is a visible, retryable error instead of a lost event.
+An import inserts the Task and its link in one transaction. The link's unique
+Issue id stops a concurrent import, whose Task goes back with its savepoint.
+
+A key re-reads the Issue, one GET for all the keys of a run, and copies GitHub's
+current value onto the Task through the normal save, as the integration user and
+with no push back. There are no conflicts: the last sync wins. Each key has its
+own savepoint. The cron keeps what the others finished; a failure inline rolls
+everything back and records the whole delta.
+
+``issue: delete`` reads nothing: the signed event is the evidence, and a 404 or 410 on
+a read never is. It deletes the Task tree, and a refusal keeps retrying from
+to_be_deleted with the Task still visible. With no link, a late event for an Issue that
+has gone finishes with nothing imported or deleted (``issue_gone``).
+
+An imported Issue learns its parent from a ``parent: sync`` key (``queue_imported_parent``):
+the parent may not be imported yet, and that must not hold the import back.
 """
+
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import NamedTuple
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
-from redis.exceptions import LockError
+from frappe.model.document import Document
+from frappe.utils import now_datetime, sanitize_html, today
+from frappe.utils.nestedset import get_descendants_of
+from pymysql.constants import CR
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 
+from setu.api.task import (
+	check_no_open_subtasks,
+	check_parent_due_date,
+	check_parent_rules,
+	delete_task_tree,
+	note_subtask,
+	subtree_documents,
+)
 from setu.github import (
 	bot,
 	client,
+	comments,
 	connection,
 	convert,
+	delta,
 	issues,
+	link_state,
 	links,
 	outbound,
 	projects,
-	reconcile,
+	retry,
 	store,
 	titles,
 )
 from setu.github.client import GitHubError
 from setu.github.issues import IssueData
+from setu.retry_jobs import HandlerResult
 
-ISSUE_EVENTS = ("issues", "sub_issues")
-# Issue actions that cannot change a synced field of a linked Issue.
-QUIET_ACTIONS = (
-	"assigned",
-	"unassigned",
-	"labeled",
-	"unlabeled",
-	"milestoned",
-	"demilestoned",
-	"locked",
-	"unlocked",
-	"pinned",
-	"unpinned",
-	"typed",
-	"untyped",
+KEY_SAVEPOINT = "envision_github_key"
+IMPORT_SAVEPOINT = "envision_github_import"
+CANCELLED_REASONS = frozenset({"not_planned", "duplicate"})
+# A larger tree deletes from its Retry Job row: inline work has to stay inside GitHub's
+# 10 second window, and how long a delete takes grows with the tree.
+MAX_INLINE_DELETE_TASKS = 25
+# What ``issue: sync`` brings up to date on a linked Issue. A parent has its own key
+# and can wait for another Issue, which must not hold these back.
+ISSUE_FIELDS = ("title", "description", "status")
+PARENT_RESOURCE = "parent"
+# What a read of an Issue that isn't there gets. Losing access can look the same.
+MISSING_STATUSES = frozenset({404, 410})
+# The connection-level failures. Frappe raises the driver's own error for these, with
+# the same numbers in both of its MariaDB drivers (Database.sql only wraps deadlocks
+# and lock wait timeouts, which happen with MariaDB up and are ordinary failures).
+LOST_CONNECTION = frozenset(
+	{
+		CR.CR_CONNECTION_ERROR,
+		CR.CR_CONN_HOST_ERROR,
+		CR.CR_IPSOCK_ERROR,
+		CR.CR_UNKNOWN_HOST,
+		CR.CR_SERVER_GONE_ERROR,
+		CR.CR_SERVER_LOST,
+		CR.CR_SERVER_LOST_EXTENDED,
+	}
 )
-GONE = (301, 404, 410)
 
 
-def process_issue_delivery(delivery_id: str) -> None:
-	doc = frappe.get_doc(connection.DELIVERY, delivery_id)
-	if doc.status not in ("Queued", "Failed", "Processing"):
+class RetryRowWriteError(Exception):
+	"""The event's Retry Job row could not be written, so it isn't stored anywhere:
+	GitHub has to see a failed delivery. A validation refusal alone would reply 417."""
+
+	http_status_code = 500
+
+
+def is_infrastructure(exc: BaseException) -> bool:
+	"""MariaDB unreachable, server gone away or connection lost, or Redis unreachable."""
+	if isinstance(exc, RedisConnectionError | RedisTimeoutError):
+		return True
+	if frappe.db.is_interface_error(exc):
+		return True
+	return isinstance(exc, frappe.db.OperationalError) and bool(exc.args) and exc.args[0] in LOST_CONNECTION
+
+
+def apply_or_queue(
+	target: dict[str, str | int],
+	entries: dict[str, str],
+	link: frappe._dict | None,
+	sender: str | None = None,
+) -> None:
+	"""GitHub → Envision 1, part 2, for an event's non-empty delta. Returning means
+	reply 200; anything raised is a 5xx. ``link`` is the Issue's link, if it has one.
+	``sender`` is named in the Activity only if the change applies here and now."""
+	if connection.binding_changed() or tree_too_large_inline(entries, link):
+		queue_event(target, entries, link.name if link else None)
 		return
-	settings = client.settings()
-	if not settings.app_id or doc.app_id != settings.app_id:
-		close(doc, "Ignored", _("This delivery belongs to a disconnected app."))
+	job_key = delta.inbound_job_key(str(target["repository_id"]), str(target["issue_id"]))
+	if retry.merge_into_row(job_key, entries, None):
+		frappe.db.commit()
 		return
-	route = route_for_delivery(doc)
-	if not route:
-		close(doc, "Ignored", _("This repository is not connected to a project."))
+	lock = store.issue_lock_nowait(str(target["issue_id"]))
+	if not lock.acquire():
+		queue_event(target, entries, link.name if link else None)
 		return
-	blocker = projects.sync_blocker(route)
-	if blocker:
-		# Kept for when sync resumes (setu.github.activation.resume).
-		close(doc, "Deferred", projects.inactive_message(blocker))
-		return
-	doc.status = "Processing"
-	doc.attempts += 1
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
 	try:
-		with store.issue_lock(doc.issue_id):
-			note = handle_issue(doc, route) if doc.event == "issues" else handle_sub_issue(doc, route)
-		doc.status = "Processed"
-		doc.error = note
-	except LockError:
-		frappe.db.rollback()
-		doc.status = "Queued"
-		doc.attempts -= 1
-		doc.error = _("Another worker is processing this Issue; it will be retried.")
-	except GitHubError as exc:
-		frappe.db.rollback()
-		if exc.rate_limited:
-			doc.status = "Queued"
-			doc.attempts -= 1
-		else:
-			doc.status = "Failed"
-		doc.error = str(exc)
+		apply_inline(target, entries, sender)
+	finally:
+		lock.release()
+
+
+def tree_too_large_inline(entries: dict[str, str], link: frappe._dict | None) -> bool:
+	if entries.get(delta.ISSUE_RESOURCE) != delta.DELETE or not link or not link.task:
+		return False
+	if not frappe.db.exists("Task", link.task):
+		return False
+	# The Task itself is one more than its descendants, so stop counting at the limit.
+	descendants = get_descendants_of(
+		"Task", link.task, limit=MAX_INLINE_DELETE_TASKS, ignore_permissions=True
+	)
+	return len(descendants) >= MAX_INLINE_DELETE_TASKS
+
+
+def apply_inline(target: dict[str, str | int], entries: dict[str, str], sender: str | None = None) -> None:
+	"""Apply the delta in the request's transaction. Infrastructure errors are raised,
+	and any other failure goes to the Retry Job row, including one settling the link:
+	the keys run again from there, which is safe, and the row's on-done hook settles it.
+
+	The commit comes before settling so that it reads the rows other transactions
+	wrote during the GitHub requests."""
+	try:
+		with client.bounded_requests(), bot.syncing():
+			apply_keys(target, entries, set(), sender)
+		frappe.db.commit()
+		record_applied(str(target["issue_id"]))
+		if entries.get(delta.ISSUE_RESOURCE) == delta.DELETE:
+			end_row_written_meanwhile(target, entries)
+		frappe.db.commit()
+	except Exception as exc:
+		if is_infrastructure(exc):
+			raise
+		record_failure(target, entries, exc)
+
+
+def record_applied(issue_id: str) -> None:
+	"""The change reached the Task. Applying ``issue: delete`` or a transfer removed the
+	link, and to_be_updated stays while link.delta has keys (``links.settle``)."""
+	link = links.link_for_issue(issue_id)
+	if link:
+		frappe.db.set_value(
+			store.ISSUE_SYNC, link.name, "last_synced_at", now_datetime(), update_modified=False
+		)
+		links.settle(link.name)
+
+
+def end_row_written_meanwhile(target: dict[str, str | int], entries: dict[str, str]) -> None:
+	"""A webhook that found the lock busy can commit a row this run's snapshot couldn't
+	see, so deleting the link missed it. With no Task its keys would fail for ever;
+	holding the delete instead, it finishes with no link to act on."""
+	job_key = delta.inbound_job_key(str(target["repository_id"]), str(target["issue_id"]))
+	retry.merge_into_row(job_key, entries, None)
+
+
+def record_failure(target: dict[str, str | int], entries: dict[str, str], exc: Exception) -> None:
+	"""Roll back what the apply did and leave the delta for the cron. The messages a
+	refusal queued are dropped: the reply to GitHub would otherwise carry them."""
+	frappe.db.rollback()
+	frappe.clear_messages()
+	link = links.link_for_issue(str(target["issue_id"]))
+	link_name = link.name if link else None
+	queue_event(target, entries, link_name, error_log=retry.log_failure(exc, link_name), failed=True)
+
+
+def queue_event(
+	target: dict[str, str | int],
+	entries: dict[str, str],
+	link_name: str | None,
+	*,
+	error_log: str | None = None,
+	failed: bool = False,
+) -> None:
+	"""Upsert the Issue's Retry Job row and settle its link, if it has one, and commit.
+
+	A link that went, or became unlinked or to_be_deleted, while this waited for its
+	lock ignores the change, so nothing is stored, except a refused delete, which only
+	an unlinked link ignores. Only ``failed`` with ``issue: delete`` means refused.
+	"""
+	link = links.locked_link(link_name) if link_name else None
+	refused = failed and entries.get(delta.ISSUE_RESOURCE) == delta.DELETE
+	if link_name and (not link or not keeps_event(link.sync_state, refused)):
+		frappe.db.commit()
+		return
+	write_row(target, entries, link.task if link else None, error_log)
+	if link and refused:
+		mark_delete_refused(link)
+	elif link:
+		links.settle(link.name)
+	frappe.db.commit()
+
+
+def mark_delete_refused(link: frappe._dict) -> None:
+	"""to_be_deleted wins, and the link's github:issue row holds the delete. Every other
+	key goes, so no push is left to reach an Issue that has gone."""
+	job_key = delta.inbound_job_key(link.repository_id, link.repository_provider_issue_id)
+	links.delete_retry_jobs(link, keep_job=job_key)
+	frappe.db.set_value(
+		store.ISSUE_SYNC,
+		link.name,
+		{"sync_state": link_state.on_inbound_delete_refused(link.sync_state), "delta": None},
+		update_modified=False,
+	)
+
+
+def keeps_event(state: link_state.LinkState, refused: bool) -> bool:
+	if refused:
+		return link_state.on_inbound_delete_refused(state) == link_state.TO_BE_DELETED
+	return link_state.on_inbound_failed(state) == link_state.Outcome.QUEUE_FOR_CRON
+
+
+def write_row(
+	target: dict[str, str | int], entries: dict[str, str], task_name: str | None, error_log: str | None
+) -> None:
+	try:
+		retry.upsert_issue_job(
+			str(target["repository_id"]),
+			str(target["issue_id"]),
+			int(target["issue_number"]),
+			task_name,
+			entries,
+			error_log,
+		)
+	except Exception as exc:
+		raise RetryRowWriteError(
+			f"Could not write the Retry Job row for Issue {target['issue_id']}."
+		) from exc
+
+
+def apply_issue_delta(target: dict[str, str | int], entries: dict[str, str] | None = None) -> HandlerResult:
+	"""Retry Job handler, for the cron, which owns the row. A busy lock finishes
+	nothing: the row is still there on the next pass. There is no job mode inbound."""
+	if not entries:
+		return HandlerResult(frozenset())
+	lock = store.issue_lock_nowait(str(target["issue_id"]))
+	if not lock.acquire():
+		return HandlerResult(frozenset())
+	try:
+		return run_cron(target, entries)
+	finally:
+		lock.release()
+
+
+def run_cron(target: dict[str, str | int], entries: dict[str, str]) -> HandlerResult:
+	"""Commit and report the keys that finished, with the Error Log for the first
+	failure. Settling reads this row, so it leaves the link cron_sync, and the row's
+	on-done hook settles it. An infrastructure error or a failed commit finishes nothing.
+	A refused ``issue: delete`` leaves the link to_be_deleted, and the row retries it."""
+	if links.in_other_project(links.link_for_issue(str(target["issue_id"])), str(target["repository_id"])):
+		# The link is another Project's: these keys finish with no write.
+		return HandlerResult(frozenset(entries))
+	done: set[str] = set()
+	try:
+		with bot.syncing():
+			failure = run_keys(KeyRun(target, cron=True), entries, done)
+		if done:
+			record_applied(str(target["issue_id"]))
+		frappe.db.commit()
 	except Exception as exc:
 		frappe.db.rollback()
-		store.log_safe(exc, "GitHub Issue delivery failed", connection.DELIVERY, delivery_id)
-		doc.status = "Failed"
-		doc.error = _("Issue processing failed. It will be retried.")
-	doc.processed_at = now_datetime()
-	doc.save(ignore_permissions=True)
+		done.clear()
+		failure = exc
+	if failure is None:
+		return HandlerResult(frozenset(done))
+	if outbound.is_rate_limited(failure):
+		return HandlerResult(frozenset(done), rate_limited=True)
+	link = links.link_for_issue(str(target["issue_id"]))
+	error = retry.log_failure(failure, link.name if link else None)
+	if link and entries.get(delta.ISSUE_RESOURCE) == delta.DELETE and not is_infrastructure(failure):
+		locked = links.locked_link(link.name)
+		if locked:
+			mark_delete_refused(locked)
 	frappe.db.commit()
+	return HandlerResult(frozenset(done), error=error)
 
 
-def close(doc, status: str, error: str | None) -> None:
-	doc.status = status
-	doc.error = error
-	doc.processed_at = now_datetime()
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
+@dataclass
+class KeyRun:
+	"""One pass over an Issue's keys, and what they share."""
+
+	target: dict[str, str | int]
+	sender: str | None = None
+	"""Who sent the webhook. The cron has no name."""
+	cron: bool = False
+	"""The cron runs this, and owns the Issue's Retry Job row."""
+	fetched: tuple[dict, IssueData] | None = None
+	"""The Issue's route and the one GET of the Issue."""
+	read_failure: Exception | None = None
+	task: str | None = None
+	applied: list[str] = field(default_factory=list)
+	"""What this run changed on ``task``, for its Activity comment."""
+	imported: tuple[str, IssueData] | None = None
+	"""The link this run's ``issue: sync`` imported, and its Issue."""
 
 
-def route_for_delivery(doc) -> dict | None:
-	"""The route for the delivery's repository, if its installation owns it."""
-	if not doc.repository_id:
-		return None
-	route = projects.route_for(repository=doc.repository_id)
-	if not route:
-		return None
-	row = route["repository_row"]
-	if not row or str(row.installation) != str(doc.installation_id):
-		return None
-	return route
+def apply_keys(
+	target: dict[str, str | int], entries: dict[str, str], done: set[str], sender: str | None = None
+) -> None:
+	"""Apply each key, adding what finishes to ``done``. The first failure is raised
+	once every key has had its turn: inline, the caller rolls everything back."""
+	failure = run_keys(KeyRun(target, sender), entries, done)
+	if failure:
+		raise failure
 
 
-def handle_issue(doc, route: dict) -> str | None:
-	link = links.link_for_issue(doc.issue_id)
-	if link:
-		if link.sync_state == "Tombstoned":
-			return _("This Issue's task no longer syncs.")
-		if doc.action == "deleted":
-			store.pause_links({"name": link.name}, "remote_deleted")
-			return None
-		if doc.action == "transferred":
-			store.pause_links({"name": link.name}, "transferred")
-			return None
-		if not link.task:
-			store.queue_op(link.name, "import_issue", link.project)
-			return None
-		if doc.action in QUIET_ACTIONS:
-			return None
-		if doc.actor_login:
-			frappe.db.set_value(
-				store.ISSUE_SYNC, link.name, "last_actor_login", doc.actor_login, update_modified=False
-			)
-		store.queue_op(link.name, "reconcile", link.project)
-		return None
-	if doc.action in ("deleted", "transferred"):
-		return None
-	row = route["repository_row"]
+def run_keys(run: KeyRun, entries: dict[str, str], done: set[str]) -> Exception | None:
+	"""Each key in its own savepoint, so one failing rolls back only itself. Returns the
+	first failure. An infrastructure error is raised at once: no key can run after it."""
+	first: Exception | None = None
+	for resource in key_order(entries):
+		frappe.db.savepoint(KEY_SAVEPOINT)
+		try:
+			apply_key(run, resource, entries[resource])
+		except Exception as exc:
+			if is_infrastructure(exc):
+				raise
+			first = first or exc
+			undo_key(run, done)
+		else:
+			done.add(resource)
+	note_update(run)
+	queue_run_parent(run, entries, done)
+	queue_run_comments(run, entries, done)
+	return first
+
+
+def key_order(entries: dict[str, str]) -> list[str]:
+	"""``issue`` first: it can import the Task the other keys need. Then the Task's
+	fields, the Issue's comment history, and single comments in the order GitHub
+	numbered them."""
+	return sorted(entries, key=key_rank)
+
+
+def key_rank(resource: str) -> tuple[int, int]:
+	if resource == delta.ISSUE_RESOURCE:
+		return (0, 0)
+	if resource == delta.COMMENTS_RESOURCE:
+		return (2, 0)
+	if resource.startswith(delta.COMMENT_PREFIX):
+		comment_id = resource.removeprefix(delta.COMMENT_PREFIX)
+		return (3, int(comment_id) if delta.is_numeric_id(comment_id) else 0)
+	return (1, 0)
+
+
+def undo_key(run: KeyRun, done: set[str]) -> None:
+	"""Back to the key's savepoint. A deadlock has already rolled the whole transaction
+	back, savepoint and finished keys included, so those are not finished after all."""
 	try:
-		issue = issues.get_issue(row.installation, row.full_name, doc.issue_number)
-	except GitHubError as exc:
-		if exc.status in GONE:
-			return _("The Issue is no longer in this repository.")
-		raise
-	return consider_import(route, issue, actor=doc.actor_login)
+		frappe.db.rollback(save_point=KEY_SAVEPOINT)
+	except Exception:
+		frappe.db.rollback()
+		done.clear()
+		run.applied.clear()
+		run.imported = None
 
 
-def consider_import(route: dict, issue: IssueData, *, actor: str | None = None) -> str | None:
-	"""Record an Issue for import if it should become a Task. Returns why
-	not, or None."""
-	if issue["is_pull_request"]:
-		return _("Pull requests are not synced.")
-	if links.link_for_issue(issue["id"]):
-		return None
-	marker = convert.find_marker(issue["body"])
-	if marker and issue["author_type"] == "Bot":
-		own = frappe.db.get_value(
-			store.ISSUE_SYNC,
-			{"create_marker": marker},
-			["name", "project", "sync_state", "issue_id"],
-			as_dict=True,
-		)
-		if not own or not outbound.created_by_app(issue, outbound.app_login()):
-			return _("Created by Envision on another site; not imported.")
-		if not own.issue_id and own.sync_state in store.ACTIVE_STATES:
-			# Envision's own create, not yet recorded: let it find this Issue.
-			store.queue_op(own.name, "create_issue", own.project)
-		# Either way never a new Task: a second Issue with a linked Task's
-		# marker is a duplicate create, left on GitHub for a person to close.
-		return _("Created by Envision.")
-	if not top_open(route, issue):
-		return _("This Issue or an ancestor is closed, or its parent task is Done; import skipped.")
+def apply_key(run: KeyRun, resource: str, action: str) -> None:
+	if resource == delta.ISSUE_RESOURCE and action == delta.SYNC:
+		apply_issue_sync(run)
+	elif resource == delta.ISSUE_RESOURCE and action == delta.TRANSFERRED:
+		apply_transferred(run)
+	elif resource == delta.ISSUE_RESOURCE and action == delta.DELETE:
+		apply_issue_deleted(run)
+	elif resource in delta.FIELD_RESOURCES and action == delta.SYNC:
+		apply_field_key(run, resource)
+	elif resource == delta.COMMENTS_RESOURCE and action == delta.SYNC:
+		comments.import_all(run.target)
+	elif resource.startswith(delta.COMMENT_PREFIX) and action in (delta.SYNC, delta.DELETE):
+		comments.apply_comment(run.target, resource.removeprefix(delta.COMMENT_PREFIX), action)
+	else:
+		raise NotImplementedError(f"Applying {resource}: {action} is not built.")
+
+
+def read_issue(run: KeyRun) -> tuple[dict, IssueData]:
+	"""The run's one GET. A failure is kept too, so it is not sent again. A 404 or 410
+	fails like any other: losing access looks the same, so it never proves a deletion.
+	Only ``issue_gone`` reads more into it, and never for an Issue with a link."""
+	if run.read_failure:
+		raise run.read_failure
+	if run.fetched is None:
+		try:
+			run.fetched = fetch_issue(run.target)
+		except Exception as exc:
+			run.read_failure = exc
+			raise
+	return run.fetched
+
+
+def fetch_issue(target: dict[str, str | int]) -> tuple[dict, IssueData]:
+	route = projects.route_for(repository=str(target["repository_id"]))
+	blocker = projects.sync_blocker(route)
+	if not route or blocker:
+		raise frappe.ValidationError(projects.inactive_message(blocker or "not_connected"))
 	row = route["repository_row"]
+	issue = issues.get_issue(row.installation, row.full_name, int(target["issue_number"]))
+	if issue["id"] != str(target["issue_id"]):
+		raise GitHubError("GitHub returned another Issue for this number.")
+	return route, issue
+
+
+def issue_gone(run: KeyRun) -> bool:
+	"""A late event: the Issue has no link and reads as gone, in a repository that can
+	still be read, so its key is done and nothing is imported or deleted. A repository
+	that can't be read raises, and the key retries. With a link this is always False."""
+	if links.link_for_issue(str(run.target["issue_id"])):
+		return False
+	try:
+		read_issue(run)
+	except GitHubError as exc:
+		if exc.status not in MISSING_STATUSES:
+			raise
+		route = projects.route_for(repository=str(run.target["repository_id"]))
+		if not route:
+			raise
+		row = route["repository_row"]
+		issues.check_repository(row.installation, row.full_name)
+		return True
+	return False
+
+
+# GitHub → Envision 2: issue: sync.
+
+
+class SyncResult(NamedTuple):
+	"""What ``issue: sync`` found for an Issue."""
+
+	link_name: str | None
+	"""The Issue's link, or None for no link and no Task to make."""
+	existing: frappe._dict | None = None
+	"""A link that was already there: its Task is applied as an update."""
+	imported: bool = False
+	"""This call inserted the Task and ``link_name``."""
+
+
+def apply_issue_sync(run: KeyRun) -> None:
+	if issue_gone(run):
+		return
+	route, issue = read_issue(run)
+	result = sync_issue(route, issue)
+	if result.imported and result.link_name:
+		run.imported = (result.link_name, issue)
+	elif result.existing and result.existing.sync_state not in link_state.MARKS:
+		merge_fields(run, result.existing, issue)
+
+
+def queue_run_parent(run: KeyRun, entries: dict[str, str], done: set[str]) -> None:
+	"""After a run's import has succeeded. The cron owns its row, but this merge is the
+	same as a webhook's during the run. A ``parent`` key in the run has had its turn."""
+	if run.imported and delta.ISSUE_RESOURCE in done and PARENT_RESOURCE not in entries:
+		link_name, issue = run.imported
+		queue_imported_parent(str(run.target["repository_id"]), link_name, issue)
+
+
+def queue_imported_parent(repository_id: str, link_name: str, issue: IssueData) -> None:
+	"""An Issue just imported or re-linked that GitHub says has a parent: trees are
+	never flattened. A parent not imported yet makes the key fail and retry. An Issue
+	that doesn't say learns its parent from its next ``sub_issues`` event."""
+	if issue["parent_known"] and issue["parent_number"]:
+		queue_parent_key(repository_id, issue, link_name)
+
+
+def queue_parent_key(repository_id: str, issue: IssueData, link_name: str) -> None:
+	"""``parent: sync`` in the Issue's Retry Job row, which makes the link cron_sync."""
+	queue_issue_keys(repository_id, issue, link_name, {PARENT_RESOURCE: delta.SYNC})
+
+
+def queue_run_comments(run: KeyRun, entries: dict[str, str], done: set[str]) -> None:
+	"""After a run's import has succeeded, as ``queue_run_parent``."""
+	if run.imported and delta.ISSUE_RESOURCE in done and delta.COMMENTS_RESOURCE not in entries:
+		link_name, issue = run.imported
+		queue_imported_comments(str(run.target["repository_id"]), link_name, issue)
+
+
+def queue_imported_comments(repository_id: str, link_name: str, issue: IssueData) -> None:
+	"""An Issue just imported, re-linked or read again at turn-on brings every comment it
+	has, from the cron: a long history never has to fit in a webhook's 10 seconds."""
+	if issue["comment_count"]:
+		queue_issue_keys(repository_id, issue, link_name, {delta.COMMENTS_RESOURCE: delta.SYNC})
+
+
+def queue_issue_keys(repository_id: str, issue: IssueData, link_name: str, entries: dict[str, str]) -> None:
+	"""Keys in the Issue's Retry Job row, which makes the link cron_sync."""
+	link = links.locked_link(link_name)
+	retry.upsert_issue_job(repository_id, issue["id"], issue["number"], link.task if link else None, entries)
+	links.settle(link_name)
+
+
+def target_for(repository_id: str, issue: IssueData) -> dict[str, str | int]:
+	return {"repository_id": repository_id, "issue_id": issue["id"], "issue_number": issue["number"]}
+
+
+def pending_keys(link_name: str) -> set[str]:
+	return links.pending_keys(link_name)
+
+
+def merge_fields(run: KeyRun, link: frappe._dict, issue: IssueData) -> None:
+	"""Re-read an Issue that already has its Task, field by field. There are no baselines:
+	a field with a key pending is left for the push, because Envision wins, and any other
+	takes GitHub's current value, which changes nothing if neither side changed."""
+	pending = pending_keys(link.name)
+	resources = tuple(resource for resource in ISSUE_FIELDS if resource not in pending)
+	if resources:
+		apply_fields(run, link, issue, resources)
+
+
+def import_issue(route: dict, issue: IssueData) -> str | None:
+	"""Import one Issue already read from GitHub, and return its link's name; None for a
+	pull request, a closed Issue with no link, or Envision's own Issue or a marked link,
+	which never import. A link
+	that exists is not written. A refused Task raises, and the caller's savepoint undoes
+	any partial work, as a key's does."""
+	return sync_issue(route, issue).link_name
+
+
+def sync_issue(route: dict, issue: IssueData) -> SyncResult:
+	if issue["is_pull_request"]:
+		return SyncResult(None)
+	marker = convert.find_marker(issue["body"])
+	if marker and outbound.created_by_app(issue, outbound.app_login()):
+		return SyncResult(links.fill_issue_identity(marker, route["repository"], issue_identity(issue)))
+	link = links.link_for_issue(issue["id"])
+	if link and not link_state.accepts_import(link.sync_state):
+		return SyncResult(None)
+	if link:
+		return SyncResult(link.name, link)
+	if issue["state"] != "open":
+		# A closed Issue with no link is never imported, by a webhook or at turn-on.
+		# Reopening it imports it.
+		return SyncResult(None)
+	return insert_imported(route, issue)
+
+
+def insert_imported(route: dict, issue: IssueData) -> SyncResult:
+	"""The Task and its link, in one transaction. A concurrent import that got there
+	first takes the Task with it back to the savepoint, and this becomes an update."""
+	frappe.db.savepoint(IMPORT_SAVEPOINT)
+	with bot.as_bot():
+		task = insert_task(route, issue)
 	name = store.insert_unique(
 		{
 			"doctype": store.ISSUE_SYNC,
+			"task": task.name,
 			"project": route["project"],
 			"repository_id": route["repository"],
-			"repository_full_name": row.full_name if row else None,
+			"repository_full_name": route["repository_row"].full_name,
 			"origin": "GitHub",
-			"sync_state": "Pending",
-			"issue_id": issue["id"],
-			"issue_node_id": issue["node_id"],
-			"issue_number": issue["number"],
-			"issue_url": issue["html_url"],
-			"last_actor_login": actor or issue["author_login"] or None,
+			"sync_state": link_state.SYNCED,
+			"last_synced_at": now_datetime(),
+			**issue_identity(issue),
 		}
 	)
 	if name:
-		store.queue_op(name, "import_issue", route["project"])
-	return None
-
-
-def top_open(route: dict, issue: IssueData) -> bool:
-	"""Whether this tree can import: an open root and no closed ancestors.
-
-	A linked parent is not enough: it may since have completed on either
-	side. A closed child of an open parent still imports, but not its subtree.
-	Parents in another repository remain outside this tree.
-	"""
-	row = route["repository_row"]
-	if not row:
-		return issue["state"] == "open"
-	current = issue
-	for _depth in range(issues.MAX_DEPTH):
-		if (
-			not current["parent_number"]
-			or (current["parent_full_name"] or "").lower() != row.full_name.lower()
-		):
-			break
-		parent = linked_parent(route["repository"], row.full_name, current)
-		if parent and links.completed_parent(parent.issue_id):
-			return False
-		try:
-			current = issues.get_issue(row.installation, row.full_name, current["parent_number"])
-			if current["state"] == "closed":
-				return False
-		except GitHubError as exc:
-			if exc.status not in GONE:
-				raise
-			break
-	return current["state"] == "open"
-
-
-def import_issue(link_name: str, op_name: str) -> store.Outcome:
-	"""Create the Task for a recorded Issue (worker operation)."""
-	link = frappe.get_doc(store.ISSUE_SYNC, link_name)
-	if link.task:
-		return store.outcome("Done")
-	if link.sync_state == "Tombstoned":
-		return store.outcome("Cancelled")
-	if link.sync_state == "Paused":
-		return store.outcome("Waiting")
-	found, blocker = links.target(link)
-	if blocker or not found:
-		return links.blocked(link_name, blocker or "not_connected")
-	try:
-		issue = issues.get_issue(found["installation_id"], found["full_name"], link.issue_number)
-	except GitHubError as exc:
-		if exc.status not in GONE:
-			raise
-		drop_import(link_name)
-		return store.outcome("Cancelled")
-	if issue["is_pull_request"] or issue["id"] != link.issue_id or not top_open(found["route"], issue):
-		# Eligibility can change between activation/webhook and this worker.
-		# No Task is created and no error is recorded for a skipped import.
-		drop_import(link_name)
-		return store.outcome("Cancelled")
-
-	title = issue["title"].strip() or _("Untitled GitHub issue")
-	subject, rest = titles.split(title, reconcile.subject_limit())
-	# The new description starts with the note Envision wrote, if any.
-	continued = bool(rest)
-	rendered = convert.markdown_to_html(issue["body"])
-	frappe.db.savepoint("envision_github_import")
-	try:
-		with bot.as_bot():
-			task = frappe.new_doc("Task")
-			task.project = link.project
-			# A title longer than a subject continues in the description, and
-			# stays whole on GitHub (setu.github.titles).
-			task.subject = subject
-			task.description = titles.compose(None, rendered["html"], titles.note(rest), continued)
-			task.status = "Open"
-			task.priority = "Medium"
-			# As create_task does, so imported Tasks can hold Subtasks.
-			task.is_group = 1
-			task.insert(ignore_permissions=True)
-	except frappe.ValidationError as exc:
-		frappe.db.rollback(save_point="envision_github_import")
-		return store.outcome("Error", error=store.error_text(exc))
-
-	saved = frappe.db.get_value("Task", task.name, ["subject", "description"], as_dict=True)
-	doc = frappe.get_doc(store.ISSUE_SYNC, link_name, for_update=True)
-	doc.update(
-		{
-			"task": task.name,
-			"issue_node_id": issue["node_id"],
-			"issue_url": issue["html_url"],
-			"base_title_local": titles.title(saved.subject, saved.description, continued),
-			"base_title_remote": issue["title"],
-			"base_description_hash": convert.html_digest(titles.content(saved.description, continued)),
-			"base_body_hash": convert.markdown_digest(issue["body"]),
-			"remote_body_markdown": issue["body"],
-			# Imported open; a closed Issue's status is reconciled next, so
-			# completion runs through the normal rules (P4/P10).
-			"base_status": "Open",
-			"base_state": "open",
-			"base_state_reason": None,
-			"remote_updated_at": issue["updated_at"],
-			"last_synced_at": now_datetime(),
-			"sync_state": "Synced",
-			"error": None,
-		}
-	)
-	if doc.conflicts:
-		doc.sync_state = "Conflict"
-	doc.save(ignore_permissions=True)
-	with bot.as_bot():
-		author = doc.last_actor_login or issue["author_login"]
-		text = _("Imported from GitHub issue {0}#{1}").format(doc.repository_full_name or "", issue["number"])
-		if author:
-			text += " " + _("(opened by @{0})").format(author)
-		task.add_comment("Info", text)
-
-	# Each side of a parent link records it, so import order does not matter:
-	# this child names its own parent if that parent is already linked, and
-	# observe_sub_issues below names this Issue's linked children.
-	parent = linked_parent(link.repository_id, found["full_name"], issue)
-	if parent:
-		set_remote_parent(link_name, link.project, parent.issue_id, parent.issue_number)
-	# A closed Issue's status, and a parent GitHub named while the Task did
-	# not exist yet (handle_sub_issue), are reconciled through the normal rules.
-	if issue["state"] == "closed" or doc.remote_parent_issue_id:
-		store.queue_op(link_name, "reconcile", link.project)
-	for child in frappe.get_all(
+		return SyncResult(name, imported=True)
+	frappe.db.rollback(save_point=IMPORT_SAVEPOINT)
+	# Locking, because a plain read may not see a row this transaction's snapshot predates.
+	winner = frappe.db.get_value(
 		store.ISSUE_SYNC,
-		filters={
-			"remote_parent_issue_id": issue["id"],
-			"sync_state": ["in", list(store.ACTIVE_STATES)],
-			"task": ["is", "set"],
-		},
-		fields=["name", "project"],
-	):
-		store.queue_op(child.name, "reconcile", child.project)
-	if issue["sub_issue_count"]:
-		observe_sub_issues(found, issue["id"], issue["number"])
-	return store.outcome("Done")
-
-
-def observe_sub_issues(found: links.Target, parent_id: str, parent_number: int) -> None:
-	"""Record a parent Issue's current sub-issues on their links, including
-	children still being imported, and record the rest for import, open and
-	closed: an imported parent brings its whole tree."""
-	children = issues.list_sub_issues(found["installation_id"], found["full_name"], parent_number)
-	linked = frappe.get_all(
-		store.ISSUE_SYNC,
-		filters={
-			"issue_id": ["in", [child["id"] for child in children] or [""]],
-			"sync_state": ["in", list(store.ACTIVE_STATES)],
-		},
-		fields=["name", "project", "issue_id"],
-	)
-	for child in linked:
-		set_remote_parent(child.name, child.project, parent_id, parent_number)
-	seen = {child.issue_id for child in linked}
-	for child in children:
-		if child["id"] not in seen:
-			consider_import(found["route"], child)
-
-
-def drop_import(link_name: str) -> None:
-	"""An Issue that cannot be imported after all (gone, moved, or a pull
-	request): its unfinished link holds no Task and is removed, so the Issue
-	can still import later if it becomes readable again. The running
-	operation stays for the worker to close."""
-	frappe.db.delete(store.OPERATION, {"link": link_name, "status": ["!=", "Running"]})
-	frappe.db.delete(store.SYNC_CONFLICT, {"parenttype": store.ISSUE_SYNC, "parent": link_name})
-	frappe.db.delete(store.ISSUE_SYNC, {"name": link_name, "task": ["is", "not set"]})
-
-
-def handle_sub_issue(doc, route: dict) -> str | None:
-	"""A sub-issue was added to or removed from a parent: record what the
-	payload says on the child's link, without reading GitHub again.
-
-	One link usually arrives twice (``sub_issue_*`` for the parent's side,
-	``parent_issue_*`` for the child's), and recording the same parent twice
-	changes nothing. A removal clears only the parent it names, so a late
-	removal never undoes a newer parent.
-
-	GitHub's "Create sub-issue" sends the child's ``opened`` event and this one
-	together, so the child may not be recorded or imported yet: it is
-	considered for import first, and a child whose Task does not exist yet
-	keeps the parent for its import to reconcile."""
-	removed = (doc.action or "").endswith("_removed")
-	same_repository = not doc.related_repository_id or str(doc.related_repository_id) == str(
-		route["repository"]
-	)
-	if not doc.related_issue_id or (same_repository and not doc.related_issue_number):
-		return _("The parent Issue was not named.")
-	child = links.link_for_issue(doc.issue_id)
-	if not child and not removed:
-		note = record_child(doc, route)
-		if note:
-			return note
-		child = links.link_for_issue(doc.issue_id)
-	if not child or child.sync_state not in store.ACTIVE_STATES:
-		return _("The sub-issue is not synced.")
-	if removed:
-		current = frappe.db.get_value(store.ISSUE_SYNC, child.name, "remote_parent_issue_id")
-		if current == doc.related_issue_id:
-			set_remote_parent(child.name, child.project, None, None)
-		return None
-	# A parent in another repository cannot be a Task's parent here: it is
-	# recorded without a number, and the reconcile shows a sub-issue error.
-	number = doc.related_issue_number if same_repository else None
-	set_remote_parent(child.name, child.project, doc.related_issue_id, number)
-	return None
-
-
-def record_child(doc, route: dict) -> str | None:
-	"""A sub-issue with no link yet: record it for import as its ``opened``
-	event would, under the same rules. Returns why not, or None."""
-	if not doc.issue_number:
-		return _("The sub-issue is not synced.")
-	row = route["repository_row"]
-	try:
-		issue = issues.get_issue(row.installation, row.full_name, doc.issue_number)
-	except GitHubError as exc:
-		if exc.status in GONE:
-			return _("The Issue is no longer in this repository.")
-		raise
-	if issue["id"] != doc.issue_id:
-		return _("The sub-issue is not synced.")
-	return consider_import(route, issue, actor=doc.actor_login)
-
-
-def linked_parent(repository_id: str, full_name: str, issue: IssueData) -> frappe._dict | None:
-	"""The active link of an Issue's GitHub parent in the same repository, or
-	None when it has no parent or the parent is not synced."""
-	if not issue["parent_number"] or (issue["parent_full_name"] or "").lower() != full_name.lower():
-		return None
-	return frappe.db.get_value(
-		store.ISSUE_SYNC,
-		{
-			"repository_id": repository_id,
-			"issue_number": issue["parent_number"],
-			"issue_id": ["is", "set"],
-			"sync_state": ["in", list(store.ACTIVE_STATES)],
-		},
-		["issue_id", "issue_number"],
-		as_dict=True,
-	)
-
-
-def set_remote_parent(link_name: str, project: str, parent_id: str | None, parent_number: int | None) -> None:
-	"""Record where GitHub has this Issue now; reconcile decides what follows.
-
-	A link whose Task is still being imported keeps the parent too, and its
-	import reconciles it. The row is read locked, so a concurrent import
-	either sees this parent or is seen here as having created the Task. The
-	parent's row is written first, the order import_issue locks them in."""
-	current = frappe.db.get_value(
-		store.ISSUE_SYNC,
-		link_name,
-		["task", "remote_parent_issue_id", "remote_parent_issue_number"],
+		{"repository_provider_issue_id": issue["id"]},
+		links.LINK_FIELDS,
 		as_dict=True,
 		for_update=True,
 	)
-	if (current.remote_parent_issue_id or None) == parent_id and (
-		current.remote_parent_issue_number or None
-	) == parent_number:
-		return
-	frappe.db.set_value(
-		store.ISSUE_SYNC,
-		link_name,
-		{"remote_parent_issue_id": parent_id, "remote_parent_issue_number": parent_number},
+	if not winner:
+		raise frappe.ValidationError(_("Another import of this GitHub Issue did not finish."))
+	return SyncResult(winner.name, winner)
+
+
+def insert_task(route: dict, issue: IssueData) -> Document:
+	"""The normal Task insert, so every validation runs. A title longer than a subject
+	continues in the description (setu.github.titles)."""
+	subject, rest = titles.split(whole_title(issue), subject_limit())
+	task = frappe.new_doc("Task")
+	task.project = route["project"]
+	task.subject = subject
+	task.description = titles.compose(
+		None, convert.markdown_to_html(issue["body"])["html"], titles.note(rest), False
 	)
-	if current.task:
-		store.queue_op(link_name, "reconcile", project)
+	task.priority = "Medium"
+	# As create_task does, so imported Tasks can hold Subtasks.
+	task.is_group = 1
+	task.status = task_status(issue)
+	if task.status == "Completed":
+		task.completed_on = today()
+		task.completed_by = bot.BOT_USER
+	task.insert(ignore_permissions=True)
+	task.add_comment("Info", imported_text(route, issue))
+	return task
+
+
+def imported_text(route: dict, issue: IssueData) -> str:
+	text = _("Imported from GitHub issue {0}#{1}").format(route["repository_row"].full_name, issue["number"])
+	if issue["author_login"]:
+		text += " " + _("(opened by @{0})").format(issue["author_login"])
+	return text
+
+
+def issue_identity(issue: IssueData) -> dict[str, str | int]:
+	return {
+		"repository_provider_issue_id": issue["id"],
+		"issue_node_id": issue["node_id"],
+		"issue_number": issue["number"],
+		"issue_url": issue["html_url"],
+	}
+
+
+# GitHub → Envision 3: title, description, status, parent.
+
+
+def apply_field_key(run: KeyRun, resource: str) -> None:
+	"""A key for an Issue with no Task yet fails and stays, until it has been imported.
+	A closed Issue with no Task is never imported, so its key is done."""
+	link = links.link_for_issue(str(run.target["issue_id"]))
+	if not link:
+		if issue_gone(run) or read_issue(run)[1]["state"] != "open":
+			return
+		raise frappe.ValidationError(
+			_("GitHub Issue #{0} has no Task here yet.").format(run.target["issue_number"])
+		)
+	if link.sync_state in link_state.MARKS:
+		return
+	route, issue = read_issue(run)
+	if resource == PARENT_RESOURCE:
+		apply_parent(run, route, link, issue)
+	else:
+		apply_fields(run, link, issue, (resource,))
+
+
+def apply_fields(run: KeyRun, link: frappe._dict, issue: IssueData, resources: tuple[str, ...]) -> None:
+	"""Save what differs in one normal save. A refusal is raised, so the key stays."""
+	with bot.as_bot():
+		task = frappe.get_doc("Task", link.task)
+		changed = [resource for resource in resources if FIELD_WRITERS[resource](task, issue)]
+		if changed:
+			task.save(ignore_permissions=True)
+	if changed:
+		run.task = link.task
+		run.applied.extend(field_label(resource) for resource in changed)
+
+
+def whole_title(issue: IssueData) -> str:
+	return issue["title"].strip() or _("Untitled GitHub issue")
+
+
+def subject_limit() -> int:
+	subject = frappe.get_meta("Task").get_field("subject")
+	return int(subject.length) if subject and subject.length else 140
+
+
+def write_title(task: Document, issue: IssueData) -> bool:
+	"""GitHub's title: what fits in the subject, the rest in the description's note."""
+	value = whole_title(issue)
+	if titles.same(titles.title(task.subject, task.description, False), value):
+		return False
+	subject, rest = titles.split(value, subject_limit())
+	task.subject = subject
+	task.description = titles.compose(task.description, None, titles.note(rest), False)
+	return True
+
+
+def write_description(task: Document, issue: IssueData) -> bool:
+	"""The body as HTML, keeping the title's note. Compared as the Task will store it,
+	Text Editor sanitizing included, so an unchanged body writes nothing."""
+	html = convert.markdown_to_html(issue["body"])["html"]
+	current = convert.html_digest(titles.content(task.description, False))
+	if current == convert.html_digest(sanitize_html(html, linkify=True)):
+		return False
+	task.description = titles.compose(task.description, html, None, False)
+	return True
+
+
+def write_status(task: Document, issue: IssueData) -> bool:
+	"""The status GitHub's state maps to. A Task the state already describes stays as it
+	is: an open Issue says nothing about In Progress or Blocked."""
+	status = task_status(issue)
+	if issues.state_patch(task.status) == issues.state_patch(status):
+		return False
+	set_task_status(task, status)
+	return True
+
+
+def task_status(issue: IssueData) -> str:
+	if issue["state"] == "open":
+		return "Open"
+	return "Cancelled" if issue["state_reason"] in CANCELLED_REASONS else "Completed"
+
+
+def set_task_status(task: Document, status: str) -> None:
+	"""Completion follows update_task's bookkeeping and refusals."""
+	if status == "Completed" and task.status != "Completed":
+		check_no_open_subtasks(task)
+		if not task.completed_on:
+			task.completed_on = today()
+			task.completed_by = bot.BOT_USER
+	elif task.status == "Completed" and status != "Completed":
+		task.completed_on = None
+		task.completed_by = None
+		task.progress = 0
+	task.status = status
+
+
+FIELD_WRITERS: dict[str, Callable[[Document, IssueData], bool]] = {
+	"title": write_title,
+	"description": write_description,
+	"status": write_status,
+}
+
+
+def apply_parent(run: KeyRun, route: dict, link: frappe._dict, issue: IssueData) -> None:
+	"""The child's current parent, under the parent rules. The event is not read, so a
+	late removal cannot undo a newer parent."""
+	parent = current_parent_task(route, link, issue)
+	with bot.as_bot():
+		task = frappe.get_doc("Task", link.task)
+		previous = task.parent_task or None
+		if parent == previous:
+			return
+		if parent:
+			check_parent_rules(task, frappe.get_doc("Task", parent))
+		task.parent_task = parent
+		if parent:
+			check_parent_due_date(task)
+		task.save(ignore_permissions=True)
+		if previous:
+			note_subtask(previous, _("Moved out subtask {0}").format(task.subject))
+		if parent:
+			note_subtask(parent, _("Moved in subtask {0}").format(task.subject))
+	run.task = link.task
+	run.applied.append(field_label("parent"))
+
+
+def current_parent_task(route: dict, link: frappe._dict, issue: IssueData) -> str | None:
+	"""The Task of the Issue's parent; None for no parent. A parent with no Task in this
+	Project, in this repository or not, fails and the key stays: the tree is never
+	flattened, and a key's Error Log is where a sub-issue error shows now. So does an
+	Issue that doesn't say: GitHub's field is optional, and silence isn't "no parent"."""
+	if not issue["parent_known"]:
+		raise GitHubError("GitHub did not say which Issue is this Issue's parent.")
+	if not issue["parent_number"]:
+		return None
+	number = issue["parent_number"]
+	if (issue["parent_full_name"] or "").lower() != route["repository_row"].full_name.lower():
+		raise frappe.ValidationError(
+			_("On GitHub this Issue is a sub-issue of {0}#{1}, in another repository.").format(
+				issue["parent_full_name"], number
+			)
+		)
+	parent = frappe.db.get_value(
+		store.ISSUE_SYNC,
+		{"repository_id": route["repository"], "issue_number": number},
+		["task", "project", "sync_state"],
+		as_dict=True,
+	)
+	if (
+		not parent
+		or not parent.task
+		or parent.project != link.project
+		or parent.sync_state in link_state.MARKS
+	):
+		raise frappe.ValidationError(
+			_("On GitHub this Issue is a sub-issue of #{0}, which isn't synced to this project.").format(
+				number
+			)
+		)
+	return parent.task
+
+
+def field_label(resource: str) -> str:
+	return {
+		"title": _("title"),
+		"description": _("description"),
+		"status": _("status"),
+		"parent": _("parent task"),
+	}[resource]
+
+
+def note_update(run: KeyRun) -> None:
+	"""One Activity comment for the run. It names the sender only inline."""
+	if not run.task or not run.applied:
+		return
+	text = _("Updated from GitHub: {0}").format(", ".join(run.applied))
+	if run.sender:
+		text += " " + _("by @{0}").format(run.sender)
+	with bot.as_bot():
+		frappe.get_doc("Task", run.task).add_comment("Info", text)
+
+
+# GitHub → Envision 4: issue: delete.
+
+
+def apply_issue_deleted(run: KeyRun) -> None:
+	"""The Task tree, the link and its Retry Job rows go in one transaction, with no
+	GET. No link, an unlinked one or a Task already gone are all finished. The cron owns
+	its row, so that one stays for the cron to delete when this key is reported done.
+
+	The link goes first, so the Task's own ``links.on_task_trash`` finds none and makes
+	no GitHub call, and nothing names the Task at Frappe's link check. Each Subtask's
+	hook still finds its link: it becomes to_be_deleted, and its job deletes its Issue.
+	"""
+	found = links.link_for_issue(str(run.target["issue_id"]))
+	link = links.locked_link(found.name) if found else None
+	if not link or link.sync_state == link_state.UNLINKED:
+		return
+	job_key = delta.inbound_job_key(str(run.target["repository_id"]), str(run.target["issue_id"]))
+	links.clear_job_references(link)
+	links.delete_link(link, keep_job=job_key if run.cron else None)
+	if link.task and frappe.db.exists("Task", link.task):
+		delete_issue_tree(link.task)
+
+
+def delete_issue_tree(task_name: str) -> None:
+	"""As the integration user, children first, through normal validation and hooks.
+
+	A refusal rolls the whole transaction back, not only the key's savepoint: Frappe
+	keeps after-commit callbacks through a savepoint rollback, and the
+	``delete_dynamic_links`` job of a Task that stayed would delete its Comments, ToDos
+	and Versions. Nothing else is lost, because ``issue: delete`` is always alone in
+	its delta (``delta.merge_delta``).
+	"""
+	try:
+		with bot.as_bot():
+			documents = subtree_documents(frappe.get_doc("Task", task_name))
+			delete_task_tree(documents, ignore_permissions=True)
+	except Exception as exc:
+		if not is_infrastructure(exc):
+			frappe.db.rollback()
+		raise
+
+
+# GitHub → Envision 3: issue: transferred.
+
+
+def apply_transferred(run: KeyRun) -> None:
+	"""The link and every Retry Job row go and the github tag comes off; the Task and
+	the Issue both stay. Never a deletion. The cron owns its row, so that one stays
+	for the cron to delete when this key is reported done."""
+	found = links.link_for_issue(str(run.target["issue_id"]))
+	link = links.locked_link(found.name) if found else None
+	if not link:
+		return
+	job_key = delta.inbound_job_key(str(run.target["repository_id"]), str(run.target["issue_id"]))
+	outcome = link_state.on_issue_transferred(
+		link.sync_state, has_inbound_job=not run.cron and bool(links.inbound_job(link))
+	)
+	if outcome == link_state.Outcome.QUEUE_FOR_CRON:
+		# A webhook that found the lock busy wrote the row during this run.
+		retry.merge_into_row(job_key, {delta.ISSUE_RESOURCE: delta.TRANSFERRED}, None)
+	elif outcome == link_state.Outcome.DELETE_ROW:
+		if link.task:
+			links.strip_github_tag(link.task)
+		links.delete_link(link, keep_job=job_key if run.cron else None)

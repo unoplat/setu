@@ -1,8 +1,8 @@
 """Issue titles longer than a Task subject continue in the Task's description.
 
-ERPNext holds a Task subject to ``reconcile.subject_limit()`` characters as
+ERPNext holds a Task subject to ``inbound.subject_limit()`` characters as
 Frappe stores it, and GitHub an Issue title to 256. A longer Issue title is
-neither a conflict nor shortened on GitHub (approved 2026-10-25): the subject
+never shortened on GitHub (approved 2026-10-25): the subject
 takes the title's first characters, and a generated note at the top of the
 description holds all the rest, exactly:
 
@@ -21,8 +21,9 @@ The Task's title is its subject followed by the note's text after "…"
 
 Only a marked first paragraph is a note. Frappe and Envision's paragraph
 extension preserve the marker. Literal label paragraphs are always ordinary
-description. An editor that strips the marker produces a visible conflict
-before either field is changed, never a guess that can delete user content.
+description. An editor that strips the marker leaves an ordinary paragraph: the
+text leaves the title and stays in the description, never a guess that can delete
+user content.
 
 Frappe sanitizes Data and Small Text values that look like HTML, which can
 make them longer. A subject is fitted as it will be stored (``split``), and

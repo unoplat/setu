@@ -2,8 +2,8 @@
 
 - client, issues: authenticated, rate-limit-aware GitHub requests
 - connection, projects, activation: app, routing, explicit sync enablement
-- store, links: durable links, the operation outbox, publishing hooks
-- worker, outbound, inbound, reconcile: running operations both ways
-- events, recovery: webhook receipts and scheduled recovery
+- store, links, delta, link_state: durable links, publishing hooks and their rules
+- outbound, inbound: applying changes both ways
+- retry, events, redelivery, recovery: Retry Job rows, webhooks and the scheduled crons
 - convert: Issue body Markdown ↔ description HTML
 """

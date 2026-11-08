@@ -6,11 +6,17 @@ before they expire. Nothing is stored in Redis: each web worker and job mints
 its own, and a 401 drops them and retries once. Only the rate-limit backoff is
 shared between processes, so a limited installation sends nothing until GitHub
 said to retry.
+
+A webhook applied in its request has to reply inside GitHub's 10 seconds, so
+``bounded_requests`` shortens the timeouts, stops new requests once its budget is
+spent, and sends no second request after a 401. Its failures are ordinary ones.
 """
 
 import re
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import partial
 from typing import Final
 
@@ -29,19 +35,31 @@ from githubkit import (
 from githubkit.cache import MemCacheStrategy
 from githubkit.exception import (
 	GitHubException,
+	GraphQLFailed,
 	RateLimitExceeded,
 	RequestError,
 	RequestFailed,
 )
+from githubkit.graphql import GraphQLNamespace, GraphQLResponse
 
 SETTINGS = "Envision GitHub Settings"
 API_VERSION: Final = "2022-11-28"
 TIMEOUT = httpx.Timeout(20, connect=5)
+# One token request and one call take at most about 6 seconds, and no call starts
+# after the budget: the last can run to about 8, which leaves time for the database.
+BOUNDED_TIMEOUT = httpx.Timeout(2, connect=1)
+BOUNDED_BUDGET_SECONDS = 4
+# When the running request's budget ends; None outside ``bounded_requests``.
+BOUNDED_UNTIL: ContextVar[float | None] = ContextVar("github_bounded_until", default=None)
 TOKENS = MemCacheStrategy()
 RATE_LIMITED = "GitHub's rate limit was reached. Envision will retry automatically."
 UNREACHABLE = "Could not reach GitHub. Please try again."
 INVALID = "GitHub returned an invalid response. Please try again."
+OUT_OF_TIME = "This webhook ran out of time to reach GitHub. Envision will retry automatically."
 TOKEN_PATH = re.compile(r"/app/installations/\d+/access_tokens")
+GRAPHQL_PATH = "/graphql"
+# GraphQL's error types, as the REST status that means the same.
+GRAPHQL_STATUS = {"NOT_FOUND": 404, "FORBIDDEN": 403, "UNPROCESSABLE": 422}
 
 type JSONValue = str | int | float | bool | list[JSONValue] | dict[str, JSONValue] | None
 
@@ -75,6 +93,32 @@ def settings():
 	return frappe.get_single(SETTINGS)
 
 
+def app_login() -> str | None:
+	"""The login GitHub shows as the author of what this site's app writes."""
+	slug = settings().app_slug
+	return f"{slug}[bot]" if slug else None
+
+
+@contextmanager
+def bounded_requests() -> Iterator[None]:
+	"""GitHub requests in this block use the short timeouts and the shared budget."""
+	token = BOUNDED_UNTIL.set(time.monotonic() + BOUNDED_BUDGET_SECONDS)
+	try:
+		yield
+	finally:
+		BOUNDED_UNTIL.reset(token)
+
+
+def current_timeout() -> httpx.Timeout:
+	return TIMEOUT if BOUNDED_UNTIL.get() is None else BOUNDED_TIMEOUT
+
+
+def set_token_request_timeout(request: httpx.Request) -> None:
+	"""githubkit builds its installation token request without the client, and so
+	without any timeout. httpx runs this hook for every request, that one included."""
+	request.extensions.setdefault("timeout", current_timeout().as_dict())
+
+
 def new_client[A: BaseAuthStrategy](auth: A) -> GitHub[A]:
 	# Never retry (a create may already have applied), never follow a redirect
 	# (a PATCH would be resent as a GET), and never cache responses.
@@ -82,7 +126,8 @@ def new_client[A: BaseAuthStrategy](auth: A) -> GitHub[A]:
 		auth,
 		user_agent="Envision-GitHub",
 		follow_redirects=False,
-		timeout=TIMEOUT,
+		timeout=current_timeout(),
+		event_hooks={"request": [set_token_request_timeout]},
 		cache_strategy=TOKENS,
 		http_cache=False,
 		auto_retry=False,
@@ -149,6 +194,38 @@ def installation_write[**P, T, J](
 	return send(installation_id, True, partial(method, *args, **kwargs))
 
 
+def installation_check[**P, T, J](
+	installation_id: str, method: Callable[P, Response[T, J]], *args: P.args, **kwargs: P.kwargs
+) -> None:
+	"""A read that only has to succeed: its reply is not parsed."""
+	send(installation_id, False, partial(method, *args, **kwargs))
+
+
+def installation_mutation(installation_id: str, query: str, variables: dict[str, JSONValue]) -> None:
+	"""A GraphQL write through ``installation_client(installation_id)``, with the same
+	error mapping and rate-limit handling as a REST write."""
+	github = installation_client(installation_id)
+	send(installation_id, True, partial(graphql_request, github, query, variables))
+
+
+def graphql_request(
+	github: GitHub[AppInstallationAuthStrategy], query: str, variables: dict[str, JSONValue]
+) -> Response[GraphQLResponse]:
+	"""POST the query. GitHub reports GraphQL errors with status 200, so they are
+	raised here, inside ``send``, for it to map."""
+	response = github.request(
+		"POST",
+		GRAPHQL_PATH,
+		json=GraphQLNamespace.build_graphql_request(query, variables),
+		response_model=GraphQLResponse,
+	)
+	try:
+		github.graphql.parse_graphql_response(response)
+	except pydantic.ValidationError:
+		raise GitHubError(INVALID) from None
+	return response
+
+
 def send[T, J](
 	installation_id: str | None, writes: bool, call: Callable[[], Response[T, J]]
 ) -> Response[T, J]:
@@ -161,6 +238,9 @@ def send[T, J](
 	until = backoff_until(installation_id) if installation_id else None
 	if until:
 		raise GitHubError(RATE_LIMITED, 429, retry_at=until, rate_limited=True)
+	bounded_until = BOUNDED_UNTIL.get()
+	if bounded_until is not None and time.monotonic() >= bounded_until:
+		raise GitHubError(OUT_OF_TIME)
 	for attempt in range(2):
 		try:
 			response = call()
@@ -173,6 +253,8 @@ def send[T, J](
 			if error.status != 401 or attempt:
 				raise error from None
 			clear_tokens()
+			if bounded_until is not None:
+				raise error from None
 			continue
 		# Redirects are not followed, and githubkit returns them as successes.
 		if not response.is_success:
@@ -189,6 +271,8 @@ def parsed[T, J](response: Response[T, J]) -> T:
 
 
 def failure(exc: GitHubException, writes: bool) -> GitHubError:
+	if isinstance(exc, GraphQLFailed):
+		return graphql_error(exc)
 	if isinstance(exc, RateLimitExceeded):
 		return GitHubError(
 			RATE_LIMITED,
@@ -215,6 +299,18 @@ def failure(exc: GitHubException, writes: bool) -> GitHubError:
 	if isinstance(cause, httpx.RequestError):
 		return GitHubError(UNREACHABLE, uncertain=sent(cause.request, writes))
 	return GitHubError("GitHub request failed. Please try again.", uncertain=writes)
+
+
+def graphql_error(exc: GraphQLFailed) -> GitHubError:
+	"""A GraphQL failure as the status its errors agree on. GitHub's messages are not
+	kept: they can quote what the request named."""
+	statuses = {GRAPHQL_STATUS.get(error.type or "") for error in exc.response.errors or []}
+	status = statuses.pop() if len(statuses) == 1 else None
+	return (
+		status_error(status, uncertain=False)
+		if status
+		else GitHubError("GitHub request failed. Please try again.")
+	)
 
 
 def sent(request: httpx.Request, writes: bool) -> bool:
