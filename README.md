@@ -1,11 +1,11 @@
 # Envision
 
-A planning and knowledge engine for teams building SaaS products.
+An open-source product planning app built on ERPNext and the Frappe Framework.
 
-Today, Envision helps teams plan work with a board organized by product area, milestones that track linked tasks, and a personal view across projects. We are building toward connecting that work to code, releases, and shared knowledge. See the [roadmap](#roadmap) for what's next.
+Envision works with ERPNext Project and Task records. Plan work by product area and milestone, follow your tasks across projects, and connect a project's tasks with GitHub Issues. See the [roadmap](#roadmap) for what's next.
 
 > [!WARNING]
-> Envision is in alpha. Release can include breaking changes, such as changes to data models, APIs, settings, or integrations.
+> Envision is in alpha. Releases can include breaking changes, such as changes to data models, APIs, settings, or integrations.
 
 ## What you can do today
 
@@ -14,13 +14,23 @@ Today, Envision helps teams plan work with a board organized by product area, mi
 - Organize tasks into modules. Each module represents a lasting area of your product and can have a lead and a description.
 - Move tasks through Todo, In Progress, Review, Blocked, and Done. Modules appear as rows on the board. Drag a card between rows to change its module, or between columns to change its status. You can undo a move.
 - Track delivery targets with milestones and due dates. Progress updates as linked tasks reach Done. Each task can belong to one module and one milestone.
+- Break work into subtasks and manage parent-child task relationships.
 - Assign tasks to multiple people and set priorities, tags, start dates, and due dates.
+- View and filter linked tasks from modules and milestones.
 
 ### Focus on your own work
 
 - See your assigned work across projects in My tasks, including completed tasks.
 - Save private views filtered by milestone, priority, or tag. Project views can filter by assignee; My tasks views can filter by project.
 - Open saved views on another device. They show filtered shared tasks, not separate copies.
+- See assignments and mentions in the Inbox, with an unread badge and filters.
+
+### Connect work to GitHub
+
+- Connect a GitHub repository to a project and enable Issue sync in the project settings.
+- Import eligible open Issues as tasks. Publish a task to GitHub by adding the `github` tag and confirming the destination.
+- Keep linked task and Issue titles, descriptions, statuses, and comments in sync. Envision also synchronizes supported parent and sub-issue relationships.
+- See sync status and retry failed updates in Envision. Publishing to GitHub shares task content with the people who can access the selected repository.
 
 ### Discuss and keep context
 
@@ -61,14 +71,12 @@ These capabilities are planned, not yet available. Delivery order and dates are 
 
 ### Planning and team coordination
 
-- Subtasks to break tasks into smaller pieces of work.
 - A smart notification system that prioritizes relevant updates without constant interruptions.
 - Granular roles and permissions to control who can view, create, edit, and manage work in each project.
 - A discussion board per project for ongoing conversations and announcements.
 
 ### Code and releases
 
-- GitHub integration to connect planned work with repository activity.
 - Release integration to connect tasks and milestones with what ships.
 
 ### Knowledge
