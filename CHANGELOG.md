@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/unoplat/setu/compare/v0.4.3...v0.5.0) (2026-11-09)
+
+
+### Features
+
+* **tasks:** support cancelling tasks ([73d1dba](https://github.com/unoplat/setu/commit/73d1dba6191bb73d604f6228106d7e00193a167e))
+* **tasks:** support cancelling tasks ([7453e15](https://github.com/unoplat/setu/commit/7453e15c9f8e42e03e2a76417c991f79e96576b2))
+
 ## [0.4.3](https://github.com/unoplat/setu/compare/v0.4.2...v0.4.3) (2026-11-09)
 
 
