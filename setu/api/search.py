@@ -12,7 +12,7 @@ from setu.search import EnvisionSearch
 # dialog groups them by kind. The full-text index (setu/search.py) finds
 # candidates, and each one is read back through frappe.get_list, so a result
 # is only shown if this user may open it and Envision would list it: not
-# deleted, not Cancelled, not a template, in an Envision project.
+# deleted, not a template, in an Envision project.
 
 # Results show from the second letter typed, as the dialog asks for them.
 MIN_QUERY_LENGTH = 2
@@ -82,7 +82,6 @@ def live_rows(hits: list[dict], projects: dict[str, str]) -> dict[tuple[str, str
 				"name": ["in", tasks],
 				"project": ["in", list(projects)],
 				"is_template": 0,
-				"status": ["!=", "Cancelled"],
 			},
 			fields=["name", "subject", "status", "project", "is_milestone"],
 			limit_page_length=0,

@@ -12,7 +12,7 @@ Envision works with ERPNext Project and Task records. Plan work by product area 
 ### Plan by product area and milestone
 
 - Organize tasks into modules. Each module represents a lasting area of your product and can have a lead and a description.
-- Move tasks through Todo, In Progress, Review, Blocked, and Done. Modules appear as rows on the board. Drag a card between rows to change its module, or between columns to change its status. You can undo a move.
+- Move tasks through Todo, In Progress, Review, Blocked, Done, and Cancelled. Modules appear as rows on the board. Drag a card between rows to change its module, or between columns to change its status. You can undo a move.
 - Track delivery targets with milestones and due dates. Progress updates as linked tasks reach Done. Each task can belong to one module and one milestone.
 - Break work into subtasks and manage parent-child task relationships.
 - Assign tasks to multiple people and set priorities, tags, start dates, and due dates.
@@ -29,7 +29,7 @@ Envision works with ERPNext Project and Task records. Plan work by product area 
 
 - Connect a GitHub repository to a project and enable Issue sync in the project settings.
 - Import eligible open Issues as tasks. Publish a task to GitHub by adding the `github` tag and confirming the destination.
-- Keep linked task and Issue titles, descriptions, statuses, and comments in sync. Envision also synchronizes supported parent and sub-issue relationships.
+- Keep linked task and Issue titles, descriptions, statuses, and comments in sync. A cancelled task closes its Issue as not planned. Envision also synchronizes supported parent and sub-issue relationships.
 - See sync status and retry failed updates in Envision. Publishing to GitHub shares task content with the people who can access the selected repository.
 
 ### Discuss and keep context

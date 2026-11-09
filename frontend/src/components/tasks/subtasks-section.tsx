@@ -61,7 +61,11 @@ const EMPTY_DRAFT: SubtaskDraft = {
   due_date: EMPTY_TASK.due_date,
 }
 
-/** Why "+" and Expand are off on a Done Task (ERPNext refuses the Subtask). */
+/**
+ * Why "+" and Expand are off on a Done or Cancelled Task: ERPNext refuses an
+ * open Subtask under a Done one, and Envision any under a Cancelled one
+ * (setu.api.task.check_parent_rules).
+ */
 const REOPEN_TO_ADD = "Reopen this task to add subtasks"
 
 const NEW_TITLE_ID = "subtask-new-title"
@@ -88,7 +92,7 @@ export function SubtasksSection({
   const [expanded, setExpanded] = React.useState<Partial<TaskValues> | null>(
     null
   )
-  const blocked = task.status === "Completed"
+  const blocked = task.status === "Completed" || task.status === "Cancelled"
 
   // A Subtask joins the list here, the parent's activity and, through its
   // milestone, that milestone's progress.
@@ -118,7 +122,7 @@ export function SubtasksSection({
     enabled: canAdd && !blocked && adding && expanded === null,
   })
 
-  // A Task marked Done while the row was open takes no Subtask.
+  // A Task marked Done or Cancelled while the row was open takes no Subtask.
   const row =
     adding && !blocked ? (
       <InlineSubtaskRow
@@ -163,7 +167,7 @@ export function SubtasksSection({
           project={project}
           projectName={projectName}
           // `initial` brings the row's Status; this is only the fallback.
-          status={EMPTY_TASK.status}
+          status="Open"
           // A Subtask is part of its parent's milestone unless picked apart.
           milestone={task.milestone ?? undefined}
           parent={task.name}
@@ -410,6 +414,7 @@ function InlineSubtaskRow({
           <StatusSelect
             id="subtask-new-status"
             variant="inline"
+            creating
             value={draft.status}
             onChange={(status) =>
               onDraftChange((current) => ({ ...current, status }))

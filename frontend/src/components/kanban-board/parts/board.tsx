@@ -133,7 +133,11 @@ export function Board({
             onItemDataChange={onItemDataChange}
             onColumnUpdate={onColumnUpdate}
             onColumnDelete={onColumnDelete}
-            onColumnAdd={onColumnAdd ? () => onColumnAdd(column.id) : undefined}
+            onColumnAdd={
+              onColumnAdd && column.allowAdd !== false
+                ? () => onColumnAdd(column.id)
+                : undefined
+            }
             renderSwimlaneHeader={renderSwimlaneHeader}
             hideEmptyPlaceholder={hideEmptyPlaceholder}
             onToggleSwimlaneCollapse={

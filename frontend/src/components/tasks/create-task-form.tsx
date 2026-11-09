@@ -290,6 +290,7 @@ export const CreateTaskForm = withForm({
                   <FieldLabel htmlFor="task-status">Status</FieldLabel>
                   <StatusSelect
                     id="task-status"
+                    creating
                     value={field.state.value}
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}

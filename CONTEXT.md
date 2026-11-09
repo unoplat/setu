@@ -45,7 +45,7 @@ _Avoid_: Checklist item, child issue
 ## Classification and Planning
 
 **Status**:
-A Task’s single workflow position. Envision presents ERPNext’s Open, Working, Pending Review, Overdue, and Completed statuses as Todo, In Progress, Review, Overdue, and Done, and adds Blocked. Envision does not support ERPNext’s Cancelled status; Cancelled Tasks are hidden from the Board.
+A Task’s single workflow position. Envision presents ERPNext’s Open, Working, Pending Review, Overdue, Completed, and Cancelled statuses as Todo, In Progress, Review, Overdue, Done, and Cancelled, and adds Blocked. Cancelled is the Board's last column, after Done.
 _Avoid_: State, Envision Status, priority
 
 **Priority**:
@@ -57,7 +57,7 @@ A Frappe User assigned to an ERPNext Task through Frappe's Assign To mechanism. 
 _Avoid_: Owner, custom Assignee record
 
 **Milestone**:
-A standard ERPNext Task designated as a milestone and treated by Envision as a Project target rather than ordinary Board work. Its completion is derived when it has at least one associated Task and every such Task is Done. Tasks cancelled in ERPNext are ignored.
+A standard ERPNext Task designated as a milestone and treated by Envision as a Project target rather than ordinary Board work. Its completion is derived when it has at least one associated Task and every such Task is Done. Cancelled Tasks are ignored.
 _Avoid_: Custom Envision Milestone, Sprint, iteration, release
 
 **Start Date**:
@@ -147,8 +147,8 @@ _Avoid_: Desk Workspace, native Task form
 ## Completion and Deletion
 
 **Cancelled Task**:
-Not supported in Envision. Envision has no way to cancel or reopen a Task. Tasks cancelled in ERPNext are hidden and excluded from completed work and Milestone progress. To remove a Task, delete it.
-_Avoid_: Done Task, Deleted Task
+A Task whose work was dropped without being done, kept for the record. A Task is cancelled by moving it to the Cancelled column or picking Cancelled as its Status, and reopened by moving it back; no Task is created Cancelled. A Task with open Subtasks can be cancelled, and its Subtasks keep their own Status; a Cancelled Task cannot hold new Subtasks. Cancelled Tasks stay on the Board and in search but are excluded from completed work and from Milestone and Subtask progress. As ERPNext does, cancelling a Task removes everyone assigned to it, so it leaves their My tasks, and reopening it does not assign them again. A Task linked to a GitHub Issue closes that Issue as not planned; an Issue closed as not planned or as a duplicate cancels its Task. To remove a Task, delete it.
+_Avoid_: Done Task, Deleted Task, Archived Task
 
 **Deleted Task**:
 A Task permanently removed after confirmation. Deleting a parent deletes its entire descendant tree immediately, including cancelled Subtasks. The user must have ERPNext delete permission on every Task being removed; linked records may prevent deletion, in which case the whole tree remains unchanged. Envision does not support archiving, a retention window, Undo, or restoration, and deleted Tasks are not kept in Frappe's Deleted Document recovery store. Project-role restrictions belong to the next version.

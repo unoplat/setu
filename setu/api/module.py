@@ -112,7 +112,7 @@ def add_module_comment(name: str, content: str, reply_to: str | None = None) -> 
 @frappe.whitelist()
 def count_module_tasks(name: str) -> dict:
 	"""How many Tasks a delete would move to No module (Paper: Module Delete
-	02). Counted as the Board shows them: neither Cancelled nor templates."""
+	02). Counted as the Board shows them: Cancelled included, templates not."""
 	module_doc(name)
 	return {"tasks": live_task_count({"envision_module": name})}
 

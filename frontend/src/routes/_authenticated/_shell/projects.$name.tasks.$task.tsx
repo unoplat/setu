@@ -30,7 +30,6 @@ import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
   MY_TASKS_KEY,
   TAGS_KEY,
-  boardStatus,
   descendantsOf,
   projectTasksKey,
   taskActivityKey,
@@ -163,9 +162,9 @@ function TaskScreen({
   const { confirmTags, dialog: publishDialog } =
     useGitHubTagConfirm(publishTarget)
 
-  // A Task the Board leaves off (Cancelled in Desk) has no column to pick, so
-  // it is shown, not edited.
-  const canWrite = task.can_write && boardStatus(task.status) !== null
+  // Every Task this page opens has a Board column, Cancelled included
+  // (setu.api.task.task_doc refuses templates), so it is edited as any other.
+  const canWrite = task.can_write
   useScope("task")
   // In the Subtasks' inline row the same keys open Create subtask instead.
   const addingSubtask = useScopeStack().includes("subtask-row")

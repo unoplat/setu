@@ -113,11 +113,21 @@ export function useSubtasks(project: string, parent: string) {
     () => (data ?? []).filter((task) => task.parent_task === parent),
     [data, parent]
   )
+  return { tasks, ...progressOf(tasks), loading: isLoading || !data }
+}
+
+/**
+ * How many of `tasks` are Done, out of those that count: Cancelled Tasks are
+ * listed but count for nothing (setu.api.task.PROGRESS_TASKS).
+ */
+export function progressOf(tasks: TaskSummary[]): {
+  total: number
+  done: number
+} {
+  const counted = tasks.filter((task) => task.status !== "Cancelled")
   return {
-    tasks,
-    total: tasks.length,
-    done: tasks.filter((task) => task.status === "Completed").length,
-    loading: isLoading || !data,
+    total: counted.length,
+    done: counted.filter((task) => task.status === "Completed").length,
   }
 }
 
@@ -150,7 +160,7 @@ export type TaskLink = { milestone: string } | { module: string }
 /**
  * The project's Tasks linked to one milestone or filed under one module, from
  * the list the Board already loads, and how many of them are Done. Cancelled
- * Tasks are not in that list, so they count for nothing here.
+ * Tasks are listed but count for nothing (progressOf).
  */
 export function useRelatedTasks(project: string, link: TaskLink) {
   const { data, isLoading } = useProjectTasks(project)
@@ -160,20 +170,16 @@ export function useRelatedTasks(project: string, link: TaskLink) {
     () => (data ?? []).filter((task) => task[field] === id),
     [data, field, id]
   )
-  return {
-    tasks,
-    total: tasks.length,
-    done: tasks.filter((task) => task.status === "Completed").length,
-    loading: isLoading || !data,
-  }
+  return { tasks, ...progressOf(tasks), loading: isLoading || !data }
 }
 
 /**
- * The Board's columns, in Paper order (02 — Empty Mobile App Board). Each one
- * presents ERPNext Task Statuses under Envision's names (CONTEXT.md, Status);
- * Blocked is the one Envision adds (setu/setup/property_setters.py).
- * `createStatus` is the Status a Task created from the column gets. Cancelled
- * Tasks are left off the Board, and the query above never fetches them.
+ * The Board's columns, in Paper order (02 — Empty Mobile App Board), with
+ * Cancelled after Done. Each one presents ERPNext Task Statuses under
+ * Envision's names (CONTEXT.md, Status); Blocked is the one Envision adds
+ * (setu/setup/property_setters.py). `status` is the Status a Task moved or
+ * created there gets; `canCreate` is false for Cancelled, which has no "+":
+ * work is cancelled, not created cancelled (setu.api.task.CREATE_STATUSES).
  */
 export const BOARD_COLUMNS = [
   {
@@ -181,63 +187,102 @@ export const BOARD_COLUMNS = [
     title: "Todo",
     color: "todo",
     statuses: ["Open", "Overdue"],
-    createStatus: "Open",
+    status: "Open",
+    canCreate: true,
   },
   {
     id: "in-progress",
     title: "In Progress",
     color: "in-progress",
     statuses: ["Working"],
-    createStatus: "Working",
+    status: "Working",
+    canCreate: true,
   },
   {
     id: "review",
     title: "Review",
     color: "review",
     statuses: ["Pending Review"],
-    createStatus: "Pending Review",
+    status: "Pending Review",
+    canCreate: true,
   },
   {
     id: "blocked",
     title: "Blocked",
     color: "blocked",
     statuses: ["Blocked"],
-    createStatus: "Blocked",
+    status: "Blocked",
+    canCreate: true,
   },
   {
     id: "done",
     title: "Done",
     color: "done",
     statuses: ["Completed"],
-    createStatus: "Completed",
+    status: "Completed",
+    canCreate: true,
+  },
+  {
+    id: "cancelled",
+    title: "Cancelled",
+    color: "cancelled",
+    statuses: ["Cancelled"],
+    status: "Cancelled",
+    canCreate: false,
   },
 ] as const
 
-export type BoardColumnId = (typeof BOARD_COLUMNS)[number]["id"]
+type BoardColumn = (typeof BOARD_COLUMNS)[number]
+
+export type BoardColumnId = BoardColumn["id"]
+
+/** The Statuses a Task can be moved to (setu.api.task.BOARD_STATUSES). */
+export type BoardStatus = BoardColumn["status"]
 
 /** The Statuses a Task can be created in (setu.api.task.CREATE_STATUSES). */
-export type CreateStatus = (typeof BOARD_COLUMNS)[number]["createStatus"]
+export type CreateStatus = Extract<BoardColumn, { canCreate: true }>["status"]
 
+function isCreateColumn(
+  column: BoardColumn
+): column is Extract<BoardColumn, { canCreate: true }> {
+  return column.canCreate
+}
+
+/** The columns a Task can be created in: every one but Cancelled. */
+export const CREATE_COLUMNS = BOARD_COLUMNS.filter(isCreateColumn)
+
+/** The Status a Task dragged into the column gets. */
+export function columnStatus(columnId: string): BoardStatus {
+  return (
+    BOARD_COLUMNS.find((column) => column.id === columnId)?.status ?? "Open"
+  )
+}
+
+/** The Status a Task created from the column's "+" gets. */
 export function columnCreateStatus(columnId: string): CreateStatus {
   return (
-    BOARD_COLUMNS.find((column) => column.id === columnId)?.createStatus ??
-    "Open"
+    CREATE_COLUMNS.find((column) => column.id === columnId)?.status ?? "Open"
   )
+}
+
+/** Whether the column has a "+" (Cancelled has none). */
+export function columnCanCreate(columnId: string): boolean {
+  return CREATE_COLUMNS.some((column) => column.id === columnId)
 }
 
 /**
  * The Status a Task's column stands for, as the Status picker holds it:
- * Overdue is Todo's. Null for the Statuses the Board leaves off (Cancelled).
+ * Overdue is Todo's. Null for a Status no column shows (Template).
  */
-export function boardStatus(status: string): CreateStatus | null {
+export function boardStatus(status: string): BoardStatus | null {
   return (
     BOARD_COLUMNS.find((column) =>
       (column.statuses as readonly string[]).includes(status)
-    )?.createStatus ?? null
+    )?.status ?? null
   )
 }
 
-/** The Board column a Status lands in; undefined for Cancelled. */
+/** The Board column a Status lands in; undefined for Template. */
 export function boardColumnOf(status: string): BoardColumnId | undefined {
   return BOARD_COLUMNS.find((column) =>
     (column.statuses as readonly string[]).includes(status)
@@ -407,6 +452,7 @@ export const BOARD_PALETTE: KanbanPaletteSwatch[] = [
   { id: "review", label: "Review", cssVar: "--chart-3" },
   { id: "blocked", label: "Blocked", cssVar: "--destructive" },
   { id: "done", label: "Done", cssVar: "--success" },
+  { id: "cancelled", label: "Cancelled", cssVar: "--muted-foreground" },
 ]
 
 /**
@@ -503,7 +549,7 @@ export interface BoardPlace {
  * Only what changed is sent, so a move never overwrites the other field.
  */
 export interface TaskMove {
-  status?: CreateStatus
+  status?: BoardStatus
   /** "" for No module. */
   module?: string
 }
@@ -516,7 +562,7 @@ export interface TaskMove {
 export function taskMove(from: BoardPlace, to: BoardPlace): TaskMove | null {
   const move: TaskMove = {}
   if (to.columnId !== from.columnId) {
-    move.status = columnCreateStatus(to.columnId)
+    move.status = columnStatus(to.columnId)
   }
   if (to.swimlaneId !== undefined && to.swimlaneId !== from.swimlaneId) {
     move.module = sectionCreateModule(to.swimlaneId)
@@ -646,6 +692,7 @@ function laneBoardData<T extends TaskSummary>(
         id: column.id,
         title: column.title,
         color: column.color,
+        allowAdd: column.canCreate,
         collapsed: view.collapsedColumns.has(column.id),
         items,
       }

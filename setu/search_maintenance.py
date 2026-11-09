@@ -209,7 +209,7 @@ def reconcile_records(records: list[tuple[str, str]], log: bool = True) -> list[
 def reconcile(doctype: str, name: str, engine: EnvisionSearch | None = None) -> str:
 	"""Bring one record's row in step with the database: ``"indexed"`` if it
 	exists and may be indexed, ``"removed"`` otherwise (gone, renamed, merged
-	away, a template, Cancelled, or outside an Envision project).
+	away, a template, or outside an Envision project).
 
 	``index_doc`` reads the record again and leaves out one that stopped
 	qualifying in between; that change's own reconcile then removes it.

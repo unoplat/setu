@@ -3,6 +3,7 @@ import {
   CircleDotIcon,
   CircleIcon,
   CircleSlashIcon,
+  CircleXIcon,
 } from "lucide-react"
 import type { ComponentType } from "react"
 
@@ -48,6 +49,7 @@ const STATUS_ICONS: Record<
   review: { Icon: CircleDotIcon, className: "text-sidebar-primary" },
   blocked: { Icon: CircleSlashIcon, className: "text-destructive" },
   done: { Icon: CircleCheckIcon, className: "text-success" },
+  cancelled: { Icon: CircleXIcon, className: "text-muted-foreground" },
 }
 
 /** Paper 07f/06f: the Status icon of a Board column. */

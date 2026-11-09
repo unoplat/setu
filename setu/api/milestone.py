@@ -299,18 +299,19 @@ def linked_task_counts(milestones: list[str]) -> dict[str, tuple[int, int]]:
 
 	A milestone's progress comes from its Tasks (Paper 06d: "Status updates
 	itself as linked tasks move to Done"), not ERPNext's ``progress``, which
-	nothing here sets. Counted as the milestone page lists them
-	(``LIVE_TASKS``), Completed being done, and only the Tasks the user can
-	read, so the list and the milestone page agree for everyone.
+	nothing here sets. Counted as the milestone page counts them
+	(``PROGRESS_TASKS``: Cancelled Tasks are listed but not counted),
+	Completed being done, and only the Tasks the user can read, so the list
+	and the milestone page agree for everyone.
 	"""
-	from setu.api.task import LIVE_TASKS
+	from setu.api.task import PROGRESS_TASKS
 
 	counts = dict.fromkeys(milestones, (0, 0))
 	if not milestones:
 		return counts
 	rows = frappe.get_list(
 		"Task",
-		filters={**LIVE_TASKS, "envision_milestone": ["in", milestones]},
+		filters={**PROGRESS_TASKS, "envision_milestone": ["in", milestones]},
 		fields=["envision_milestone", "status", {"COUNT": "*", "as": "tasks"}],
 		group_by="envision_milestone, status",
 		limit_page_length=0,

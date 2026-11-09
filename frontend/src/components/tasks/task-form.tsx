@@ -88,7 +88,8 @@ export const TaskForm = withForm({
     const startDate = useStore(form.store, (s) => s.values.start_date)
     const dueDate = useStore(form.store, (s) => s.values.due_date)
     const taskStatus = useStore(form.store, (s) => s.values.status)
-    const done = taskStatus === "Completed"
+    // A Done or Cancelled Task is no longer due, so it gets no due hint.
+    const closed = taskStatus === "Completed" || taskStatus === "Cancelled"
     // The date order is checked on the start date; the rail shows it under
     // the pair.
     const datesError = useStore(form.store, (s) =>
@@ -191,7 +192,7 @@ export const TaskForm = withForm({
                 </Property>
                 <DatesProperty
                   error={datesError}
-                  hint={dueDate && !done ? dueHint(dueDate) : null}
+                  hint={dueDate && !closed ? dueHint(dueDate) : null}
                   start={
                     <form.Field
                       name="start_date"
