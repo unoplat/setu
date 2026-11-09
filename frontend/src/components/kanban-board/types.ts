@@ -65,6 +65,8 @@ export type KanbanColumn = {
   allowOutgoing?: boolean
   acceptsRendererIds?: string[]
   maxItems?: number
+  /** Envision: false hides the column's "+" even when the board has `onColumnAdd`. */
+  allowAdd?: boolean
   /** Envision: ids of the swimlanes (sections) collapsed in this column. A collapsed section shows its header only. */
   collapsedSwimlanes?: string[]
 }

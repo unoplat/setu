@@ -41,6 +41,7 @@ import {
   BOARD_COLUMNS,
   BOARD_PALETTE,
   columnCreateStatus,
+  columnStatus,
   projectTasksKey,
   sectionCreateModule,
   taskActivityKey,
@@ -197,8 +198,7 @@ export function ProjectBoard({
       const undo: TaskMove = {}
       const where: string[] = []
       if (move.status !== undefined) {
-        undo.status =
-          boardStatus(task.status) ?? columnCreateStatus(from.columnId)
+        undo.status = boardStatus(task.status) ?? columnStatus(from.columnId)
         where.push(
           BOARD_COLUMNS.find((column) => column.id === to.columnId)?.title ??
             move.status

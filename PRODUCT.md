@@ -41,10 +41,10 @@ The primary Project workflow is a Kanban Board. Users scan status columns, filte
 
 ### Kanban Board
 
-- Status columns with column actions. Neither column headers nor the Module sections within them show Task counts. Each column represents the Task's Status; the Board shows Todo, In Progress, Review, Blocked, and Done.
+- Status columns with column actions. Neither column headers nor the Module sections within them show Task counts. Each column represents the Task's Status; the Board shows Todo, In Progress, Review, Blocked, Done, and Cancelled.
 - Task Cards can be opened by click or Enter and moved between columns by dragging.
-- Envision does not support cancelling Tasks. Tasks cancelled in ERPNext do not appear on the Board and do not count as completed work or Milestone progress.
-- Tasks can be added from a Board column.
+- Cancelling a Task moves it to the Cancelled column. Cancelled Tasks do not count as completed work or Milestone progress, and cancelling a linked Task closes its GitHub Issue as not planned.
+- Tasks can be added from every Board column except Cancelled.
 - Board view selection plus general, Milestone, and Priority filters.
 - Private Custom Views appear within their Project, or under My tasks, and preserve reusable Board configurations. My tasks views can also filter by Project and are always limited to the signed-in user's own Tasks.
 

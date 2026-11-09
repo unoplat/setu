@@ -3,7 +3,7 @@ import { formOptions } from "@tanstack/react-form"
 import {
   TASK_PRIORITIES,
   boardStatus,
-  type CreateStatus,
+  type BoardStatus,
   type TaskDetail,
   type TaskPriority,
 } from "@/lib/tasks"
@@ -24,7 +24,8 @@ export interface TaskValues {
   /** "YYYY-MM-DD", or "" when unset. */
   start_date: string
   due_date: string
-  status: CreateStatus
+  /** Create Task offers only the CreateStatus ones (StatusSelect `creating`). */
+  status: BoardStatus
   priority: TaskPriority
   /**
    * Frappe user ids, [] for nobody. Kept sorted where it is saved and

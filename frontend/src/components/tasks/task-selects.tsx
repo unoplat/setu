@@ -10,9 +10,10 @@ import {
 import {
   BOARD_COLUMNS,
   BOARD_PALETTE,
+  CREATE_COLUMNS,
   PRIORITY_CLASS,
   TASK_PRIORITIES,
-  type CreateStatus,
+  type BoardStatus,
   type TaskPriority,
 } from "@/lib/tasks"
 import { cn } from "@/lib/utils"
@@ -27,11 +28,24 @@ import { cn } from "@/lib/utils"
  */
 type Variant = "field" | "inline"
 
-const STATUS_ITEMS = BOARD_COLUMNS.map((column) => ({
-  value: column.createStatus,
-  label: column.title,
-  color: BOARD_PALETTE.find((swatch) => swatch.id === column.color)?.cssVar,
-}))
+interface StatusItem {
+  value: BoardStatus
+  label: string
+  color: string | undefined
+}
+
+function statusItem(column: (typeof BOARD_COLUMNS)[number]): StatusItem {
+  return {
+    value: column.status,
+    label: column.title,
+    color: BOARD_PALETTE.find((swatch) => swatch.id === column.color)?.cssVar,
+  }
+}
+
+/** Every column's Status, Cancelled included: what a Task can be moved to. */
+const STATUS_ITEMS = BOARD_COLUMNS.map(statusItem)
+/** Create Task's: a Task is never created Cancelled. */
+const CREATE_STATUS_ITEMS = CREATE_COLUMNS.map(statusItem)
 
 /** The Board column's marker, so the field reads as the column it lands in. */
 function StatusDot({ color }: { color: string | undefined }) {
@@ -61,17 +75,21 @@ export function StatusSelect({
   onChange,
   onBlur,
   variant = "field",
+  creating = false,
 }: {
   id: string
-  value: CreateStatus
-  onChange: (value: CreateStatus) => void
+  value: BoardStatus
+  onChange: (value: BoardStatus) => void
   onBlur?: () => void
   variant?: Variant
+  /** Create Task: leave out Cancelled, which no Task is created in. */
+  creating?: boolean
 }) {
   const inline = variant === "inline"
+  const items = creating ? CREATE_STATUS_ITEMS : STATUS_ITEMS
   return (
     <Select
-      items={STATUS_ITEMS}
+      items={items}
       value={value}
       onValueChange={(next) => {
         if (next) onChange(next)
@@ -82,8 +100,8 @@ export function StatusSelect({
     >
       <PickerSelectTrigger appearance={variant} id={id}>
         <SelectValue>
-          {(current: CreateStatus) => {
-            const item = STATUS_ITEMS.find((entry) => entry.value === current)
+          {(current: BoardStatus) => {
+            const item = items.find((entry) => entry.value === current)
             return inline ? (
               <>
                 <StatusRing color={item?.color} />
@@ -99,7 +117,7 @@ export function StatusSelect({
         </SelectValue>
       </PickerSelectTrigger>
       <SelectContent>
-        {STATUS_ITEMS.map((item) => (
+        {items.map((item) => (
           <SelectItem key={item.value} value={item.value}>
             <StatusDot color={item.color} />
             {item.label}

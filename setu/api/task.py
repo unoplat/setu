@@ -27,9 +27,12 @@ from setu.github.store import GITHUB_LINK_DOCTYPES
 # module keeps both honest on every save, Desk included.
 
 # The statuses a Task can be created in, one per Board column: Todo, In
-# Progress, Review, Blocked and Done. Overdue is ERPNext's to set, and
-# Envision does not support Cancelled (CONTEXT.md, Status).
+# Progress, Review, Blocked and Done. Overdue is ERPNext's to set, and the
+# Cancelled column has no "+": work is cancelled, not created cancelled.
 CREATE_STATUSES = ("Open", "Working", "Pending Review", "Blocked", "Completed")
+# The statuses a Task can be moved to: every Board column's (CONTEXT.md,
+# Status). A linked GitHub Issue closes as not_planned (setu.github.issues).
+BOARD_STATUSES = (*CREATE_STATUSES, "Cancelled")
 PRIORITIES = ("Low", "Medium", "High", "Urgent")
 
 
@@ -218,7 +221,8 @@ def update_task(
 
 	``parent_task`` moves the Task under that Task (check_parent_task), and
 	``""`` makes it a top-level Task again; both parents' Activity note the
-	move. A Task with open Subtasks cannot be marked Done.
+	move. A Task with open Subtasks cannot be marked Done, but can be
+	Cancelled: its Subtasks keep their own status.
 	"""
 	task = task_doc(name, "write")
 	previous_parent = task.parent_task or None
@@ -249,7 +253,7 @@ def update_task(
 	):
 		frappe.throw(_("Start date cannot be after the due date."), frappe.exceptions.InvalidDates)
 	if status is not None:
-		if status not in CREATE_STATUSES:
+		if status not in BOARD_STATUSES:
 			frappe.throw(_("A task cannot be set to {0}.").format(status))
 		if status == "Completed" and task.status != "Completed":
 			check_no_open_subtasks(task)
@@ -557,13 +561,16 @@ def task_doc(name: str, ptype: str = "read"):
 
 
 # The Tasks Envision lists on a project, its milestones and its modules: not
-# milestones, Cancelled or templates (frontend/src/lib/tasks.ts,
-# useProjectTasks).
+# milestones or templates (frontend/src/lib/tasks.ts, useProjectTasks).
+# Cancelled Tasks are listed, in their own Board column, but count for
+# nothing in progress (``PROGRESS_TASKS``).
 LIVE_TASKS = {
 	"is_milestone": 0,
 	"is_template": 0,
-	"status": ["not in", ["Template", "Cancelled"]],
+	"status": ["!=", "Template"],
 }
+# The Tasks a milestone's progress counts: those listed, less Cancelled.
+PROGRESS_TASKS = {**LIVE_TASKS, "status": ["not in", ["Template", "Cancelled"]]}
 
 
 # What the Board needs of each Task (frontend/src/lib/tasks.ts, TaskSummary).

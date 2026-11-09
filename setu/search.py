@@ -37,12 +37,13 @@ class EnvisionSearch(SQLiteSearch):
 				"project",
 				"is_milestone",
 				"modified",
-				# Read for is_indexable, and watched for changes like the rest.
+				# is_template is read for is_indexable; both are watched for
+				# changes like the rest.
 				"is_template",
 				"status",
 			],
 			# Narrows what a build reads; is_indexable is the rule.
-			"filters": {"is_template": 0, "status": ["!=", "Cancelled"]},
+			"filters": {"is_template": 0},
 		},
 		"Envision Module": {
 			"fields": ["name", {"title": "module_name"}, {"content": "description"}, "project", "modified"],
@@ -85,12 +86,13 @@ class EnvisionSearch(SQLiteSearch):
 
 	def is_indexable(self, doc) -> bool:
 		"""Whether a record belongs in the index, as setu.api.search would list
-		it: in an Envision project and, for a Task, neither a template nor
-		Cancelled. Builds and setu.search_maintenance both go by this, so a
-		record that stops qualifying is taken out rather than left behind."""
+		it: in an Envision project and, for a Task, not a template. Cancelled
+		Tasks are on the Board, so they are found too. Builds and
+		setu.search_maintenance both go by this, so a record that stops
+		qualifying is taken out rather than left behind."""
 		if doc.doctype not in self.INDEXABLE_DOCTYPES:
 			return False
-		if doc.doctype == "Task" and (doc.get("is_template") or doc.get("status") == "Cancelled"):
+		if doc.doctype == "Task" and doc.get("is_template"):
 			return False
 		return doc.get("project") in self.envision_projects
 

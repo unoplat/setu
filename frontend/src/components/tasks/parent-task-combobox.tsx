@@ -12,7 +12,8 @@ import { LinkCombobox, type LinkOption } from "./link-combobox"
  * Left out are the Task itself and everything under it (a Task cannot move
  * under its own Subtask) and Tasks made in Desk, which cannot hold Subtasks.
  * A Done Task is listed but not pickable while this one is open: ERPNext
- * refuses an open Subtask under it (setu.api.task.check_parent_task).
+ * refuses an open Subtask under it. A Cancelled Task is never pickable
+ * (setu.api.task.check_parent_rules).
  */
 export function ParentTaskCombobox({
   id,
@@ -29,7 +30,7 @@ export function ParentTaskCombobox({
   project: string
   /** The Task being moved; absent while creating one. */
   task?: string
-  /** This Task's Status: a Done one may sit under a Done parent. */
+  /** This Task's Status: a Done or Cancelled one may sit under a Done parent. */
   status: string
   /** The parent's name, or "" for none. */
   value: string
@@ -76,18 +77,29 @@ function parentOptions(
         !below.has(candidate.name)
     )
     .map((candidate) => {
-      // The parent it already has stays pickable, Done or not.
-      const blocked =
-        candidate.status === "Completed" &&
-        status !== "Completed" &&
-        candidate.name !== current
+      const reason = blockedReason(candidate.status, status)
+      // The parent it already has stays pickable, whatever its Status.
+      const blocked = reason !== null && candidate.name !== current
       return {
         value: candidate.name,
         label: candidate.subject,
-        detail: blocked
-          ? `${candidate.name} · Done, reopen it to add subtasks`
-          : candidate.name,
+        detail: blocked ? `${candidate.name} · ${reason}` : candidate.name,
         disabled: blocked,
       }
     })
+}
+
+/** Why a Task in `parentStatus` can't hold one in `status`, or null. */
+function blockedReason(parentStatus: string, status: string): string | null {
+  if (parentStatus === "Cancelled") {
+    return "Cancelled, reopen it to add subtasks"
+  }
+  if (
+    parentStatus === "Completed" &&
+    status !== "Completed" &&
+    status !== "Cancelled"
+  ) {
+    return "Done, reopen it to add subtasks"
+  }
+  return null
 }

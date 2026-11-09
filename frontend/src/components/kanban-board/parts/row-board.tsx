@@ -94,7 +94,11 @@ export function RowBoard({
               key={column.id}
               column={column}
               accent={accents.get(column.id)}
-              onAdd={onColumnAdd ? () => onColumnAdd(column.id) : undefined}
+              onAdd={
+                onColumnAdd && column.allowAdd !== false
+                  ? () => onColumnAdd(column.id)
+                  : undefined
+              }
             />
           ))}
         </div>

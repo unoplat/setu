@@ -233,7 +233,9 @@ export function TaskReadOnly({
                 }
                 due={task.due_date ? formatShortDay(task.due_date) : notSet}
                 hint={
-                  task.due_date && task.status !== "Completed"
+                  task.due_date &&
+                  task.status !== "Completed" &&
+                  task.status !== "Cancelled"
                     ? dueHint(task.due_date)
                     : null
                 }

@@ -39,7 +39,7 @@ import {
   boardStatus,
   BOARD_COLUMNS,
   BOARD_PALETTE,
-  columnCreateStatus,
+  columnStatus,
   MY_TASKS_KEY,
   projectTasksKey,
   taskActivityKey,
@@ -219,7 +219,7 @@ export function MyTasksBoard({
       const task = tasks?.find((t) => t.name === item.id)
       if (!move?.status || !task) return
       const undo: TaskMove = {
-        status: boardStatus(task.status) ?? columnCreateStatus(from.columnId),
+        status: boardStatus(task.status) ?? columnStatus(from.columnId),
       }
       const where =
         BOARD_COLUMNS.find((column) => column.id === to.columnId)?.title ??
