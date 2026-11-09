@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/unoplat/setu/compare/v0.4.2...v0.4.3) (2026-11-09)
+
+
+### Documentation
+
+* update README for released features ([9ce84f8](https://github.com/unoplat/setu/commit/9ce84f88355a78bf9cd66c69c73b6f3fef6e6902))
+
 ## [0.4.2](https://github.com/unoplat/setu/compare/v0.4.1...v0.4.2) (2026-11-08)
 
 
