@@ -1,54 +1,42 @@
 # Envision
 
-An open-source product planning app built on ERPNext and the Frappe Framework.
+**Open-source product management on top of ERPNext.** Plan work by product area and milestone, follow your own tasks across projects, and keep GitHub Issues in sync without leaving a keyboard-first board. Envision is built for first-class integration with [Unoplat Code Confluence](https://docs.unoplat.io), which will supply agent context and automatic documentation drawn from your code.
 
-Envision works with ERPNext Project and Task records. Plan work by product area and milestone, follow your tasks across projects, and connect a project's tasks with GitHub Issues. See the [roadmap](#roadmap) for what's next.
+[![Release](https://img.shields.io/github/v/release/unoplat/setu?label=release)](CHANGELOG.md)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue)](license.txt)
+![Frappe v16](https://img.shields.io/badge/Frappe-v16-0089ff)
+![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
+
+Envision is a Frappe app that runs inside your ERPNext site.
 
 > [!WARNING]
 > Envision is in alpha. Releases can include breaking changes, such as changes to data models, APIs, settings, or integrations.
 
-## What you can do today
+**Contents:** [Available today](#available-today) · [Coming next](#coming-next) · [Keyboard shortcuts](#keyboard-shortcuts) · [Getting started](#getting-started) · [Release notes](#release-notes) · [License](#license)
 
-### Plan by product area and milestone
+## Available today
 
-- Organize tasks into modules. Each module represents a lasting area of your product and can have a lead and a description.
-- Move tasks through Todo, In Progress, Review, Blocked, Done, and Cancelled. Modules appear as rows on the board. Drag a card between rows to change its module, or between columns to change its status. You can undo a move.
-- Track delivery targets with milestones and due dates. Progress updates as linked tasks reach Done. Each task can belong to one module and one milestone.
-- Break work into subtasks and manage parent-child task relationships.
-- Assign tasks to multiple people and set priorities, tags, start dates, and due dates.
-- View and filter linked tasks from modules and milestones.
+| Area | What you get |
+| --- | --- |
+| **Planning** | Module × status board, milestones with live progress, subtasks, priorities, tags, dates |
+| **Personal work** | My tasks across projects, private saved views, Inbox for assignments and mentions |
+| **GitHub** | Two-way sync of Issues, comments, status, and sub-issues |
+| **Collaboration** | Comments with mentions and quotes, live activity, project Links board |
+| **Search** | Raycast-inspired, one-click search across all your data, along with actions (`Cmd/Ctrl+K`) |
 
-### Focus on your own work
+## Coming next
 
-- See your assigned work across projects in My tasks, including completed tasks.
-- Save private views filtered by milestone, priority, or tag. Project views can filter by assignee; My tasks views can filter by project.
-- Open saved views on another device. They show filtered shared tasks, not separate copies.
-- See assignments and mentions in the Inbox, with an unread badge and filters.
+| Area | What's planned |
+| --- | --- |
+| **Code Confluence** | First-class integration with [Unoplat Code Confluence](https://docs.unoplat.io) for agent context and automatic documentation |
+| **Collaboration** | Message board per project, then roles, membership, and per-project permissions |
+| **Personal work** | Smart notifications |
+| **Releases** | Release integration that connects tasks and milestones with what ships |
+| **Knowledge** | Wiki for product docs, decisions, and team guides |
 
-### Connect work to GitHub
+Order and dates are not committed. Have an idea or a need that isn't listed? [Open an issue](https://github.com/unoplat/setu/issues).
 
-- Connect a GitHub repository to a project and enable Issue sync in the project settings.
-- Import eligible open Issues as tasks. Publish a task to GitHub by adding the `github` tag and confirming the destination.
-- Keep linked task and Issue titles, descriptions, statuses, and comments in sync. A cancelled task closes its Issue as not planned. Envision also synchronizes supported parent and sub-issue relationships.
-- See sync status and retry failed updates in Envision. Publishing to GitHub shares task content with the people who can access the selected repository.
-
-### Discuss and keep context
-
-- Write rich-text descriptions and follow changes through activity history.
-- Comment on tasks, milestones, modules, and links. Mention people or quote a comment when replying. New comments and activity appear on an open page without refreshing.
-- Keep project resources in a Links board with descriptions and built-in or custom link types.
-
-### Work from the keyboard
-
-Envision is keyboard-first. You can search, move around, create, save, and comment without reaching for the mouse.
-
-- Search tasks, milestones, modules, links, projects, and actions with `Cmd+K` or `Ctrl+K`. Every action in the search palette shows its shortcut.
-- Move between pages with two-key sequences, such as `G` then `P` for Projects.
-- Submit any create form from any field, save edits right away, or post a comment with `Cmd+Enter` or `Ctrl+Enter`. Edits to tasks, milestones, modules, and links also save automatically.
-- Expand a description into a focused full-height editor with `Cmd+Shift+Enter` or `Ctrl+Shift+Enter`, and press `Esc` to return to the form. Type `/` in the editor for headings, checklists, code blocks, and more.
-- Move board cards with the keyboard as well as by dragging.
-
-Default shortcuts:
+## Keyboard shortcuts
 
 | Shortcut | Action |
 | --- | --- |
@@ -63,27 +51,37 @@ Default shortcuts:
 | `Cmd/Ctrl+Shift+Enter` | Expand or collapse the description editor |
 | `Esc` | Leave the full description editor, keeping your edits |
 
-Every shortcut can be changed in **Settings**. Record a single key, a chord, or a sequence. Envision warns you when a new shortcut conflicts with an existing one, and you can reset one shortcut or all of them.
+Every shortcut can be changed in **Settings**. Record a single key, a chord, or a sequence. Envision warns you about conflicts, and you can reset one shortcut or all of them.
 
-## Roadmap
+## Getting started
 
-These capabilities are planned, not yet available. Delivery order and dates are not committed.
+### Requirements
 
-### Planning and team coordination
+- Frappe Framework v16 and ERPNext, on a working [bench](https://docs.frappe.io/framework/user/en/installation)
+- Python 3.14 or later
 
-- A smart notification system that prioritizes relevant updates without constant interruptions.
-- Granular roles and permissions to control who can view, create, edit, and manage work in each project.
-- A discussion board per project for ongoing conversations and announcements.
+### Install
 
-### Code and releases
+```bash
+bench get-app https://github.com/unoplat/setu
+bench --site <your-site> install-app setu
+```
 
-- Release integration to connect tasks and milestones with what ships.
+Open **Envision** from the apps screen, or go to `/envision` on your site. Projects you create in Envision are enabled for it automatically.
 
-### Knowledge
+### Connect GitHub (optional)
 
-- Wiki-based knowledge management for product documentation, decisions, and team guides.
-- Automatic documentation using [Unoplat Code Confluence](https://github.com/unoplat/unoplat-code-confluence), drawing on code context extracted from repositories.
-- Agent artifacts connected to the work they support.
+1. In Envision, open **Settings → GitHub**, then create the GitHub App for your organization and install it.
+2. Open a project's settings, choose a repository, and turn on Issue sync.
+
+> [!NOTE]
+> Publishing to GitHub shares task content with everyone who can access the selected repository.
+
+Envision uses ERPNext's existing role permissions for Projects and Tasks. Anyone who can edit a task in ERPNext can edit it in Envision.
+
+## Release notes
+
+See [CHANGELOG.md](CHANGELOG.md) for every release.
 
 ## License
 
