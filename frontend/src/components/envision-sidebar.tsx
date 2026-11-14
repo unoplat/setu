@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router"
+import * as React from "react"
+import { Link, useRouter } from "@tanstack/react-router"
 import { BellIcon, SettingsIcon, SquareCheckIcon } from "lucide-react"
 
 import { NavMain, type NavItem } from "@/components/nav-main"
@@ -15,6 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   useInboxCounts,
@@ -85,6 +87,37 @@ function withUnread(unread: number): readonly NavItem[] {
   )
 }
 
+/**
+ * On a phone the sidebar is a drawer over the page, and it gets out of the way
+ * once the user goes somewhere: a link tapped in it, a palette result, or the
+ * browser's back and forward. Returns the click handler for the drawer's
+ * parts; the desktop sidebar is left as it is.
+ */
+function useCloseMobileSidebarOnNavigate() {
+  const router = useRouter()
+  const { isMobile, openMobile, setOpenMobile } = useSidebar()
+
+  // Listens only while the drawer is open, so opening it never closes it.
+  React.useEffect(() => {
+    if (!openMobile) return undefined
+    return router.subscribe("onBeforeNavigate", (event) => {
+      if (event.pathChanged) setOpenMobile(false)
+    })
+  }, [router, openMobile, setOpenMobile])
+
+  // A tap on the page already open changes no path, so the tap closes it too.
+  // React events bubble through portals, so the user menu's links count.
+  return (event: React.MouseEvent) => {
+    if (
+      isMobile &&
+      event.target instanceof Element &&
+      event.target.closest("a[href]")
+    ) {
+      setOpenMobile(false)
+    }
+  }
+}
+
 export function EnvisionSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
@@ -93,9 +126,10 @@ export function EnvisionSidebar({
   const revalidateCounts = useRevalidateInboxCounts()
   // Mounted on every page, so the badge stays live wherever the user is.
   useInboxEvents(revalidateCounts)
+  const closeOnLinkTap = useCloseMobileSidebarOnNavigate()
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader onClick={closeOnLinkTap}>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/" />}>
@@ -111,11 +145,11 @@ export function EnvisionSidebar({
         </SidebarMenu>
         <NavSearch />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent onClick={closeOnLinkTap}>
         <NavMain items={withUnread(counts?.message.unread ?? 0)} />
         <NavProjects projects={projects ?? []} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter onClick={closeOnLinkTap}>
         <NavUser />
       </SidebarFooter>
       <SidebarRail />
