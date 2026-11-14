@@ -255,9 +255,10 @@ export function MyTasksBoard({
     []
   )
 
-  // Bound the page so the board scrolls vertically instead of growing with its rows.
+  // Bound the page so the board scrolls vertically instead of growing with its
+  // rows. It ends above the phone's tab bar (--tab-bar-h, index.css).
   return (
-    <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden">
+    <div className="flex h-[calc(100svh-var(--tab-bar-h,0px))] min-h-0 min-w-0 flex-col overflow-hidden">
       <MyTasksHeader
         page={view?.view_name}
         badge={view ? <OnlyYouBadge /> : undefined}

@@ -410,6 +410,41 @@ body > .react-renderer:has(> [data-richtext-portal]) {
 		cursor: pointer;
 	}
 	html {
-		@apply font-sans;
+		/* Safari tints its toolbar from the page background. */
+		@apply bg-background font-sans;
+	}
+}
+
+/* The phone's tab bar (components/mobile-tab-bar.tsx). While it is shown,
+   the shell gets its height, which pads the content (SidebarInset) and
+   shortens the boards; on screens without it the variable stays unset. */
+@media (width < 48rem) {
+	[data-slot="sidebar-wrapper"]:has(> [data-slot="bottom-nav"]) {
+		--tab-bar-h: calc(4rem + env(safe-area-inset-bottom));
+	}
+}
+/* On touch screens the on-screen keyboard would sit over the bar, or push it
+   about, while the user types; it steps aside until the field loses focus.
+   --tab-bar-h stays, so the page does not jump. */
+@media (hover: none) {
+	body:has(
+			:is(
+				input:not(
+					[type="checkbox"],
+					[type="radio"],
+					[type="button"],
+					[type="submit"],
+					[type="reset"],
+					[type="range"],
+					[type="color"],
+					[type="file"]
+				),
+				textarea,
+				select,
+				[contenteditable]:not([contenteditable="false"])
+			):focus
+		)
+		[data-slot="bottom-nav"] {
+		display: none;
 	}
 }

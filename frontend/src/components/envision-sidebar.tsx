@@ -6,6 +6,7 @@ import { NavMain, type NavItem } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSearch } from "@/components/nav-search"
 import { NavUser } from "@/components/nav-user"
+import { UnreadBadge } from "@/components/unread-badge"
 import { NavMyTasksViews } from "@/components/views/nav-views"
 import {
   Sidebar,
@@ -50,16 +51,6 @@ const NAV: readonly NavItem[] = [
 
 // Paper: 10c — Inbox. The Inbox item carries the count of records with
 // anything unread, in every project; none at zero or while it loads.
-
-/** The count as a pill, read out as "3 unread" rather than a bare number. */
-function UnreadBadge({ count }: { count: number }) {
-  return (
-    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sidebar-primary px-1.5 text-xs font-medium text-sidebar-primary-foreground tabular-nums">
-      <span aria-hidden="true">{count > 99 ? "99+" : count}</span>
-      <span className="sr-only">{count} unread</span>
-    </span>
-  )
-}
 
 // The badge is hidden in the icon-collapsed sidebar, so the bell carries a dot
 // there instead, while anything is unread.
