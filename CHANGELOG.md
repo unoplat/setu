@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/unoplat/setu/compare/v0.5.0...v0.6.0) (2026-11-18)
+
+
+### Features
+
+* **shell:** add bottom tab bar for phones ([46a2f95](https://github.com/unoplat/setu/commit/46a2f9552fdd7891975f37a8fcb0ff415b0b9fe7))
+
+
+### Bug Fixes
+
+* **sidebar:** close mobile drawer on navigation ([27f2a28](https://github.com/unoplat/setu/commit/27f2a28bab4f3816b7709dcf03d0af403b5dffda))
+* **ui:** improve mobile screen layouts ([e0d1118](https://github.com/unoplat/setu/commit/e0d11188b52f220f8501dda1b24b107397372c04))
+
 ## [0.5.0](https://github.com/unoplat/setu/compare/v0.4.3...v0.5.0) (2026-11-09)
 
 
