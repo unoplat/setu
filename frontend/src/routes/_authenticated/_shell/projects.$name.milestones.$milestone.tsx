@@ -18,7 +18,7 @@ import { ProjectHeader } from "@/components/project-header"
 import { SaveIndicator, UnsavedEditsDialog } from "@/components/record-detail"
 import { RecordPlaceholder } from "@/components/record-placeholder"
 import { useAutosaveForm } from "@/lib/autosave"
-import { useCommand, useScope } from "@/lib/commands"
+import { useCommand, useScope, useScopeStack } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
 import { useMarkRecordRead } from "@/lib/inbox"
 import {
@@ -110,6 +110,9 @@ function MilestoneScreen({
   const saved = React.useMemo(() => milestoneValues(milestone), [milestone])
   const autosave = useAutosaveForm({
     saved,
+    // Saving the description stores and prunes its images, so it waits for
+    // its Save button.
+    manual: ["description"],
     prepare: prepareMilestone,
     save: async (changes) => {
       const response = await update.call({ name: milestone.name, ...changes })
@@ -133,7 +136,11 @@ function MilestoneScreen({
   useCommand("milestone.collapseDescription", () => setExpanded(false), {
     enabled: expanded,
   })
-  useCommand("milestone.save", () => void flush(), { enabled: canWrite })
+  // ⌘↵ in the comment box posts the comment; it does not save the page.
+  const inComment = useScopeStack().includes("milestone-comment")
+  useCommand("milestone.save", () => void autosave.saveAll(), {
+    enabled: canWrite && !inComment,
+  })
 
   const footer = (
     <MilestoneSections
@@ -168,7 +175,12 @@ function MilestoneScreen({
             milestone={milestone}
             projectName={projectName}
             listeners={autosave.listeners}
-            status={autosave.status}
+            descriptionSave={{
+              dirty: autosave.manualPending,
+              error: autosave.manualPending ? autosave.failure : null,
+              onSave: autosave.saveAll,
+              onDiscard: autosave.discard,
+            }}
             descriptionRevision={autosave.replaced.description ?? 0}
             descriptionConflict={
               autosave.conflicts.includes("description")
@@ -206,6 +218,7 @@ function MilestoneScreen({
         reason={autosave.error}
         saving={autosave.status === "saving"}
         conflict={autosave.status === "conflict"}
+        description={autosave.manualPending}
       />
     </>
   )

@@ -83,7 +83,14 @@ export const descriptionExtensions = [
     },
   }),
   Text,
-  HardBreak,
+  // HardBreak binds Mod-Enter and Shift-Enter; keep only Shift-Enter so the
+  // record page's Save command gets ⌘↵.
+  // https://tiptap.dev/docs/editor/extensions/custom-extensions/extend-existing
+  HardBreak.extend({
+    addKeyboardShortcuts() {
+      return { "Shift-Enter": () => this.editor.commands.setHardBreak() }
+    },
+  }),
   ListItem,
   // The mark that colour, font family and font size write their styles on.
   TextStyle,
