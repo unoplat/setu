@@ -14,6 +14,9 @@ import {
   KindRow,
   RailGroup,
   TitleInput,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
 } from "@/components/record-detail"
 import type {
   AutosaveListeners,
@@ -309,14 +312,14 @@ export const TaskForm = withForm({
               </div>
             </RailGroup>
 
-            {activity}
+            <RailEnd>{activity}</RailEnd>
           </>
         }
       >
         <form
           noValidate
           aria-label="Task"
-          className="flex flex-col gap-8"
+          className={DETAIL_BODY_CLASS}
           onSubmit={(event) => {
             event.preventDefault()
             event.stopPropagation()
@@ -327,7 +330,7 @@ export const TaskForm = withForm({
             onSubmit()
           }}
         >
-          <div className="flex flex-col gap-3">
+          <DetailHead>
             <KindRow indicator={indicator}>
               <TaskKind
                 name={task.name}
@@ -354,7 +357,7 @@ export const TaskForm = withForm({
                 />
               )}
             </form.Field>
-          </div>
+          </DetailHead>
 
           <form.Field name="description" listeners={listeners.typed}>
             {(field) => (

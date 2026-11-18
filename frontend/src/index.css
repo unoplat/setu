@@ -415,6 +415,26 @@ body > .react-renderer:has(> [data-richtext-portal]) {
 	}
 }
 
+/* Room for a phone's notch and home indicator on full-screen layers
+   (components/search/phone-search.tsx). */
+@utility pt-safe-top {
+	padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe-bottom {
+	padding-bottom: env(safe-area-inset-bottom);
+}
+@utility ps-safe-left {
+	padding-inline-start: env(safe-area-inset-left);
+}
+@utility pe-safe-right {
+	padding-inline-end: env(safe-area-inset-right);
+}
+/* A Status ring's stroke (components/app-ui/status-dot.tsx). */
+@utility border-dot {
+	border-style: solid;
+	border-width: 1.5px;
+}
+
 /* The phone's tab bar (components/mobile-tab-bar.tsx). While it is shown,
    the shell gets its height, which pads the content (SidebarInset) and
    shortens the boards; on screens without it the variable stays unset. */

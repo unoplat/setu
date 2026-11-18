@@ -1,6 +1,7 @@
 import { FlagIcon } from "lucide-react"
 
 import { PickerSelectTrigger } from "@/components/app-ui/field-controls"
+import { StatusDot } from "@/components/app-ui/status-dot"
 import {
   Select,
   SelectContent,
@@ -46,17 +47,6 @@ function statusItem(column: (typeof BOARD_COLUMNS)[number]): StatusItem {
 const STATUS_ITEMS = BOARD_COLUMNS.map(statusItem)
 /** Create Task's: a Task is never created Cancelled. */
 const CREATE_STATUS_ITEMS = CREATE_COLUMNS.map(statusItem)
-
-/** The Board column's marker, so the field reads as the column it lands in. */
-function StatusDot({ color }: { color: string | undefined }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-2 shrink-0 rounded-full"
-      style={{ backgroundColor: color ? `var(${color})` : undefined }}
-    />
-  )
-}
 
 /** 09's ring before the Status, in its column's colour. */
 export function StatusRing({ color }: { color: string | undefined }) {
@@ -109,7 +99,7 @@ export function StatusSelect({
               </>
             ) : (
               <>
-                <StatusDot color={item?.color} />
+                <StatusDot color={item?.color && `var(${item.color})`} />
                 {item?.label}
               </>
             )
@@ -119,7 +109,7 @@ export function StatusSelect({
       <SelectContent>
         {items.map((item) => (
           <SelectItem key={item.value} value={item.value}>
-            <StatusDot color={item.color} />
+            <StatusDot color={item.color && `var(${item.color})`} />
             {item.label}
           </SelectItem>
         ))}

@@ -9,6 +9,9 @@ import {
   KindRow,
   RailGroup,
   TitleInput,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
 } from "@/components/record-detail"
 import { FieldError } from "@/components/ui/field"
 import type {
@@ -121,14 +124,14 @@ export const LinkForm = withForm({
               </dl>
             </RailGroup>
 
-            {activity}
+            <RailEnd>{activity}</RailEnd>
           </>
         }
       >
         <form
           noValidate
           aria-label="Link"
-          className="flex flex-col gap-8"
+          className={DETAIL_BODY_CLASS}
           onSubmit={(event) => {
             event.preventDefault()
             event.stopPropagation()
@@ -139,7 +142,7 @@ export const LinkForm = withForm({
             onSubmit()
           }}
         >
-          <div className="flex flex-col gap-3">
+          <DetailHead>
             <KindRow indicator={indicator}>
               <LinkKind link={link} url={url} />
             </KindRow>
@@ -162,7 +165,7 @@ export const LinkForm = withForm({
                 />
               )}
             </form.Field>
-          </div>
+          </DetailHead>
 
           <form.Field
             name="url"

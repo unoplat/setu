@@ -133,8 +133,12 @@ export type KanbanBoardProps = {
    * to "sections".
    */
   layout?: "sections" | "rows"
-  /** Envision, rows layout: the "+" on a swimlane's header. */
-  onSwimlaneAdd?: (swimlaneId: string) => void
+  /**
+   * Envision, rows layout: the "+" on a swimlane's header. On a phone the
+   * header sits in one column, which is passed as `columnId`; on a wider
+   * screen the row spans every column and `columnId` is undefined.
+   */
+  onSwimlaneAdd?: (swimlaneId: string, columnId?: string) => void
   /**
    * Envision: what follows the pointer during a drag instead of the full
    * card. Keep it small, so it does not hide where the card will land.

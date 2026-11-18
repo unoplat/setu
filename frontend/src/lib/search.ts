@@ -55,6 +55,29 @@ export function isSearchable(query: string): boolean {
   return query.trim().length >= MIN_QUERY_LENGTH
 }
 
+/**
+ * `text` split where the words of `terms` (two letters or more) appear, as
+ * excerpt parts, for a title the server returns without match ranges.
+ * Longer words are tried first, so "de demo" marks all of "demo".
+ */
+export function matchParts(text: string, terms: string): ExcerptPart[] {
+  const words = terms
+    .split(/\s+/)
+    .filter((word) => word.length >= 2)
+    .sort((a, b) => b.length - a.length)
+    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  if (!words.length) return [{ text, match: false }]
+  return text
+    .split(new RegExp(`(${words.join("|")})`, "gi"))
+    .map((part, index) => ({ text: part, match: index % 2 === 1 }))
+    .filter((part) => part.text !== "")
+}
+
+/** A result's cmdk value: its kind and name. */
+export function recordValue(result: SearchResult): string {
+  return `${result.type}:${result.name}`
+}
+
 /** Results by kind, in the dialog's order, leaving out empty kinds. */
 export function groupResults(results: readonly SearchResult[]) {
   return RECORD_GROUPS.map((group) => ({
@@ -85,8 +108,9 @@ const INDEXING_RETRY_MS = 5000
 // focus (at most every few seconds), so edits made meanwhile can show up.
 // SWR's keepPreviousData is not used: its kept answer outlives openings and
 // would stand in for the current query's own (see useRecordSearch).
+// On a phone, focus is not revalidated: iOS reports it each time its keyboard
+// closes (useRecordSearch's `revalidateOnFocus`).
 const SEARCH: SWRConfiguration<{ message: SearchResponse }> = {
-  revalidateOnFocus: true,
   revalidateIfStale: false,
 }
 
@@ -109,7 +133,19 @@ export function isSearchKey(key: unknown): boolean {
  *   timer, before an uncached answer has arrived, so it would never start.
  *   SWR skips these retries while the tab is hidden or offline.
  */
-export function useRecordSearch(query: string, opening: number) {
+export function useRecordSearch(
+  query: string,
+  opening: number,
+  {
+    revalidateOnFocus = true,
+  }: {
+    /**
+     * Envision, phones: false, since iOS reports focus each time its
+     * keyboard closes and every one would ask the server again.
+     */
+    revalidateOnFocus?: boolean
+  } = {}
+) {
   const text = query.trim()
   const [indexing, setIndexing] = React.useState(false)
   const search = useFrappeGetCall<{ message: SearchResponse }>(
@@ -117,7 +153,11 @@ export function useRecordSearch(query: string, opening: number) {
     { text },
     // A null key fetches nothing, below the second letter.
     isSearchable(text) ? [SEARCH_KEY, text] : null,
-    { ...SEARCH, refreshInterval: indexing ? INDEXING_RETRY_MS : 0 }
+    {
+      ...SEARCH,
+      revalidateOnFocus,
+      refreshInterval: indexing ? INDEXING_RETRY_MS : 0,
+    }
   )
   // This key's own answer: without keepPreviousData, never another query's.
   const answer = search.data?.message
@@ -139,5 +179,7 @@ export function useRecordSearch(query: string, opening: number) {
     response: answer ?? (kept?.opening === opening ? kept.answer : undefined),
     isLoading: search.isLoading,
     error: search.error,
+    /** Asks the server again for the current query (Try again). */
+    retry: () => void search.mutate(),
   }
 }

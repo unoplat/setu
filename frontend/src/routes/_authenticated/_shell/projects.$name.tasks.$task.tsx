@@ -201,7 +201,11 @@ function TaskScreen({
         name={project}
         projectName={projectName}
         section="Tasks"
-        page={{ title: task.subject, sectionTo: "/projects/$name" }}
+        page={{
+          title: task.subject,
+          id: task.name,
+          sectionTo: "/projects/$name",
+        }}
         ancestors={task.ancestors}
       >
         <TaskActions

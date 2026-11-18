@@ -282,6 +282,21 @@ export function boardStatus(status: string): BoardStatus | null {
   )
 }
 
+/**
+ * The Board column a Status lands in and its colour, as a CSS colour
+ * (`var(--primary)`); undefined for Template.
+ */
+export function statusColumn(
+  status: string
+): { title: string; color: string | undefined } | undefined {
+  const column = BOARD_COLUMNS.find((c) =>
+    (c.statuses as readonly string[]).includes(status)
+  )
+  if (!column) return undefined
+  const cssVar = BOARD_PALETTE.find((s) => s.id === column.color)?.cssVar
+  return { title: column.title, color: cssVar && `var(${cssVar})` }
+}
+
 /** The Board column a Status lands in; undefined for Template. */
 export function boardColumnOf(status: string): BoardColumnId | undefined {
   return BOARD_COLUMNS.find((column) =>

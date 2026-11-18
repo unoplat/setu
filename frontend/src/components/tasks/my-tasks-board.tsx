@@ -18,6 +18,7 @@ import { TaskDragPreview } from "@/components/tasks/task-card"
 import { taskCardRenderer } from "@/components/tasks/task-card-renderer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BoardToolbar } from "@/components/views/board-toolbar"
+import { MobileBoardHeader } from "@/components/views/mobile-board-header"
 import { OnlyYouBadge } from "@/components/views/only-you-badge"
 import type { ProjectChoice } from "@/components/views/task-filter-bar"
 import { useAssignees, type Assignee } from "@/lib/assignees"
@@ -259,11 +260,17 @@ export function MyTasksBoard({
   // rows. It ends above the phone's tab bar (--tab-bar-h, index.css).
   return (
     <div className="flex h-[calc(100svh-var(--tab-bar-h,0px))] min-h-0 min-w-0 flex-col overflow-hidden">
-      <MyTasksHeader
-        page={view?.view_name}
-        badge={view ? <OnlyYouBadge /> : undefined}
-      />
-      <main className="flex min-h-0 flex-1 flex-col">
+      <div className="contents max-md:hidden">
+        <MyTasksHeader
+          page={view?.view_name}
+          badge={view ? <OnlyYouBadge /> : undefined}
+        />
+      </div>
+      <MobileBoardHeader
+        context={view ? "My tasks" : undefined}
+        title={view ? view.view_name : "My tasks"}
+        filters={filters.filters}
+      >
         <BoardToolbar
           project={null}
           view={view}
@@ -274,6 +281,21 @@ export function MyTasksBoard({
           people={people?.message ?? NO_PEOPLE}
           tags={tagList?.message.tags ?? NO_TAGS}
         />
+      </MobileBoardHeader>
+      <main className="flex min-h-0 flex-1 flex-col">
+        {/* On a phone the toolbar lives in the View & filter sheet. */}
+        <div className="max-md:hidden">
+          <BoardToolbar
+            project={null}
+            view={view}
+            views={views ?? NO_VIEWS}
+            board={filters}
+            projects={projects}
+            milestones={milestoneOptions?.message ?? NO_MILESTONES}
+            people={people?.message ?? NO_PEOPLE}
+            tags={tagList?.message.tags ?? NO_TAGS}
+          />
+        </div>
         {isLoading || (!tasks && !error) ? (
           <div className="flex min-h-0 flex-1 gap-3 overflow-hidden p-6">
             {BOARD_COLUMNS.map((column) => (
@@ -303,7 +325,9 @@ export function MyTasksBoard({
               "min-h-0 flex-1",
               // Rows pad themselves, around their pinned headers; with no
               // Tasks at all the Board is plain columns, padded from here.
-              board.swimlanes?.length ? "[--board-pad:1.5rem]" : "[&>div]:p-6"
+              board.swimlanes?.length
+                ? "[--board-pad:1.5rem]"
+                : "md:[&>div]:p-6"
             )}
           />
         )}

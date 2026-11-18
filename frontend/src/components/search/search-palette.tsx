@@ -2,15 +2,16 @@ import * as React from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { defaultFilter } from "cmdk"
 import { useSWRConfig } from "frappe-react-sdk"
-import {
-  FlagIcon,
-  FolderIcon,
-  LayoutGridIcon,
-  LinkIcon,
-  SquareCheckIcon,
-} from "lucide-react"
+import { FolderIcon } from "lucide-react"
 
 import { HotkeyHint } from "@/components/hotkey-hint"
+import {
+  enterSearchEntry,
+  leaveSearchEntry,
+  usePhoneSearchHistory,
+} from "@/components/search/phone-history"
+import { PhoneSearch } from "@/components/search/phone-search"
+import { MatchedText, RecordIcon } from "@/components/search/search-parts"
 import {
   closePalette,
   setPaletteOpen,
@@ -37,28 +38,21 @@ import {
   useCommand,
   type CommandDefinition,
 } from "@/lib/commands"
-import { displayHost, linkIconElement } from "@/lib/links"
+import { displayHost } from "@/lib/links"
 import { useProjects } from "@/lib/projects"
 import {
   groupResults,
   isSearchable,
   isSearchKey,
   nameLeads,
+  recordValue,
   useRecordSearch,
   type ExcerptPart,
-  type RecordType,
   type SearchResult,
 } from "@/lib/search"
 
 // Typing settles for this long before the server is asked.
 const SEARCH_DELAY_MS = 150
-
-const RECORD_ICONS: Record<RecordType, React.ReactNode> = {
-  task: <SquareCheckIcon />,
-  module: <LayoutGridIcon />,
-  milestone: <FlagIcon />,
-  link: <LinkIcon />,
-}
 
 /**
  * The ⌘K search dialog (Paper: search-experience, A). Mounted once in the app
@@ -89,7 +83,10 @@ export function SearchPalette() {
   // Counts openings, so an answer kept from an earlier one is never shown.
   const [opening, setOpening] = React.useState(0)
   const settled = useDebounce(query, SEARCH_DELAY_MS)
-  const search = useRecordSearch(settled, opening)
+  // On a phone the app regaining focus is mostly the keyboard closing.
+  const search = useRecordSearch(settled, opening, {
+    revalidateOnFocus: !isMobile,
+  })
   const { mutate } = useSWRConfig()
 
   // Every open and close starts with an empty query. Opening also forgets
@@ -107,9 +104,19 @@ export function SearchPalette() {
       // On a phone the sidebar is a modal drawer; the palette replaces it
       // rather than opening over its focus trap.
       if (isMobile && openMobile) setOpenMobile(false)
+      // Envision: on a phone, Back closes Search (phone-history.ts).
+      if (isMobile) enterSearchEntry()
+    } else {
+      leaveSearchEntry()
     }
     setQuery("")
   })
+  usePhoneSearchHistory()
+  // A phone layout that takes over while Search is open (a phone rotated to
+  // portrait) adds the entry then, so Back still closes Search.
+  React.useEffect(() => {
+    if (open && isMobile) enterSearchEntry()
+  }, [open, isMobile])
   useCommand("palette.open", togglePalette)
 
   const text = query.trim()
@@ -160,13 +167,26 @@ export function SearchPalette() {
   // row when that row is gone (results arrive or a filter drops it).
   const highlighted = values.includes(selected) ? selected : (values[0] ?? "")
 
-  function run(command: CommandDefinition) {
+  // Envision: a pick closes the palette, then acts once a phone's Search
+  // history entry is gone, so Back from where it lands skips Search.
+  function closeThen(act: () => void) {
     closePalette()
-    actions[command.id]?.()
+    leaveSearchEntry(act)
+  }
+
+  function run(command: CommandDefinition) {
+    closeThen(() => actions[command.id]?.())
+  }
+
+  function openProject(name: string) {
+    closeThen(() => void navigate({ to: "/projects/$name", params: { name } }))
   }
 
   function openRecord(result: SearchResult) {
-    closePalette()
+    closeThen(() => navigateToRecord(result))
+  }
+
+  function navigateToRecord(result: SearchResult) {
     const name = result.project
     if (result.type === "task") {
       void navigate({
@@ -211,13 +231,7 @@ export function SearchPalette() {
             <CommandItem
               key={project.name}
               value={`project:${project.name}`}
-              onSelect={() => {
-                closePalette()
-                void navigate({
-                  to: "/projects/$name",
-                  params: { name: project.name },
-                })
-              }}
+              onSelect={() => openProject(project.name)}
             >
               <FolderIcon />
               <span>{project.project_name}</span>
@@ -243,6 +257,33 @@ export function SearchPalette() {
       ))}
     </>
   )
+
+  if (isMobile) {
+    return (
+      <PhoneSearch
+        open={open}
+        onOpenChange={setPaletteOpen}
+        query={query}
+        onQueryChange={setQuery}
+        highlighted={highlighted}
+        onHighlight={setSelected}
+        projects={matchingProjects}
+        commands={commandGroups.flatMap((entry) => entry.commands)}
+        recordGroups={recordGroups}
+        namesLead={namesLead}
+        pending={pending}
+        searching={searching}
+        firstAnswerPending={searching && !response && !search.error}
+        // An index still being built cannot answer yet either.
+        unavailable={searching && (!!search.error || !!response?.indexing)}
+        correctedQuery={response?.corrected_query ?? null}
+        onRetry={search.retry}
+        onOpenProject={(project) => openProject(project.name)}
+        onRunCommand={run}
+        onOpenRecord={openRecord}
+      />
+    )
+  }
 
   return (
     <CommandDialog
@@ -293,10 +334,6 @@ export function SearchPalette() {
   )
 }
 
-function recordValue(result: SearchResult): string {
-  return `${result.type}:${result.name}`
-}
-
 function emptyMessage({
   searching,
   pending,
@@ -325,10 +362,7 @@ function RecordItem({
 }) {
   return (
     <CommandItem value={recordValue(result)} onSelect={onSelect}>
-      {/* A link wears its type's icon. */}
-      {result.type === "link"
-        ? linkIconElement(result.icon)
-        : RECORD_ICONS[result.type]}
+      <RecordIcon result={result} />
       <span className="max-w-[45%] shrink-0 truncate">{result.title}</span>
       {result.type === "link" && result.host ? (
         <span className="max-w-[30%] shrink-0 truncate font-normal text-muted-foreground">
@@ -344,22 +378,11 @@ function RecordItem({
 }
 
 function Excerpt({ parts }: { parts: ExcerptPart[] }) {
-  if (!parts.length) return null
   return (
-    <span className="min-w-0 flex-1 truncate font-normal text-muted-foreground">
-      {parts.map((part, index) =>
-        part.match ? (
-          <mark
-            // Parts are positional: the same text can match twice.
-            key={index}
-            className="bg-transparent font-medium text-foreground"
-          >
-            {part.text}
-          </mark>
-        ) : (
-          <React.Fragment key={index}>{part.text}</React.Fragment>
-        )
-      )}
-    </span>
+    <MatchedText
+      parts={parts}
+      className="min-w-0 flex-1 truncate font-normal text-muted-foreground"
+      markClassName="bg-transparent font-medium text-foreground"
+    />
   )
 }

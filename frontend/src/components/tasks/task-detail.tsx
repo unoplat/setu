@@ -18,7 +18,14 @@ import {
   RecordComments,
   type ActivitySource,
 } from "@/components/record-activity"
-import { DetailLayout, KindRow, RailGroup } from "@/components/record-detail"
+import {
+  DetailLayout,
+  KindRow,
+  RailGroup,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
+} from "@/components/record-detail"
 import { taskGitHubKey } from "@/lib/github"
 import { dueHint, formatShortDay, useMilestones } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
@@ -270,12 +277,12 @@ export function TaskReadOnly({
             )}
           </RailGroup>
 
-          {activity}
+          <RailEnd>{activity}</RailEnd>
         </>
       }
     >
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
+      <div className={DETAIL_BODY_CLASS}>
+        <DetailHead>
           <KindRow>
             <TaskKind
               name={task.name}
@@ -283,10 +290,10 @@ export function TaskReadOnly({
               parent={directParent(task)}
             />
           </KindRow>
-          <h1 className="text-3xl/9 font-semibold tracking-tight">
+          <h1 className="text-3xl/9 font-semibold tracking-tight max-md:text-2xl/8">
             {task.subject}
           </h1>
-        </div>
+        </DetailHead>
         <ReadOnlyDescription value={task.description} />
       </div>
       {footer}

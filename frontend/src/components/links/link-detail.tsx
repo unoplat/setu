@@ -13,7 +13,14 @@ import {
   RecordComments,
   type ActivitySource,
 } from "@/components/record-activity"
-import { DetailLayout, KindRow, RailGroup } from "@/components/record-detail"
+import {
+  DetailLayout,
+  KindRow,
+  RailGroup,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
+} from "@/components/record-detail"
 import { buttonVariants } from "@/components/ui/button"
 import {
   copyAddress,
@@ -216,19 +223,19 @@ export function LinkReadOnly({
               <ProjectProperty projectName={projectName} />
             </dl>
           </RailGroup>
-          {activity}
+          <RailEnd>{activity}</RailEnd>
         </>
       }
     >
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
+      <div className={DETAIL_BODY_CLASS}>
+        <DetailHead>
           <KindRow>
             <LinkKind link={link} />
           </KindRow>
-          <h1 className="text-3xl/9 font-semibold tracking-tight">
+          <h1 className="text-3xl/9 font-semibold tracking-tight max-md:text-2xl/8">
             {link.link_name}
           </h1>
-        </div>
+        </DetailHead>
         <AddressBlock linkName={link.link_name} url={link.url} />
         <ReadOnlyDescription value={link.description} />
       </div>

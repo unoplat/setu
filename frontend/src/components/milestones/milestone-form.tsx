@@ -12,6 +12,9 @@ import {
   KindRow,
   RailGroup,
   TitleInput,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
 } from "@/components/record-detail"
 import type {
   AutosaveListeners,
@@ -189,14 +192,14 @@ export const MilestoneForm = withForm({
 
             <MilestoneProgress milestone={milestone} />
 
-            {activity}
+            <RailEnd>{activity}</RailEnd>
           </>
         }
       >
         <form
           noValidate
           aria-label="Milestone"
-          className="flex flex-col gap-8"
+          className={DETAIL_BODY_CLASS}
           onSubmit={(event) => {
             event.preventDefault()
             event.stopPropagation()
@@ -207,7 +210,7 @@ export const MilestoneForm = withForm({
             onSubmit()
           }}
         >
-          <div className="flex flex-col gap-3">
+          <DetailHead>
             <KindRow indicator={indicator}>
               <MilestoneKind name={milestone.name} />
             </KindRow>
@@ -230,7 +233,7 @@ export const MilestoneForm = withForm({
                 />
               )}
             </form.Field>
-          </div>
+          </DetailHead>
 
           <form.Field name="description" listeners={listeners.typed}>
             {(field) => (

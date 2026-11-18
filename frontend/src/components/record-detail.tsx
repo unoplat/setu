@@ -18,6 +18,7 @@ import { Dialog } from "@/components/ui/dialog"
 import { FieldError } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { AutosaveStatus, ConflictChoice } from "@/lib/autosave"
+import { setDetailHeadHidden } from "@/lib/detail-head"
 import { bindingKey, getBinding, type CommandId } from "@/lib/commands"
 import { cn } from "@/lib/utils"
 
@@ -34,7 +35,14 @@ const DescriptionEditor = React.lazy(
 
 /**
  * The page under the header: the content column and the properties rail, each
- * scrolling on its own. Below `lg` the rail drops under the content.
+ * scrolling on its own.
+ *
+ * Below `md` (phones only) it is one column in the order Paper's phone frames give (Task
+ * detail 1, Milestone detail 3, Module detail 1): the title (DetailHead),
+ * then the rail's properties, then the description and what follows it, and
+ * last whatever the rail closes with (RailEnd: the activity). The wrappers
+ * step aside (`contents`) so those pieces can be ordered as one list while
+ * each is still drawn once, in its own place in the form.
  */
 export function DetailLayout({
   children,
@@ -43,17 +51,77 @@ export function DetailLayout({
   children: React.ReactNode
   rail: React.ReactNode
 }) {
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  // The phone header shows the record once its title has scrolled under it.
+  React.useEffect(() => {
+    const head = ref.current?.querySelector("[data-detail-head]")
+    if (!head) return
+    const observer = new IntersectionObserver(
+      ([entry]) =>
+        setDetailHeadHidden(
+          !entry.isIntersecting && entry.boundingClientRect.top < HEADER_PX
+        ),
+      { rootMargin: `-${HEADER_PX}px 0px 0px 0px` }
+    )
+    observer.observe(head)
+    return () => {
+      observer.disconnect()
+      setDetailHeadHidden(false)
+    }
+  }, [])
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-      <div className="flex min-w-0 flex-col items-center px-6 pt-10 pb-16 sm:px-14 lg:flex-1 lg:overflow-y-auto">
-        <div className="flex w-full max-w-190 flex-col gap-10">{children}</div>
+    <div
+      ref={ref}
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto max-md:gap-6 max-md:px-5 max-md:pt-5 max-md:pb-16 lg:flex-row lg:overflow-hidden"
+    >
+      <div className="flex min-w-0 flex-col items-center px-6 pt-10 pb-16 max-md:contents sm:px-14 lg:flex-1 lg:overflow-y-auto">
+        <div className="flex w-full max-w-190 flex-col gap-10 max-md:contents">
+          {children}
+        </div>
       </div>
       <aside
         aria-label="Properties and activity"
-        className="flex shrink-0 flex-col gap-5 border-t px-6 py-8 lg:w-85 lg:overflow-y-auto lg:border-t-0 lg:border-l"
+        className="flex shrink-0 flex-col gap-5 border-t px-6 py-8 max-md:contents lg:w-85 lg:overflow-y-auto lg:border-t-0 lg:border-l"
       >
         {rail}
       </aside>
+    </div>
+  )
+}
+
+/** The phone header's height (ProjectHeader, `h-14`). */
+const HEADER_PX = 56
+
+/**
+ * What a record page's content column starts with: the record's chip and
+ * its title. On a phone it stays first, above the properties.
+ */
+export function DetailHead({ children }: { children: React.ReactNode }) {
+  return (
+    <div data-detail-head className="flex flex-col gap-3 max-md:order-first">
+      {children}
+    </div>
+  )
+}
+
+/**
+ * The content column's own wrapper (the form, or the read-only body). Below
+ * `md` it steps aside so its pieces join the page's single column.
+ */
+export const DETAIL_BODY_CLASS = "flex flex-col gap-8 max-md:contents"
+
+/**
+ * What closes the rail (the activity, and a Task's GitHub panel). On a phone
+ * it goes to the end of the page, after the comments.
+ */
+export function RailEnd({ children }: { children: React.ReactNode }) {
+  // Wider screens draw the rail as before: the wrapper steps aside, and its
+  // first block keeps the rule it had as a later block of the rail.
+  return (
+    <div className="contents max-md:order-last max-md:flex max-md:flex-col max-md:gap-5 max-md:border-t max-md:pt-4 max-md:empty:hidden md:*:first:border-t md:*:first:pt-4">
+      {children}
     </div>
   )
 }
@@ -72,7 +140,8 @@ export function RailGroup({
   return (
     <div
       className={cn(
-        "flex flex-col not-first:border-t not-first:pt-4",
+        // On a phone the properties come straight after the title.
+        "flex flex-col not-first:border-t not-first:pt-4 max-md:-order-1",
         className
       )}
     >
@@ -243,7 +312,7 @@ export function TitleInput({
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
         aria-invalid={error ? true : undefined}
-        className="-mx-2.5 -my-1 field-sizing-content w-[calc(100%+1.25rem)] max-w-[calc(100%+1.25rem)] min-w-24 truncate rounded-md bg-transparent px-2.5 py-1 text-3xl/9 font-semibold tracking-tight transition-[color,background-color,box-shadow] outline-none hover:bg-foreground/6 focus-visible:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:ring-3 aria-invalid:ring-destructive/20 supports-[field-sizing:content]:w-auto"
+        className="-mx-2.5 -my-1 field-sizing-content w-[calc(100%+1.25rem)] max-w-[calc(100%+1.25rem)] min-w-24 truncate rounded-md bg-transparent px-2.5 py-1 text-3xl/9 font-semibold tracking-tight transition-[color,background-color,box-shadow] outline-none hover:bg-foreground/6 focus-visible:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:ring-3 aria-invalid:ring-destructive/20 supports-[field-sizing:content]:w-auto max-md:text-2xl/8"
       />
       <FieldError>{error}</FieldError>
     </div>
