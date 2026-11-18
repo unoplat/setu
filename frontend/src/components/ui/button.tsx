@@ -18,6 +18,9 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Envision: a phone header's text action (Search's Cancel), in the
+        // accent the tab bar and chips use.
+        text: "font-medium text-sidebar-primary hover:text-sidebar-primary/80",
       },
       size: {
         default:
@@ -29,6 +32,10 @@ const buttonVariants = cva(
         "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
+        // Envision: the 44px touch target of the phone screens.
+        touch:
+          "h-11 gap-2 px-4 has-data-[icon=inline-end]:pe-3 has-data-[icon=inline-start]:ps-3",
+        "icon-touch": "size-11",
       },
     },
     defaultVariants: {

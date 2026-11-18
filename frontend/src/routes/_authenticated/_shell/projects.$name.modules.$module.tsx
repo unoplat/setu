@@ -162,6 +162,7 @@ function ModuleScreen({
         section="Modules"
         page={{
           title: module.module_name,
+          id: module.name,
           sectionTo: "/projects/$name/modules",
         }}
       >

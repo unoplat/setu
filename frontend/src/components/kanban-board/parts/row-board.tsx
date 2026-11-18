@@ -30,7 +30,7 @@ import { makeCellId } from "./swimlane-cell"
 const OPEN_ON_HOVER_MS = 500
 
 /** The items of `column` drawn in `lane`; an unknown lane shows in the first. */
-function laneItems(
+export function laneItems(
   column: KanbanColumn,
   lane: KanbanSwimlane,
   swimlanes: KanbanSwimlane[]

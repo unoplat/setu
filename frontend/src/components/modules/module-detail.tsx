@@ -13,7 +13,14 @@ import {
   RecordComments,
   type ActivitySource,
 } from "@/components/record-activity"
-import { DetailLayout, KindRow, RailGroup } from "@/components/record-detail"
+import {
+  DetailLayout,
+  KindRow,
+  RailGroup,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
+} from "@/components/record-detail"
 import { RelatedTasks } from "@/components/tasks/related-tasks"
 import {
   moduleActivityKey,
@@ -129,19 +136,19 @@ export function ModuleReadOnly({
             </dl>
           </RailGroup>
           <ModuleProgress module={module} />
-          {activity}
+          <RailEnd>{activity}</RailEnd>
         </>
       }
     >
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
+      <div className={DETAIL_BODY_CLASS}>
+        <DetailHead>
           <KindRow>
             <ModuleKind />
           </KindRow>
-          <h1 className="text-3xl/9 font-semibold tracking-tight">
+          <h1 className="text-3xl/9 font-semibold tracking-tight max-md:text-2xl/8">
             {module.module_name}
           </h1>
-        </div>
+        </DetailHead>
         <ReadOnlyDescription value={module.description} />
       </div>
       {footer}

@@ -77,6 +77,30 @@ function DialogContent({
   )
 }
 
+/**
+ * Envision: a dialog that covers the whole screen, for phone layers such as
+ * Search. No overlay, no centring, no corners and no padding. The layer sets
+ * its own height; `--dialog-h` and `--dialog-top` (unset: the whole screen)
+ * let it follow the part the on-screen keyboard leaves visible.
+ */
+function DialogFullscreenContent({
+  className,
+  ...props
+}: DialogPrimitive.Popup.Props) {
+  return (
+    <DialogPortal>
+      <DialogPrimitive.Popup
+        data-slot="dialog-content"
+        className={cn(
+          "fixed inset-x-0 top-(--dialog-top,0px) z-50 flex h-(--dialog-h,100dvh) flex-col bg-background ps-safe-left pe-safe-right pt-safe-top text-foreground outline-none",
+          className
+        )}
+        {...props}
+      />
+    </DialogPortal>
+  )
+}
+
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -149,6 +173,7 @@ export {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFullscreenContent,
   DialogHeader,
   DialogOverlay,
   DialogPortal,

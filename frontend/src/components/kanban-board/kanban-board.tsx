@@ -15,9 +15,11 @@ import {
   type CollisionDetection,
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Board } from "./parts/board"
 import { KanbanDragOverlay } from "./parts/drag-overlay"
+import { MobileRowBoard } from "./parts/mobile-row-board"
 import { RowBoard } from "./parts/row-board"
 import { useDragHandlers } from "./hooks/use-drag-handlers"
 import { useKanbanState } from "./hooks/use-kanban-state"
@@ -121,7 +123,9 @@ export function KanbanBoard({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   )
 
   const {
@@ -195,6 +199,10 @@ export function KanbanBoard({
   }
 
   const rows = layout === "rows" && state.swimlanes?.length
+  // Envision: below md the rows layout shows one column at a time, with or
+  // without swimlanes.
+  const isMobile = useIsMobile()
+  const mobileRows = layout === "rows" && isMobile
   function handleToggleRow(swimlaneId: string) {
     dispatch({ type: "toggle-swimlane-row", swimlaneId })
   }
@@ -266,7 +274,19 @@ export function KanbanBoard({
         aria-label={ariaLabel}
         className={cn("relative flex h-full min-h-0 flex-col", className)}
       >
-        {rows && state.swimlanes ? (
+        {mobileRows ? (
+          <MobileRowBoard
+            data={state}
+            swimlanes={state.swimlanes}
+            rendererMap={rendererMap}
+            palette={palettePinned}
+            readOnly
+            onItemClick={onItemClick}
+            onColumnAdd={onColumnAdd}
+            onSwimlaneAdd={onSwimlaneAdd}
+            onToggleRow={handleToggleRow}
+          />
+        ) : rows && state.swimlanes ? (
           <RowBoard
             data={state}
             swimlanes={state.swimlanes}
@@ -318,7 +338,21 @@ export function KanbanBoard({
           aria-label={ariaLabel}
           className={cn("relative flex h-full min-h-0 flex-col", className)}
         >
-          {rows && state.swimlanes ? (
+          {mobileRows ? (
+            <MobileRowBoard
+              data={state}
+              swimlanes={state.swimlanes}
+              rendererMap={rendererMap}
+              palette={palettePinned}
+              readOnly={readOnly}
+              itemDrag
+              onItemClick={onItemClick}
+              onItemDataChange={handleItemUpdate}
+              onColumnAdd={onColumnAdd}
+              onSwimlaneAdd={onSwimlaneAdd}
+              onToggleRow={handleToggleRow}
+            />
+          ) : rows && state.swimlanes ? (
             <RowBoard
               data={state}
               swimlanes={state.swimlanes}

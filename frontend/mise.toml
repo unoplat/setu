@@ -1,6 +1,7 @@
 [tools]
 # Keep these aligned with package.json.
 bun = "1.4.2"
+pipenv = "latest"
 vp = "0.3.1"
 
 [env]
@@ -14,7 +15,7 @@ FRAPPE_SITE = "erpdev.localhost"
 [tasks.setup-frappe-bench]
 description = "Set up the Frappe development bench"
 run = '''
-fm create "$FM_BENCH" \
+fmx create "$FM_BENCH" \
   --environment dev \
   --apps frappe:version-16 \
   --apps erpnext:version-16 \
@@ -22,17 +23,43 @@ fm create "$FM_BENCH" \
 '''
 
 
-[tasks.init_setu]
-description = "Fetch the setu app into the Frappe bench"
-run = 'fm shell "$FM_BENCH" -c "bench get-app https://github.com/unoplat/setu.git"'
+[tasks.init_setu_bench]
+description = "Fetch the setu app into the Frappe bench (then run `mise run init_setu_site`)"
+run = 'fmx shell "$FM_BENCH" -c "bench get-app https://github.com/unoplat/setu.git"'
+
+[tasks.init_setu_site]
+description = "Install the setu app on the Frappe site (after `mise run init_setu_bench`)"
+run = 'fmx shell "$FM_BENCH" -c "bench --site $FRAPPE_SITE install-app setu"'
 
 [tasks.backend]
 description = "Start the Frappe Manager site separately (requires Docker/OrbStack)"
-run = 'fm start "$FM_BENCH"'
+run = 'fmx start "$FM_BENCH"'
+
+[tasks.restart]
+description = "Restart the Frappe Manager web and worker services (after installing an app or changing Python code)"
+run = 'fmx restart "$FM_BENCH"'
 
 [tasks.tunnel]
 description = "Expose the local Frappe site through a temporary public HTTPS URL (requires cloudflared)"
 run = 'cloudflared tunnel --url http://127.0.0.1:80 --http-host-header "$FRAPPE_SITE"'
+
+[tasks.tailnet-alias]
+description = "Register this machine's Tailscale hostname as a Frappe alias (briefly recreates site Nginx)"
+run = '''
+set -eu
+# Override TAILNET_HOST to register a different hostname.
+TAILNET_HOST="${TAILNET_HOST:-$(tailscale status --json | python3 -c 'import json, sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')}"
+if [ -z "$TAILNET_HOST" ]; then
+  echo "No Tailscale DNS name found. Connect Tailscale and enable MagicDNS first." >&2
+  exit 1
+fi
+fmx update "$FM_BENCH" --add-alias "$TAILNET_HOST"
+'''
+
+[tasks.tailnet-serve]
+description = "Serve Frappe privately over Tailscale HTTPS (run tailnet-alias first; default port 8443)"
+raw = true
+run = 'sudo tailscale serve --bg --https="${TAILNET_HTTPS_PORT:-8443}" http://127.0.0.1:80'
 
 [tasks.dev]
 description = "Build and deploy the frontend bundle and setu app; start Frappe separately with `mise run backend` (run `mise run migrate` after for custom field changes)"
@@ -69,7 +96,7 @@ run = "vp add"
 
 [tasks.migrate]
 description = "Run bench migrate on the Frappe Manager site (syncs setu custom fields and property setters)"
-run = 'fm shell "$FM_BENCH" -c "bench --site $FRAPPE_SITE migrate"'
+run = 'fmx shell "$FM_BENCH" -c "bench --site $FRAPPE_SITE migrate"'
 
 [tasks.deploy-local]
 description = "Build, then copy the bundle and the setu Python app into the local bench clone (run `mise run migrate` after for DocType changes)"

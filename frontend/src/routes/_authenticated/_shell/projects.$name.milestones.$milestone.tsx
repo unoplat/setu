@@ -152,6 +152,7 @@ function MilestoneScreen({
         section="Milestones"
         page={{
           title: milestone.subject,
+          id: milestone.name,
           sectionTo: "/projects/$name/milestones",
         }}
       >

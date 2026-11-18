@@ -9,6 +9,9 @@ import {
   KindRow,
   RailGroup,
   TitleInput,
+  DETAIL_BODY_CLASS,
+  DetailHead,
+  RailEnd,
 } from "@/components/record-detail"
 import type {
   AutosaveListeners,
@@ -112,14 +115,14 @@ export const ModuleForm = withForm({
 
             <ModuleProgress module={module} />
 
-            {activity}
+            <RailEnd>{activity}</RailEnd>
           </>
         }
       >
         <form
           noValidate
           aria-label="Module"
-          className="flex flex-col gap-8"
+          className={DETAIL_BODY_CLASS}
           onSubmit={(event) => {
             event.preventDefault()
             event.stopPropagation()
@@ -130,7 +133,7 @@ export const ModuleForm = withForm({
             onSubmit()
           }}
         >
-          <div className="flex flex-col gap-3">
+          <DetailHead>
             <KindRow indicator={indicator}>
               <ModuleKind />
             </KindRow>
@@ -153,7 +156,7 @@ export const ModuleForm = withForm({
                 />
               )}
             </form.Field>
-          </div>
+          </DetailHead>
 
           <form.Field name="description" listeners={listeners.typed}>
             {(field) => (

@@ -1,41 +1,65 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "ask-matt": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/ask-matt/SKILL.md",
-      "computedHash": "0cd14026efa0330083cbc7adf590976c162b60e02f696a8dcce96f0b4dab8a72"
+      "computedHash": ""
+    },
+    "fix-issue": {
+      "source": "frappe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/fix-issue/SKILL.md",
+      "computedHash": "b51c79ccfe0773c887e0431485095f456d3b517eaec1a151e81b8549c01960f2"
+    },
+    "frappe-app-dev": {
+      "source": "frappe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frappe-app-dev/SKILL.md",
+      "computedHash": "e8f44affa17d34394b0bd59e80650ec86f2bd995db47ac8ba45369fdf97de8d9"
+    },
+    "frappe-code-review": {
+      "source": "frappe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frappe-code-review/SKILL.md",
+      "computedHash": "bd9677a53f90eb8591889a79266ed9052677d53e1756d1bff599499cffc01e72"
     },
     "grill-with-docs": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
-      "computedHash": "35e62aa423aaeab6a414bcac273f56dfb17802ef2334b41b6a3b00f28196c8cf"
+      "computedHash": ""
     },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": ".agents/skills/impeccable/SKILL.md",
-      "computedHash": "3afb2a5e8cb327d83f75d585494dcdb6aaaf7506cf0410cddd072b30f960efea"
+      "computedHash": ""
     },
     "reactjs-tiptap-editor": {
       "source": "hunghg255/reactjs-tiptap-editor",
       "sourceType": "github",
       "skillPath": "skills/reactjs-tiptap-editor/SKILL.md",
-      "computedHash": "8fbe01d16221445191b9b8596a9a81feacf565863b3644917d6be93596a0064f"
+      "computedHash": "5f4db4238401f26d26300a7a4711be0506743fe1532b4201149ce60dee9aa555"
+    },
+    "ship-it": {
+      "source": "frappe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/ship-it/SKILL.md",
+      "computedHash": "85d7f3105ae49a4fe4f45f1d4b5fdfea1f5331133009d3d9261e57212f6c14ab"
     },
     "to-spec": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/to-spec/SKILL.md",
-      "computedHash": "3fa1a0695d4ea242fae9e569e4d22aa1788623197abb33bfadafae7315789bbf"
+      "computedHash": ""
     },
     "to-tickets": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/to-tickets/SKILL.md",
-      "computedHash": "bf5e6ebcb4f1272de0c188d5b3901f265a03d1fa9935a21a7a56938e21e2e761"
+      "computedHash": ""
     }
   }
 }
