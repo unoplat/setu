@@ -20,13 +20,15 @@ Envision is a SaaS project-management product centered on a Kanban board. It sho
 
 ## Positioning
 
-Envision keeps project work, personal follow-up, and team communication in one application. The Kanban Board remains the primary operating view, while Inbox, My tasks, and Message Board provide focused views for attention, ownership, and discussion.
+Envision is an open-source product planning app built on ERPNext and the Frappe Framework. It keeps project work, personal follow-up, and the GitHub Issues a team already uses in one application on top of standard ERPNext Project and Task records. The Kanban Board remains the primary operating view, while Inbox and My tasks provide focused views for attention and ownership. The interface is keyboard-first.
 
 ## Operating Context
 
-Teams switch among Envision-enabled Projects from a persistent sidebar. Global navigation provides Home, My tasks, Inbox, and application Settings. Each Project exposes Tasks, Milestones, Modules, Message Board, Todos, Project Settings, and private Views; My tasks has private Views of its own. In the first version the signed-in user's Frappe identity and ERPNext role permissions determine what is available; Envision roles and Project membership arrive in the next version.
+Teams switch among Envision-enabled Projects from a persistent sidebar. Global navigation provides Home, My tasks, Inbox, and application Settings. Each Project exposes Tasks, Milestones, Modules, Links, Project Settings, and private Views; My tasks has private Views of its own. In the first version the signed-in user's Frappe identity and ERPNext role permissions determine what is available; Envision roles and Project membership arrive in the next version.
 
-The primary Project workflow is a Kanban Board. Users scan status columns, filter Tasks, open or move Cards, and add Tasks without leaving the Board. Status belongs to the column; each Card carries the Task information that remains useful when it moves.
+The primary Project workflow is a Kanban Board. Modules appear as rows on the Board and statuses as columns. Users scan the Board, filter Tasks, open or move Cards, and add Tasks without leaving it.
+
+Envision is used on desktop and on phones. Every screen must work at phone width and is tested there. Status belongs to the column; each Card carries the Task information that remains useful when it moves.
 
 ## Capabilities and Constraints
 
@@ -34,10 +36,32 @@ The primary Project workflow is a Kanban Board. Users scan status columns, filte
 
 - Multi-Project navigation with expandable Project sections and visible signed-in identity. The Envision role label arrives with roles in the next version.
 - Global Home, My tasks, Inbox, and application Settings.
-- Project-scoped Tasks, Milestones, Modules, Message Board, Todos, Settings, and private Views.
+- Project-scoped Tasks, Milestones, Modules, Links, Settings, and private Views.
 - My tasks shows the Tasks assigned to the signed-in user across every Envision-enabled Project, Done Tasks included, with private Views of its own.
-- Search entry point for Tasks and actions, with a keyboard shortcut shown in the interface.
-- The Paper design distinguishes global My tasks from Project-scoped Todos. The exact purpose and ERPNext record basis of Project Todos are still undecided.
+- Search palette (`Cmd/Ctrl+K`) for Tasks, Milestones, Modules, Links, Projects, and actions; every action shows its shortcut.
+- Inbox shows assignments and mentions with an unread badge and filters.
+- Message Board and Project Todos appear in the Paper design but are not built. Their purpose and ERPNext record basis are still undecided.
+
+### Keyboard-first
+
+- Two-key navigation sequences (for example `G` then `P` for Projects), `N` for a new Project, `D` for dark mode.
+- `Cmd/Ctrl+Enter` creates, saves, or posts a comment from any field; `Cmd/Ctrl+Shift+Enter` expands the description into a full-height editor; `Esc` returns with edits kept.
+- Board Cards can be moved with the keyboard as well as by dragging.
+- Every shortcut is rebindable in Settings (single key, chord, or sequence), with conflict warnings and reset.
+
+### Planning records
+
+- Modules are lasting product areas with an optional lead and description; they form the Board's rows. Dragging a Card between rows changes its Module; moves can be undone.
+- Milestones have due dates and progress that advances as linked Tasks reach Done. A Task belongs to at most one Module and one Milestone.
+- Subtasks and parent-child Task relationships; multiple assignees, priorities, tags, start and due dates.
+- Rich-text descriptions with slash commands, activity history, and comments with mentions and quoting on Tasks, Milestones, Modules, and Links. New comments and activity appear live.
+- A Links board per Project holds resources with descriptions and built-in or custom link types.
+
+### GitHub Issue sync
+
+- A Project connects to a GitHub repository with Issue sync enabled in Project Settings.
+- Eligible open Issues import as Tasks. A Task publishes to GitHub when given the `github` tag and the destination is confirmed; publishing shares Task content with everyone who can access that repository.
+- Linked titles, descriptions, statuses, comments, and supported parent/sub-issue relationships stay in sync. Sync status is visible and failed updates can be retried.
 
 ### Kanban Board
 
@@ -45,6 +69,7 @@ The primary Project workflow is a Kanban Board. Users scan status columns, filte
 - Task Cards can be opened by click or Enter and moved between columns by dragging.
 - Cancelling a Task moves it to the Cancelled column. Cancelled Tasks do not count as completed work or Milestone progress, and cancelling a linked Task closes its GitHub Issue as not planned.
 - Tasks can be added from every Board column except Cancelled.
+- The Board must remain workable at phone width, not only readable.
 - Board view selection plus general, Milestone, and Priority filters.
 - Private Custom Views appear within their Project, or under My tasks, and preserve reusable Board configurations. My tasks views can also filter by Project and are always limited to the signed-in user's own Tasks.
 
@@ -70,8 +95,10 @@ The first version has no Envision access model. Creating a Project is a single s
 ### Product constraints and open decisions
 
 - Standard ERPNext and Frappe DocTypes must be reused when official documentation establishes a compatible record. Envision-owned DocTypes require an explicit gap and architecture decision.
-- Paper labels such as Modules, Message Board, Inbox, and Project Todos do not by themselves establish an ERPNext or Envision DocType.
-- No deployment target or browser matrix has been decided yet.
+- Paper labels such as Message Board and Project Todos do not by themselves establish an ERPNext or Envision DocType.
+- Envision is in alpha; releases can include breaking changes to data models, APIs, settings, or integrations.
+- Every screen must be tested at phone width as well as desktop. No deployment target or browser matrix beyond that has been decided.
+- Planned, not committed: smarter notifications, granular roles and permissions, a per-Project discussion board, release integration, a wiki, automatic documentation via Unoplat Code Confluence, and agent artifacts linked to work.
 
 ## Evidence on Hand
 
@@ -88,3 +115,4 @@ The first version has no Envision access model. Creating a Project is a single s
 - Reuse documented ERPNext and Frappe records before creating Envision-owned DocTypes.
 - Make status, priority, ownership, dates, and Milestone relationships immediately legible.
 - Reduce project-management upkeep rather than adding process.
+- Every action reachable by keyboard; every screen usable on a phone.
