@@ -24,7 +24,6 @@ import { RichTextHeading } from "reactjs-tiptap-editor/heading"
 import { RichTextHighlight } from "reactjs-tiptap-editor/highlight"
 import { RichTextRedo, RichTextUndo } from "reactjs-tiptap-editor/history"
 import { RichTextHorizontalRule } from "reactjs-tiptap-editor/horizontalrule"
-import { RichTextImage } from "reactjs-tiptap-editor/image"
 import { RichTextIndent } from "reactjs-tiptap-editor/indent"
 import { RichTextItalic } from "reactjs-tiptap-editor/italic"
 import { RichTextLineHeight } from "reactjs-tiptap-editor/lineheight"
@@ -42,6 +41,10 @@ import { RichTextUnderline } from "reactjs-tiptap-editor/textunderline"
 import { themeActions } from "reactjs-tiptap-editor/theme"
 import "reactjs-tiptap-editor/style.css"
 
+import {
+  EditorImageDialog,
+  ImageToolbarButton,
+} from "@/components/editor-image/editor-image-dialog"
 import { useTheme } from "@/components/theme-provider"
 import { Kbd } from "@/components/ui/kbd"
 import { cn } from "@/lib/utils"
@@ -213,7 +216,7 @@ export default function DescriptionEditor({
             <RichTextTaskList />
             <span className="envision-rte-separator" />
             <RichTextLink />
-            <RichTextImage />
+            <ImageToolbarButton editor={editor} />
             <RichTextBlockquote />
             <RichTextHorizontalRule />
             <RichTextCodeBlock />
@@ -232,6 +235,7 @@ export default function DescriptionEditor({
         <RichTextBubbleCodeBlock />
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
+      <EditorImageDialog editor={editor} />
       {/* Outside the provider: the package redefines the colour variables
           for everything inside it. Clicking the hint writes at the end. */}
       {plain && !expanded ? (

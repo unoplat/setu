@@ -118,6 +118,9 @@ function TaskScreen({
   const saved = React.useMemo(() => taskValues(task), [task])
   const autosave = useAutosaveForm({
     saved,
+    // Saving the description stores and prunes its images, so it waits for
+    // its Save button.
+    manual: ["description"],
     prepare: prepareTask,
     save: async (changes) => {
       const response = await update.call({ name: task.name, ...changes })
@@ -174,7 +177,11 @@ function TaskScreen({
   useCommand("task.collapseDescription", () => setExpanded(false), {
     enabled: expanded,
   })
-  useCommand("task.save", () => void flush(), { enabled: canWrite })
+  // ⌘↵ in the comment box posts the comment; it does not save the page.
+  const inComment = useScopeStack().includes("task-comment")
+  useCommand("task.save", () => void autosave.saveAll(), {
+    enabled: canWrite && !inComment,
+  })
 
   // 09k: the Subtasks between the description and the comments.
   const footer = (
@@ -222,7 +229,12 @@ function TaskScreen({
             project={project}
             listeners={autosave.listeners}
             confirmTags={confirmTags}
-            status={autosave.status}
+            descriptionSave={{
+              dirty: autosave.manualPending,
+              error: autosave.manualPending ? autosave.failure : null,
+              onSave: autosave.saveAll,
+              onDiscard: autosave.discard,
+            }}
             descriptionRevision={autosave.replaced.description ?? 0}
             descriptionConflict={
               autosave.conflicts.includes("description")
@@ -260,6 +272,7 @@ function TaskScreen({
         reason={autosave.error}
         saving={autosave.status === "saving"}
         conflict={autosave.status === "conflict"}
+        description={autosave.manualPending}
       />
       {publishDialog}
     </>

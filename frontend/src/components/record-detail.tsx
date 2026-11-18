@@ -30,8 +30,8 @@ const DescriptionEditor = React.lazy(
 // What the three record pages share (Paper: 06d — Milestone Detail, 07d —
 // Module Detail, 09 — Task Detail): the record's own content in a centred
 // column (title, description, related lists, comments), and a 340px rail of
-// its properties on the right, closed by its activity log. Nothing has a Save
-// button; see lib/autosave.
+// its properties on the right, closed by its activity log. Every property
+// saves on its own (lib/autosave); only the description has a Save button.
 
 /**
  * The page under the header: the content column and the properties rail, each
@@ -226,7 +226,7 @@ export function SaveIndicator({
           </Button>
         </>
       ) : (
-        "Edits save automatically"
+        "Properties save automatically"
       )}
     </div>
   )
@@ -319,13 +319,74 @@ export function TitleInput({
   )
 }
 
-const STATUS_TEXT: Record<AutosaveStatus, string> = {
-  idle: "Edits save automatically",
-  saving: "Saving…",
-  saved: "Saved",
-  invalid: "Not saved yet",
-  error: "Couldn’t save",
-  conflict: "Not saved: changed elsewhere",
+/** The description's own Save: it is the one field that does not autosave. */
+export type DescriptionSave = {
+  /** The description has edits that are not saved. */
+  dirty: boolean
+  /** Why its last save failed, while the edits are still unsaved. */
+  error: string | null
+  onSave: () => Promise<void>
+  onDiscard: () => void
+}
+
+/** "Unsaved changes", the reason a save failed, Discard and Save. */
+function DescriptionSaveBar({
+  save,
+  saveCommand,
+  className,
+}: {
+  save: DescriptionSave
+  saveCommand: CommandId
+  className?: string
+}) {
+  const [saving, setSaving] = React.useState(false)
+  if (!save.dirty && !saving) return null
+  return (
+    <div
+      className={cn("flex flex-wrap items-center gap-x-3 gap-y-2", className)}
+    >
+      <span
+        aria-live="polite"
+        className={cn(
+          "me-auto min-w-0 truncate text-xs",
+          save.error && !saving ? "text-destructive" : "text-muted-foreground"
+        )}
+        title={save.error ?? undefined}
+      >
+        {saving
+          ? "Saving…"
+          : save.error
+            ? `Couldn’t save: ${save.error}`
+            : "Unsaved changes"}
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={saving}
+        onClick={save.onDiscard}
+      >
+        Discard
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        disabled={saving}
+        onClick={async () => {
+          setSaving(true)
+          try {
+            await save.onSave()
+          } finally {
+            setSaving(false)
+          }
+        }}
+      >
+        {saving ? <LoaderCircleIcon className="animate-spin" /> : <CheckIcon />}
+        Save
+        <HotkeyText command={saveCommand} className="text-xs opacity-70" />
+      </Button>
+    </div>
+  )
 }
 
 /**
@@ -347,7 +408,8 @@ export function DescriptionField({
   subtitle,
   toggleCommand,
   collapseCommand,
-  status,
+  saveCommand,
+  save,
 }: {
   /** The saved HTML; see DescriptionEditor for when it is read. */
   value: string
@@ -369,7 +431,9 @@ export function DescriptionField({
   subtitle: string
   toggleCommand: CommandId
   collapseCommand: CommandId
-  status: AutosaveStatus
+  /** Saves the description (and any other edit); shown on the Save button. */
+  saveCommand: CommandId
+  save: DescriptionSave
 }) {
   return (
     <section
@@ -453,18 +517,19 @@ export function DescriptionField({
         </React.Suspense>
       </div>
 
+      {expanded ? null : (
+        <DescriptionSaveBar save={save} saveCommand={saveCommand} />
+      )}
+
       {expanded ? (
         <footer className="flex shrink-0 items-center justify-between gap-4 border-t px-8 py-5">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm" aria-live="polite">
-              {STATUS_TEXT[status]}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              <HotkeyText command={collapseCommand} /> to return · Edits save as
-              you write
-            </span>
+          <span className="text-xs text-muted-foreground">
+            <HotkeyText command={collapseCommand} /> to return
+          </span>
+          <div className="flex min-w-0 items-center gap-3">
+            <DescriptionSaveBar save={save} saveCommand={saveCommand} />
+            {save.dirty ? null : <EditorDoneButton onClick={onCollapse} />}
           </div>
-          <EditorDoneButton onClick={onCollapse} />
         </footer>
       ) : null}
     </section>
@@ -481,6 +546,7 @@ export function UnsavedEditsDialog({
   reason,
   saving,
   conflict = false,
+  description = false,
 }: {
   leaving: {
     stay: () => void
@@ -494,6 +560,8 @@ export function UnsavedEditsDialog({
   saving: boolean
   /** The edits are held because someone changed the same fields elsewhere. */
   conflict?: boolean
+  /** The description has edits its Save button has not sent. */
+  description?: boolean
 }) {
   return (
     <Dialog
@@ -514,7 +582,9 @@ export function UnsavedEditsDialog({
             conflict
               ? "Someone changed the same fields elsewhere while you were editing. Keep editing to choose which version to keep, or leave without yours."
               : (reason ??
-                "A field needs fixing before they can be saved. Keep editing to fix it, or leave without them.")
+                (description
+                  ? "The description has changes you haven’t saved. Save them, keep editing, or leave without them."
+                  : "A field needs fixing before they can be saved. Keep editing to fix it, or leave without them."))
           }
         />
         <PromptDialogFooter>
@@ -537,14 +607,14 @@ export function UnsavedEditsDialog({
           >
             Leave without saving
           </Button>
-          {reason ? (
+          {reason || (description && !conflict) ? (
             <ActionButton
               type="button"
               size="lg"
               disabled={saving}
               onClick={() => void leaving?.retry()}
             >
-              {saving ? "Saving…" : "Try again"}
+              {saving ? "Saving…" : reason ? "Try again" : "Save and leave"}
             </ActionButton>
           ) : null}
         </PromptDialogFooter>

@@ -15,7 +15,7 @@ import { ProjectHeader } from "@/components/project-header"
 import { SaveIndicator, UnsavedEditsDialog } from "@/components/record-detail"
 import { RecordPlaceholder } from "@/components/record-placeholder"
 import { useAutosaveForm } from "@/lib/autosave"
-import { useCommand, useScope } from "@/lib/commands"
+import { useCommand, useScope, useScopeStack } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
 import { useMarkRecordRead } from "@/lib/inbox"
 import {
@@ -112,6 +112,9 @@ function LinkScreen({
   const saved = React.useMemo(() => linkValues(link), [link])
   const autosave = useAutosaveForm({
     saved,
+    // Saving the description stores and prunes its images, so it waits for
+    // its Save button.
+    manual: ["description"],
     prepare: prepareLink,
     save: async (changes) => {
       const response = await update.call({ name: link.name, ...changes })
@@ -139,7 +142,11 @@ function LinkScreen({
   useCommand("link.collapseDescription", () => setExpanded(false), {
     enabled: expanded,
   })
-  useCommand("link.save", () => void flush(), { enabled: canWrite })
+  // ⌘↵ in the comment box posts the comment; it does not save the page.
+  const inComment = useScopeStack().includes("link-comment")
+  useCommand("link.save", () => void autosave.saveAll(), {
+    enabled: canWrite && !inComment,
+  })
 
   const footer = <LinkSections link={link} />
   const activity = <LinkActivityLog link={link} />
@@ -166,7 +173,12 @@ function LinkScreen({
             link={link}
             projectName={projectName}
             listeners={autosave.listeners}
-            status={autosave.status}
+            descriptionSave={{
+              dirty: autosave.manualPending,
+              error: autosave.manualPending ? autosave.failure : null,
+              onSave: autosave.saveAll,
+              onDiscard: autosave.discard,
+            }}
             descriptionRevision={autosave.replaced.description ?? 0}
             descriptionConflict={
               autosave.conflicts.includes("description")
@@ -204,6 +216,7 @@ function LinkScreen({
         reason={autosave.error}
         saving={autosave.status === "saving"}
         conflict={autosave.status === "conflict"}
+        description={autosave.manualPending}
       />
     </>
   )

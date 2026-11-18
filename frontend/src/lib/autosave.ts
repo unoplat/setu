@@ -19,6 +19,11 @@ import { frappeErrorMessage } from "@/lib/frappe-error"
  * What the form does not do is kept here: one save at a time with later
  * edits folded into the next one, what "saved" currently means (`base`), and
  * holding a navigation until the last edit has landed.
+ *
+ * `manual` fields (the description) are left out of autosave: they are sent
+ * only by `saveAll` (the description's Save button), and `discard` puts back
+ * the saved value. Saving a description stores its new images and deletes
+ * the ones it dropped, so it waits until the writer says it is done.
  */
 
 export type AutosaveStatus =
@@ -98,6 +103,10 @@ export function conflicting<T extends object>(input: {
   )
 }
 
+function hasUnsavedImage(value: unknown): boolean {
+  return typeof value === "string" && /<img\b[^>]*\bsrc=["']data:/i.test(value)
+}
+
 /** How long typing pauses before it is saved. */
 const TYPING_DEBOUNCE_MS = 800
 
@@ -115,6 +124,7 @@ export function useAutosaveForm<T extends object>({
   saved,
   prepare = unchanged,
   save,
+  manual = [],
 }: {
   /** The record as the server has it, in the form's shape. */
   saved: T
@@ -125,6 +135,8 @@ export function useAutosaveForm<T extends object>({
    * when the save fails.
    */
   save: (changes: Partial<T>) => Promise<T>
+  /** Fields saved only by `saveAll`, never on their own. */
+  manual?: (keyof T)[]
 }) {
   // `base` is what the server has. The ref is for the code that runs between
   // renders (a save finishing, the leave guard).
@@ -146,10 +158,12 @@ export function useAutosaveForm<T extends object>({
   // coming back, not a change made elsewhere.
   const sending = React.useRef<Partial<T> | null>(null)
 
-  const latest = React.useRef({ prepare, save })
+  const latest = React.useRef({ prepare, save, manual })
   React.useEffect(() => {
-    latest.current = { prepare, save }
+    latest.current = { prepare, save, manual }
   })
+  // Set while a save run should send the `manual` fields too.
+  const includeManual = React.useRef(false)
 
   function moveBase(next: T) {
     baseRef.current = next
@@ -177,7 +191,9 @@ export function useAutosaveForm<T extends object>({
       const sentFrom = baseRef.current
       const prepared = prepare(value)
       const fields = pendingFields(prepared, sentFrom).filter(
-        (field) => !conflictsRef.current.includes(field)
+        (field) =>
+          !conflictsRef.current.includes(field) &&
+          (includeManual.current || !latest.current.manual.includes(field))
       )
       if (fields.length === 0) {
         setFailure(null)
@@ -198,6 +214,15 @@ export function useAutosaveForm<T extends object>({
         for (const [field, fieldValue] of Object.entries(adopt)) {
           formApi.setFieldValue(field as never, fieldValue as never, ADOPT)
         }
+        // A new image is sent in the text as a data: address and comes back
+        // as the File the save stored it in. A control that keeps its own
+        // copy (the description's editor) must take that address, or its
+        // next edit would send the image again.
+        markReplaced(
+          (Object.keys(adopt) as (keyof T)[]).filter((field) =>
+            hasUnsavedImage(sent[field])
+          )
+        )
         moveBase(next)
         setFailure(null)
         setSavedAt(Date.now())
@@ -253,10 +278,30 @@ export function useAutosaveForm<T extends object>({
         } while (state.again)
       } finally {
         state.promise = null
+        includeManual.current = false
         setRunning(false)
       }
     })()
     return state.promise
+  }, [form])
+
+  /** Save every edit, the `manual` fields included. */
+  const saveAll = React.useCallback((): Promise<void> => {
+    includeManual.current = true
+    return flush()
+  }, [flush])
+
+  /** Put back the saved value of the `manual` fields. */
+  const discard = React.useCallback(() => {
+    const fields = latest.current.manual
+    for (const field of fields) {
+      form.setFieldValue(field as never, baseRef.current[field] as never, ADOPT)
+    }
+    markReplaced(fields)
+    // Nothing of the user's is left to collide with a change made elsewhere.
+    moveConflicts(
+      conflictsRef.current.filter((field) => !fields.includes(field))
+    )
   }, [form])
 
   const pendingNow = React.useCallback(
@@ -268,7 +313,17 @@ export function useAutosaveForm<T extends object>({
 
   const pending = useStore(
     form.store,
-    (state) => pendingFields(prepare(state.values as T), base).length > 0
+    (state) =>
+      pendingFields(prepare(state.values as T), base).filter(
+        (field) => !manual.includes(field)
+      ).length > 0
+  )
+  const manualPending = useStore(
+    form.store,
+    (state) =>
+      pendingFields(prepare(state.values as T), base).filter((field) =>
+        manual.includes(field)
+      ).length > 0
   )
   const valid = useStore(form.store, (state) => state.isValid)
 
@@ -295,9 +350,13 @@ export function useAutosaveForm<T extends object>({
       moveConflicts(
         conflictsRef.current.filter((field) => !settled.includes(field))
       )
-      if (choice === "mine") void flush()
+      if (choice === "mine") {
+        void (settled.some((field) => latest.current.manual.includes(field))
+          ? saveAll()
+          : flush())
+      }
     },
-    [form, flush]
+    [form, flush, saveAll]
   )
 
   const status: AutosaveStatus = running
@@ -354,6 +413,14 @@ export function useAutosaveForm<T extends object>({
     savedAt,
     /** Save now, without waiting for the debounce; resolves when idle. */
     flush,
+    /** Save every edit, the `manual` fields included. */
+    saveAll,
+    /** Put back the saved value of the `manual` fields. */
+    discard,
+    /** A `manual` field has an edit that is not saved. */
+    manualPending,
+    /** Why the last save failed. */
+    failure,
     listeners,
     /** Set while a navigation is held because the edits could not be saved. */
     leaving:
@@ -362,7 +429,7 @@ export function useAutosaveForm<T extends object>({
             stay: () => blocker.reset(),
             discard: () => blocker.proceed(),
             retry: async () => {
-              await flush()
+              await saveAll()
               if (!pendingNow()) blocker.proceed()
             },
           }
