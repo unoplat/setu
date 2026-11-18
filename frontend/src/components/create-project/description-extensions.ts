@@ -55,8 +55,8 @@ import { TextUnderline } from "reactjs-tiptap-editor/textunderline"
 // attributes it would not); description-extensions.test.ts covers the round
 // trip. Left out of the playground's set: embeds whose tags Frappe strips
 // (iframe, tweet, video), blocks that keep their text in an attribute, which
-// Desk cannot show (callout, formula), and anything that needs an upload
-// endpoint or an API key in the browser.
+// Desk cannot show (callout, formula), and anything that needs an API key in
+// the browser.
 
 const DESCRIPTION_PLACEHOLDER =
   "Describe the goal, scope, and what done looks like. Press '/' for commands."
@@ -148,9 +148,10 @@ export const descriptionExtensions = [
   }),
   // Frappe rewrites every link's rel to this value, so write it that way.
   Link.configure({ HTMLAttributes: { rel: "noopener noreferrer" } }),
-  // By address only: the project does not exist yet, so there is nothing to
-  // attach an upload to.
-  Image.configure({ resourceImage: "link" }),
+  // Inserted through Envision's own dialog (components/editor-image). A new
+  // image is a data: address until the save stores it (setu.api.media), so
+  // those must parse too; the package's dialog is not rendered.
+  Image.configure({ allowBase64: true }),
   Table,
   Emoji,
   SlashCommand,

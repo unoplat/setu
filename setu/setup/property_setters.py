@@ -12,6 +12,11 @@ ENVISION_DOCTYPE_PROPERTIES = [
 	# Milestone and Task activity shows field changes ("changed Due Date from …
 	# to …"), which Frappe only records as Versions when track_changes is on.
 	("Task", "track_changes", "1", "Check"),
+	# Images in descriptions and comments are attachments of the record
+	# (setu.api.media); ERPNext's limits (Task 5, Project 4) would fail the save
+	# that adds one more.
+	("Task", "max_attachments", "0", "Int"),
+	("Project", "max_attachments", "0", "Int"),
 ]
 
 # ERPNext's Task statuses plus Envision's Blocked (CONTEXT.md, Status), placed

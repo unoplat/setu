@@ -14,6 +14,7 @@ import { themeActions } from "reactjs-tiptap-editor/theme"
 import "reactjs-tiptap-editor/style.css"
 
 import { descriptionSlashCommands } from "@/components/create-project/slash-commands"
+import { EditorImageDialog } from "@/components/editor-image/editor-image-dialog"
 import { useTheme } from "@/components/theme-provider"
 
 import { commentExtensions, searchMentions } from "./comment-extensions"
@@ -102,6 +103,8 @@ export default function CommentEditor({
         <RichTextBubbleLink />
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
+      {/* "/image": the image is stored when the comment is posted. */}
+      <EditorImageDialog editor={editor} />
     </div>
   )
 }

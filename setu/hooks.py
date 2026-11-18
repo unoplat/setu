@@ -194,11 +194,19 @@ _search_index_events = {
 	"after_delete": "setu.search_maintenance.after_delete",
 	"after_rename": "setu.search_maintenance.after_rename",
 }
+# Images added in the rich text editor travel in the text until it is saved;
+# the save stores them as Files on the record and deletes the ones its text
+# no longer uses (setu.api.media).
+_inline_image_events = {
+	"before_validate": "setu.api.media.store_record_images",
+	"on_update": "setu.api.media.prune_record_images",
+}
 doc_events = {
 	"Project": {
 		"before_rename": "setu.github.projects.guard_project_rename",
 		"on_trash": "setu.api.project.guard_project_delete",
 		"on_change": "setu.search_maintenance.on_project_change",
+		**_inline_image_events,
 		"after_rename": [
 			"setu.api.view.rename_project_filters",
 			"setu.search_maintenance.on_project_rename",
@@ -212,12 +220,16 @@ doc_events = {
 		"before_rename": "setu.github.links.guard_task_rename",
 		"validate": "setu.api.task.validate_task_links",
 		"after_insert": "setu.github.links.on_task_insert",
-		"on_update": "setu.github.links.on_task_update",
+		"before_validate": "setu.api.media.store_record_images",
+		"on_update": [
+			"setu.github.links.on_task_update",
+			"setu.api.media.prune_record_images",
+		],
 		"on_trash": "setu.github.links.on_task_trash",
 		**_search_index_events,
 	},
-	"Envision Module": _search_index_events,
-	"Envision Link": _search_index_events,
+	"Envision Module": {**_search_index_events, **_inline_image_events},
+	"Envision Link": {**_search_index_events, **_inline_image_events},
 	# Frappe's rename leaves the old name in each document's _user_tags.
 	"Tag": {
 		"after_rename": "setu.api.task.rename_tag",
@@ -234,13 +246,18 @@ doc_events = {
 	# when the original goes (setu.api.timeline). A comment on a published Task is
 	# sent to its GitHub Issue (setu.github.comments).
 	"Comment": {
+		"before_validate": "setu.api.media.store_comment_images",
 		"validate": "setu.api.timeline.validate_quote",
 		"after_insert": "setu.github.comments.on_comment_insert",
-		"on_update": "setu.github.comments.on_comment_update",
+		"on_update": [
+			"setu.github.comments.on_comment_update",
+			"setu.api.media.prune_comment_images_on_update",
+		],
 		"on_trash": [
 			"setu.api.timeline.release_quotes",
 			"setu.github.comments.on_comment_trash",
 		],
+		"after_delete": "setu.api.media.prune_comment_images_on_delete",
 	},
 }
 

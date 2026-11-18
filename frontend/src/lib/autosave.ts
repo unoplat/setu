@@ -98,6 +98,10 @@ export function conflicting<T extends object>(input: {
   )
 }
 
+function hasUnsavedImage(value: unknown): boolean {
+  return typeof value === "string" && /<img\b[^>]*\bsrc=["']data:/i.test(value)
+}
+
 /** How long typing pauses before it is saved. */
 const TYPING_DEBOUNCE_MS = 800
 
@@ -198,6 +202,15 @@ export function useAutosaveForm<T extends object>({
         for (const [field, fieldValue] of Object.entries(adopt)) {
           formApi.setFieldValue(field as never, fieldValue as never, ADOPT)
         }
+        // A new image is sent in the text as a data: address and comes back
+        // as the File the save stored it in. A control that keeps its own
+        // copy (the description's editor) must take that address, or its
+        // next edit would send the image again.
+        markReplaced(
+          (Object.keys(adopt) as (keyof T)[]).filter((field) =>
+            hasUnsavedImage(sent[field])
+          )
+        )
         moveBase(next)
         setFailure(null)
         setSavedAt(Date.now())
