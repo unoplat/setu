@@ -13,8 +13,10 @@ import { RichTextStrike } from "reactjs-tiptap-editor/strike"
 import { themeActions } from "reactjs-tiptap-editor/theme"
 import "reactjs-tiptap-editor/style.css"
 
+import { replaceDocument } from "@/components/create-project/description-html"
 import { descriptionSlashCommands } from "@/components/create-project/slash-commands"
 import { EditorImageDialog } from "@/components/editor-image/editor-image-dialog"
+import { makeDraftImagesPublic } from "@/components/editor-image/image-file"
 import { useTheme } from "@/components/theme-provider"
 
 import { commentExtensions, searchMentions } from "./comment-extensions"
@@ -47,6 +49,7 @@ export default function CommentEditor({
   header,
   onChange,
   onFocusChange,
+  publicImagesOnly = false,
 }: {
   ref?: React.Ref<CommentEditorHandle>
   /** Shown inside the box above the text, as a reply's quote is. */
@@ -54,6 +57,8 @@ export default function CommentEditor({
   /** The comment's HTML, or "" while it is empty. */
   onChange: (html: string) => void
   onFocusChange: (focused: boolean) => void
+  /** Disallow private image uploads (GitHub-synced tasks and subtasks). */
+  publicImagesOnly?: boolean
 }) {
   const { resolvedTheme } = useTheme()
   const frappe = React.useContext(FrappeContext)
@@ -75,6 +80,24 @@ export default function CommentEditor({
     onFocus: () => onFocusChange(true),
     onBlur: () => onFocusChange(false),
   })
+
+  // If the task becomes public-images-only while an unsaved private draft
+  // image is in the comment box, flip it to public so posting succeeds.
+  const latestOnChange = React.useRef(onChange)
+  React.useEffect(() => {
+    latestOnChange.current = onChange
+  })
+  React.useEffect(() => {
+    if (!editor || editor.isDestroyed || !publicImagesOnly || editor.isEmpty) {
+      return
+    }
+    const current = editor.getHTML()
+    const next = makeDraftImagesPublic(current)
+    if (next !== current) {
+      replaceDocument(editor, next)
+      latestOnChange.current(next)
+    }
+  }, [editor, publicImagesOnly])
 
   React.useEffect(() => {
     themeActions.setTheme(resolvedTheme === "dark" ? "dark" : "light")
@@ -104,7 +127,7 @@ export default function CommentEditor({
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
       {/* "/image": the image is stored when the comment is posted. */}
-      <EditorImageDialog editor={editor} />
+      <EditorImageDialog editor={editor} publicOnly={publicImagesOnly} />
     </div>
   )
 }

@@ -43,3 +43,15 @@ export async function imageDataAddress(
   const filename = file.name.replace(/[^A-Za-z0-9._-]+/g, "-").slice(0, 100)
   return `data:${file.type};filename=${filename || "image"};private=${isPrivate ? 1 : 0};base64,${plain.slice(comma + 1)}`
 }
+
+/**
+ * Turn any unsaved private `data:` images in editor HTML public (used when a
+ * draft task gets the `github` tag or moves under a GitHub parent before save).
+ */
+export function makeDraftImagesPublic(html: string): string {
+  if (!html || !html.includes(";private=1;")) return html
+  return html.replace(
+    /(<img\b[^>]*?\bsrc\s*=\s*["']data:[^"']*?);private=1;/gi,
+    "$1;private=0;"
+  )
+}

@@ -61,6 +61,8 @@ export const TaskForm = withForm({
     onCollapse: () => {},
     /** Enter in the title: save now. */
     onSubmit: () => {},
+    /** Disallow private image uploads (GitHub-synced tasks and subtasks). */
+    publicImagesOnly: false,
     /** What follows the description in the content column: the comments. */
     footer: null as React.ReactNode,
     /** What closes the rail: the activity log. */
@@ -80,6 +82,7 @@ export const TaskForm = withForm({
     onExpand,
     onCollapse,
     onSubmit,
+    publicImagesOnly,
     footer,
     activity,
   }) {
@@ -371,6 +374,7 @@ export const TaskForm = withForm({
                 collapseCommand="task.collapseDescription"
                 saveCommand="task.save"
                 save={descriptionSave}
+                publicImagesOnly={publicImagesOnly}
               />
             )}
           </form.Field>

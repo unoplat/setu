@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useSelector } from "@tanstack/react-form"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   useFrappeGetDoc,
@@ -24,7 +25,7 @@ import { TaskForm } from "@/components/tasks/task-form"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope, useScopeStack } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
-import { taskGitHubKey, useTaskGitHub } from "@/lib/github"
+import { hasGitHubTag, taskGitHubKey, useTaskGitHub } from "@/lib/github"
 import { useMarkRecordRead } from "@/lib/inbox"
 import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
@@ -144,6 +145,21 @@ function TaskScreen({
   // asks first (components/github/publish-dialog). Until the Task's GitHub
   // state has loaded, it asks without knowing the repository.
   const github = useTaskGitHub(task.name)
+  const liveTags = useSelector(form.store, (state) => state.values.tags)
+  const liveParent = useSelector(
+    form.store,
+    (state) => state.values.parent_task
+  )
+  const liveParentGitHub = useTaskGitHub(
+    liveParent && liveParent !== (task.parent_task ?? "") ? liveParent : null
+  )
+  const publicImagesOnly = Boolean(
+    task.requires_public_images ||
+    github.data?.message.requires_public_images ||
+    hasGitHubTag(liveTags) ||
+    liveParentGitHub.data?.message.requires_public_images
+  )
+
   const { data: projectTasks } = useProjectTasks(project)
   const publishTarget = React.useMemo<PublishTarget | null>(() => {
     const view = github.data?.message
@@ -192,7 +208,7 @@ function TaskScreen({
         task={task}
         canAdd={canWrite}
       />
-      <TaskComments task={task} />
+      <TaskComments task={task} publicImagesOnly={publicImagesOnly} />
     </>
   )
   const activity = (
@@ -250,6 +266,7 @@ function TaskScreen({
             onExpand={() => setExpanded(true)}
             onCollapse={() => setExpanded(false)}
             onSubmit={() => void flush()}
+            publicImagesOnly={publicImagesOnly}
             footer={footer}
             activity={activity}
           />

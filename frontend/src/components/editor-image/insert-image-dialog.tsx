@@ -31,10 +31,13 @@ export function InsertImageDialog({
   editor,
   open,
   onOpenChange,
+  publicOnly = false,
 }: {
   editor: Editor
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Disallow private uploads (e.g. GitHub-synced tasks and subtasks). */
+  publicOnly?: boolean
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -46,7 +49,11 @@ export function InsertImageDialog({
         <span data-richtext-portal="" hidden />
         {/* Remounted on each open, so every insert starts from the defaults. */}
         {open ? (
-          <InsertImageForm editor={editor} onDone={() => onOpenChange(false)} />
+          <InsertImageForm
+            editor={editor}
+            publicOnly={publicOnly}
+            onDone={() => onOpenChange(false)}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
@@ -55,13 +62,16 @@ export function InsertImageDialog({
 
 function InsertImageForm({
   editor,
+  publicOnly,
   onDone,
 }: {
   editor: Editor
+  publicOnly: boolean
   onDone: () => void
 }) {
   const [tab, setTab] = React.useState<Tab>("upload")
   const [isPrivate, setIsPrivate] = React.useState(false)
+  const effectivePrivate = publicOnly ? false : isPrivate
   const [alt, setAlt] = React.useState("")
   const [url, setUrl] = React.useState("")
   const [reading, setReading] = React.useState(false)
@@ -88,7 +98,7 @@ function InsertImageForm({
     }
     setReading(true)
     try {
-      insert(await imageDataAddress(file, { isPrivate }))
+      insert(await imageDataAddress(file, { isPrivate: effectivePrivate }))
     } catch {
       toast.error(`${file.name} wasn't added`, {
         description: "It couldn't be read. Try again, or add it by link.",
@@ -164,7 +174,8 @@ function InsertImageForm({
               }}
             />
             <VisibilityNotice
-              isPrivate={isPrivate}
+              isPrivate={effectivePrivate}
+              publicOnly={publicOnly}
               onPrivateChange={setIsPrivate}
               disabled={reading}
             />
@@ -215,10 +226,12 @@ function InsertImageForm({
 
 function VisibilityNotice({
   isPrivate,
+  publicOnly,
   onPrivateChange,
   disabled,
 }: {
   isPrivate: boolean
+  publicOnly: boolean
   onPrivateChange: (value: boolean) => void
   disabled: boolean
 }) {
@@ -234,21 +247,25 @@ function VisibilityNotice({
             : "Anyone with the link can view"}
         </span>
         <span className="text-xs text-muted-foreground">
-          {isPrivate
-            ? "Will be visible only in Envision."
-            : "Will also be visible outside Envision, such as on GitHub."}
+          {publicOnly
+            ? "Images on GitHub tasks and subtasks must be public to ensure 2-way sync with GitHub."
+            : isPrivate
+              ? "Will be visible only in Envision."
+              : "Will also be visible outside Envision, such as on GitHub."}
         </span>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Label htmlFor={switchId}>Private</Label>
-        <Switch
-          id={switchId}
-          size="sm"
-          checked={isPrivate}
-          onCheckedChange={onPrivateChange}
-          disabled={disabled}
-        />
-      </div>
+      {publicOnly ? null : (
+        <div className="flex shrink-0 items-center gap-2">
+          <Label htmlFor={switchId}>Private</Label>
+          <Switch
+            id={switchId}
+            size="sm"
+            checked={isPrivate}
+            onCheckedChange={onPrivateChange}
+            disabled={disabled}
+          />
+        </div>
+      )}
     </div>
   )
 }

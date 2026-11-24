@@ -121,7 +121,9 @@ export function CreatePublishNotice({
     return (
       <p className="text-sm leading-5 text-muted-foreground" role="status">
         The github tag publishes this task once a manager turns on GitHub sync
-        for this project and reviews the tagged tasks.
+        for this project and reviews the tagged tasks. Private images on this
+        task and its subtasks will be made public to ensure 2-way sync with
+        GitHub.
       </p>
     )
   }

@@ -11,7 +11,14 @@ import { openImageDialog, registerImageDialog } from "./open-image-dialog"
  * The insert dialog of one editor, mounted once beside it. The toolbar
  * button and "/image" open it through `openImageDialog`.
  */
-export function EditorImageDialog({ editor }: { editor: Editor }) {
+export function EditorImageDialog({
+  editor,
+  publicOnly = false,
+}: {
+  editor: Editor
+  /** Disallow private uploads (e.g. GitHub-synced tasks and subtasks). */
+  publicOnly?: boolean
+}) {
   const [open, setOpen] = React.useState(false)
 
   React.useEffect(
@@ -20,7 +27,12 @@ export function EditorImageDialog({ editor }: { editor: Editor }) {
   )
 
   return (
-    <InsertImageDialog editor={editor} open={open} onOpenChange={setOpen} />
+    <InsertImageDialog
+      editor={editor}
+      open={open}
+      onOpenChange={setOpen}
+      publicOnly={publicOnly}
+    />
   )
 }
 

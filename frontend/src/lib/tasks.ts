@@ -314,6 +314,8 @@ export interface TaskDetail {
   milestone: string | null
   module: string | null
   tags: string[]
+  /** True when this Task or any ancestor is tagged github or actively linked. */
+  requires_public_images?: boolean
   project: string | null
   project_name: string | null
   /** The Task it is a Subtask of, or null. */

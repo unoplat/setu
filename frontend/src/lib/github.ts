@@ -270,6 +270,8 @@ export interface TaskGitHub {
   route: TaskRoute
   link: TaskLink | null
   can_write: boolean
+  /** True when this Task or any ancestor is tagged github or actively linked. */
+  requires_public_images: boolean
   /** Which controls the server allows this user now; show only those. */
   actions: {
     retry: boolean

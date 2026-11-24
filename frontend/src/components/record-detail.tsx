@@ -341,6 +341,7 @@ export function DescriptionField({
   collapseCommand,
   saveCommand,
   save,
+  publicImagesOnly = false,
 }: {
   /** The saved HTML; see DescriptionEditor for when it is read. */
   value: string
@@ -365,6 +366,8 @@ export function DescriptionField({
   /** Saves the description (and any other edit); shown on the Save button. */
   saveCommand: CommandId
   save: DescriptionSave
+  /** Disallow private image uploads (GitHub-synced tasks and subtasks). */
+  publicImagesOnly?: boolean
 }) {
   return (
     <section
@@ -444,6 +447,7 @@ export function DescriptionField({
             expanded={expanded}
             plain
             label={label}
+            publicImagesOnly={publicImagesOnly}
           />
         </React.Suspense>
       </div>

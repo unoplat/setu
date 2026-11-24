@@ -45,6 +45,7 @@ import {
   EditorImageDialog,
   ImageToolbarButton,
 } from "@/components/editor-image/editor-image-dialog"
+import { makeDraftImagesPublic } from "@/components/editor-image/image-file"
 import { useTheme } from "@/components/theme-provider"
 import { Kbd } from "@/components/ui/kbd"
 import { cn } from "@/lib/utils"
@@ -90,6 +91,7 @@ export default function DescriptionEditor({
   expanded,
   plain = false,
   label = "Project description",
+  publicImagesOnly = false,
 }: {
   /** The saved HTML; the editor reads it at first and on each `revision`. */
   value: string
@@ -111,6 +113,8 @@ export default function DescriptionEditor({
   plain?: boolean
   /** The document's accessible name. */
   label?: string
+  /** Disallow private image uploads (GitHub-synced tasks and subtasks). */
+  publicImagesOnly?: boolean
 }) {
   const { resolvedTheme } = useTheme()
 
@@ -144,6 +148,23 @@ export default function DescriptionEditor({
     shownRevision.current = revision
     replaceDocument(editor, editorDescription(value))
   }, [editor, revision, value])
+
+  // If the record becomes public-images-only while an unsaved private draft
+  // image is in the editor (e.g. adding the github tag before saving), flip
+  // the draft image to public in the editor and notify the form.
+  const latestOnChange = React.useRef(onChange)
+  React.useEffect(() => {
+    latestOnChange.current = onChange
+  })
+  React.useEffect(() => {
+    if (!editor || editor.isDestroyed || !publicImagesOnly) return
+    const current = storedDescription(editor)
+    const next = makeDraftImagesPublic(current)
+    if (next !== current) {
+      replaceDocument(editor, editorDescription(next))
+      latestOnChange.current(next)
+    }
+  }, [editor, publicImagesOnly])
 
   // The package keeps its theme in a shared store rather than reading the
   // app's `.dark` class.
@@ -235,7 +256,7 @@ export default function DescriptionEditor({
         <RichTextBubbleCodeBlock />
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
-      <EditorImageDialog editor={editor} />
+      <EditorImageDialog editor={editor} publicOnly={publicImagesOnly} />
       {/* Outside the provider: the package redefines the colour variables
           for everything inside it. Clicking the hint writes at the end. */}
       {plain && !expanded ? (

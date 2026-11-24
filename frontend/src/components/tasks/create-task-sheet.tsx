@@ -150,6 +150,9 @@ export function CreateTaskSheet({
     isActiveLink(parentView.link.state) &&
     parentView.route.sync_enabled
   )
+  const publicImagesOnly =
+    hasGitHubTag(tags) || Boolean(parentView?.requires_public_images)
+
   const repository = route ? repositoryView(route.repository) : null
   const publishTarget = React.useMemo<PublishTarget | null>(() => {
     if (parentPublishing) return null
@@ -170,9 +173,15 @@ export function CreateTaskSheet({
     )
   } else if (hasGitHubTag(tags) && route?.sync_enabled) {
     githubNotice = <CreatePublishNotice kind="tagged" repository={repository} />
-  } else if (hasGitHubTag(tags) && route?.connected) {
+  } else if (
+    (hasGitHubTag(tags) && route?.connected) ||
+    parentView?.requires_public_images
+  ) {
     githubNotice = (
-      <CreatePublishNotice kind="backlog" repository={repository} />
+      <CreatePublishNotice
+        kind="backlog"
+        repository={parentView?.route.repository ?? repository}
+      />
     )
   }
 
@@ -252,6 +261,7 @@ export function CreateTaskSheet({
           withParent={parent !== undefined}
           confirmTags={confirmTags}
           githubNotice={githubNotice}
+          publicImagesOnly={publicImagesOnly}
         />
         <DiscardDraftDialog
           open={confirmingDiscard}

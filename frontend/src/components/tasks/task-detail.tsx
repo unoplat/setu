@@ -55,12 +55,19 @@ const TASK_ACTIVITY: ActivitySource = {
 }
 
 /** 09's Comments, closing the content column under the description. */
-export function TaskComments({ task }: { task: TaskDetail }) {
+export function TaskComments({
+  task,
+  publicImagesOnly = false,
+}: {
+  task: TaskDetail
+  publicImagesOnly?: boolean
+}) {
   return (
     <RecordComments
       record={task.name}
       project={task.project}
       source={TASK_ACTIVITY}
+      publicImagesOnly={publicImagesOnly}
     />
   )
 }

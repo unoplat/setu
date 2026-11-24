@@ -106,8 +106,9 @@ export function MentionsWarning() {
     <p className="flex gap-2 text-sm leading-5 text-muted-foreground">
       <AtSignIcon aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
       <span>
-        On GitHub, @mentions notify people and #references link Issues. Files
-        attached in Envision are never copied.
+        On GitHub, @mentions notify people and #references link Issues. Private
+        images on synced tasks and subtasks will be made public to ensure 2-way
+        sync with GitHub.
       </span>
     </p>
   )
