@@ -98,6 +98,7 @@ function ProjectSettingsScreen({
   const navigate = useNavigate()
   const { mutate: revalidateProjects } = useProjects()
   const [expanded, setExpanded] = React.useState(false)
+  const [descriptionRevision, setDescriptionRevision] = React.useState(0)
   const [deleteDialog, setDeleteDialog] = React.useState<DeleteDialogKind>(null)
 
   const update = useFrappePostCall<{ message: ProjectSettings }>(
@@ -127,6 +128,11 @@ function ProjectSettingsScreen({
         .catch(() => null)
       if (!response) return
       form.reset(settingsValues(response.message))
+      if (response.message.description !== value.description) {
+        // Load server-rewritten image URLs (stored data: images or cloned ?fid= links)
+        // back into the editor without adding to undo history.
+        setDescriptionRevision((n) => n + 1)
+      }
       // A new name shows in the sidebar and breadcrumb right away.
       await Promise.all([
         replaceSettings(response.message),
@@ -221,6 +227,7 @@ function ProjectSettingsScreen({
             projectName={settings.project_name}
             state={state}
             expanded={expanded}
+            descriptionRevision={descriptionRevision}
             error={update.error ? frappeErrorMessage(update.error) : null}
             onExpand={() => setExpanded(true)}
             onCollapse={() => setExpanded(false)}

@@ -215,13 +215,21 @@ export function useAutosaveForm<T extends object>({
           formApi.setFieldValue(field as never, fieldValue as never, ADOPT)
         }
         // A new image is sent in the text as a data: address and comes back
-        // as the File the save stored it in. A control that keeps its own
-        // copy (the description's editor) must take that address, or its
-        // next edit would send the image again.
+        // as the File the save stored it in; a tags/parent save can also turn
+        // private images public, or clone a pasted private image to a new fid.
+        // A control that keeps its own copy (the description's editor) must
+        // take the updated address.
         markReplaced(
-          (Object.keys(adopt) as (keyof T)[]).filter((field) =>
-            hasUnsavedImage(sent[field])
-          )
+          (Object.keys(adopt) as (keyof T)[]).filter((field) => {
+            if (!(field in sent)) return true
+            const outgoing = sent[field]
+            if (hasUnsavedImage(outgoing)) return true
+            return (
+              typeof outgoing === "string" &&
+              outgoing.includes("/private/files/") &&
+              adopt[field] !== outgoing
+            )
+          })
         )
         moveBase(next)
         setFailure(null)
