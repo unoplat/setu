@@ -45,7 +45,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date, now_datetime
 from frappe.utils.background_jobs import get_job_status
-from frappe.utils.nestedset import get_descendants_of
+from frappe.utils.nestedset import get_ancestors_of, get_descendants_of
 from rq.job import JobStatus
 
 from setu.github import bot, clock, convert, delta, issues, link_state, projects, retry, store, titles
@@ -141,11 +141,57 @@ class TaskGitHub(TypedDict):
 	route: RouteView
 	link: LinkView | None
 	can_write: bool
+	# True when this Task or any ancestor is tagged github or actively linked.
+	requires_public_images: bool
 	actions: TaskActions
 
 
 def has_github_tag(user_tags: str | None) -> bool:
 	return GITHUB_TAG in {tag.strip().casefold() for tag in (user_tags or "").split(",")}
+
+
+def requires_public_images(
+	task_name: str | None,
+	*,
+	parent_task: str | None = None,
+	user_tags: str | None = None,
+) -> bool:
+	"""Whether inline images on this Task (or its comments) must be public.
+
+	True when the Task itself or any ancestor has the ``github`` tag or an
+	active GitHub Issue Sync link, so every image in a synced tree stays in
+	2-way sync with GitHub.
+	"""
+	if user_tags is not None and has_github_tag(user_tags):
+		return True
+
+	names: list[str] = []
+	if task_name and frappe.db.exists("Task", task_name):
+		names.append(task_name)
+
+	if parent_task is not None:
+		if parent_task and frappe.db.exists("Task", parent_task):
+			names.append(parent_task)
+			names.extend(get_ancestors_of("Task", parent_task))
+	elif task_name and frappe.db.exists("Task", task_name):
+		names.extend(get_ancestors_of("Task", task_name))
+
+	if not names:
+		return False
+
+	unique = list(dict.fromkeys(names))
+	for row in frappe.get_all("Task", filters={"name": ["in", unique]}, fields=["name", "_user_tags"]):
+		if row.name == task_name and user_tags is not None:
+			continue
+		if has_github_tag(row._user_tags):
+			return True
+
+	return bool(
+		frappe.db.exists(
+			store.ISSUE_SYNC,
+			{"task": ["in", unique], "sync_state": ["not in", list(link_state.MARKS)]},
+		)
+	)
 
 
 def ineligible_reason(task: Document | frappe._dict) -> str | None:
@@ -939,6 +985,7 @@ def task_projection(task: Document) -> TaskGitHub:
 		"route": route,
 		"link": view,
 		"can_write": can_write,
+		"requires_public_images": requires_public_images(task.name, user_tags=tags),
 		"actions": {
 			"retry": bool(can_write and link and can_retry(link, raw_route)),
 		},
