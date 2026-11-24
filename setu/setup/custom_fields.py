@@ -95,6 +95,21 @@ ENVISION_CUSTOM_FIELDS = {
 			"no_copy": 1,
 		},
 	],
+	# Editor images no text uses any more wait out a grace period before they
+	# are deleted, so an undo can bring them back (setu.api.media).
+	"File": [
+		{
+			"fieldname": "envision_unused_since",
+			"fieldtype": "Datetime",
+			"label": "Unused Since",
+			"insert_after": "attached_to_field",
+			"read_only": 1,
+			"hidden": 1,
+			"no_copy": 1,
+			"search_index": 1,
+			"description": "When Envision found this editor image unused. Cleared when it is used again; the hourly sweep deletes the File after the grace period.",
+		},
+	],
 }
 
 
