@@ -392,6 +392,49 @@
 	max-width: 100%;
 	border-radius: 0.5rem;
 }
+/* A Mermaid code block (create-project/mermaid-code-block.ts): the code, then
+   the diagram it draws. A read-only description shows the diagram alone once
+   it draws; an empty or invalid one keeps its code. Inside the editor the
+   colour variables are HSL channels. */
+.envision-code-block[data-mermaid="true"] > pre {
+	margin-bottom: 0;
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.envision-mermaid-preview:empty {
+	display: none;
+}
+.envision-mermaid-preview {
+	display: flex;
+	justify-content: center;
+	overflow-x: auto;
+	margin-bottom: 1rem;
+	border: 1px solid hsl(var(--border));
+	border-top: 0;
+	border-radius: 0 0 0.5rem 0.5rem;
+	padding: 1rem;
+	user-select: none;
+}
+.envision-mermaid-preview svg {
+	max-width: 100%;
+	height: auto;
+}
+.envision-mermaid-message {
+	margin: 0;
+	font-size: 0.8125rem;
+	color: hsl(var(--muted-foreground));
+}
+.ProseMirror[contenteditable="false"]
+	.envision-code-block[data-state="ready"]
+	> pre {
+	display: none;
+}
+.ProseMirror[contenteditable="false"]
+	.envision-code-block[data-state="ready"]
+	> .envision-mermaid-preview {
+	border-top: 1px solid hsl(var(--border));
+	border-radius: 0.5rem;
+}
 /* The "/" menu is appended to <body> with no z-index of its own, which would
    leave it underneath the dialog (z-50). */
 body > .react-renderer:has(> [data-richtext-portal]) {

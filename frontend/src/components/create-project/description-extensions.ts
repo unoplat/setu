@@ -15,7 +15,6 @@ import { Bold } from "reactjs-tiptap-editor/bold"
 import { BulletList } from "reactjs-tiptap-editor/bulletlist"
 import { Clear } from "reactjs-tiptap-editor/clear"
 import { Code } from "reactjs-tiptap-editor/code"
-import { CodeBlock } from "reactjs-tiptap-editor/codeblock"
 import { Color } from "reactjs-tiptap-editor/color"
 import {
   Column,
@@ -47,6 +46,8 @@ import { TaskList } from "reactjs-tiptap-editor/tasklist"
 import { TextAlign } from "reactjs-tiptap-editor/textalign"
 import { TextDirection } from "reactjs-tiptap-editor/textdirection"
 import { TextUnderline } from "reactjs-tiptap-editor/textunderline"
+
+import { MermaidCodeBlock } from "./mermaid-code-block"
 
 // The description is saved as the editor's own HTML, which
 // setu.api.project.create_project writes into ERPNext's `notes`. Frappe cleans
@@ -123,7 +124,8 @@ export const descriptionExtensions = [
   TaskList,
   Blockquote,
   HorizontalRule,
-  CodeBlock,
+  // The package's code block, plus a drawn diagram for `mermaid` blocks.
+  MermaidCodeBlock,
   Details,
   Column,
   // The package reads both column nodes back wrongly: it looks for a wrapper

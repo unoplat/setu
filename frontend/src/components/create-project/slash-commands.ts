@@ -3,6 +3,8 @@ import type { SlashCommandList } from "reactjs-tiptap-editor/slashcommand"
 
 import { openImageDialog } from "@/components/editor-image/open-image-dialog"
 
+import { DEFAULT_MERMAID_CODE, MERMAID_LANGUAGE } from "./mermaid-code-block"
+
 type CommandList = NonNullable<
   React.ComponentProps<typeof SlashCommandList>["commandList"]
 >
@@ -132,6 +134,25 @@ export const descriptionSlashCommands: CommandList = [
             .focus()
             .deleteRange(range)
             .insertColumns({ cols: 2 })
+            .run()
+        },
+      },
+      // A code block GitHub also draws (see mermaid-code-block.ts).
+      {
+        name: "mermaid",
+        label: "Mermaid diagram",
+        aliases: ["diagram", "flowchart", "chart", "graph"],
+        iconName: "Mermaid",
+        action: ({ editor, range }) => {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .insertContent({
+              type: "codeBlock",
+              attrs: { language: MERMAID_LANGUAGE },
+              content: [{ type: "text", text: DEFAULT_MERMAID_CODE }],
+            })
             .run()
         },
       },
