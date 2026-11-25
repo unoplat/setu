@@ -7,6 +7,7 @@ import {
   Property,
 } from "@/components/detail-properties"
 import {
+  type DescriptionSave,
   DescriptionField,
   DetailLayout,
   KindRow,
@@ -16,11 +17,7 @@ import {
   DetailHead,
   RailEnd,
 } from "@/components/record-detail"
-import type {
-  AutosaveListeners,
-  AutosaveStatus,
-  ConflictChoice,
-} from "@/lib/autosave"
+import type { AutosaveListeners, ConflictChoice } from "@/lib/autosave"
 import { dueHint, type MilestoneDetail } from "@/lib/milestones"
 
 import { AssigneeCombobox } from "./assignee-combobox"
@@ -51,7 +48,8 @@ export const MilestoneForm = withForm({
     milestone: {} as MilestoneDetail,
     projectName: "",
     listeners: {} as AutosaveListeners,
-    status: "idle" as AutosaveStatus,
+    /** The description's Save button: it is not autosaved. */
+    descriptionSave: {} as DescriptionSave,
     /** Moves when the description was replaced from outside. */
     descriptionRevision: 0,
     /** Set while the description was changed elsewhere as it was written. */
@@ -73,7 +71,7 @@ export const MilestoneForm = withForm({
     milestone,
     projectName,
     listeners,
-    status,
+    descriptionSave,
     descriptionRevision,
     descriptionConflict,
     indicator,
@@ -235,7 +233,7 @@ export const MilestoneForm = withForm({
             </form.Field>
           </DetailHead>
 
-          <form.Field name="description" listeners={listeners.typed}>
+          <form.Field name="description">
             {(field) => (
               <DescriptionField
                 value={field.state.value}
@@ -250,7 +248,8 @@ export const MilestoneForm = withForm({
                 subtitle={`${milestone.subject} · Milestone`}
                 toggleCommand="milestone.toggleDescription"
                 collapseCommand="milestone.collapseDescription"
-                status={status}
+                saveCommand="milestone.save"
+                save={descriptionSave}
               />
             )}
           </form.Field>

@@ -1,8 +1,7 @@
 import type * as React from "react"
-import {
-  renderCommandListDefault,
-  type SlashCommandList,
-} from "reactjs-tiptap-editor/slashcommand"
+import type { SlashCommandList } from "reactjs-tiptap-editor/slashcommand"
+
+import { openImageDialog } from "@/components/editor-image/open-image-dialog"
 
 type CommandList = NonNullable<
   React.ComponentProps<typeof SlashCommandList>["commandList"]
@@ -16,12 +15,6 @@ type Command = CommandList[number]["commands"][number]
 // every render.
 
 const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const
-
-// Opening the image dialog goes through an event the package keeps internal,
-// so borrow that one action from its default list.
-const openImageDialog = renderCommandListDefault({ t: (key) => key })
-  .flatMap((group) => group.commands)
-  .find((command) => command.name === "image")?.action
 
 export const descriptionSlashCommands: CommandList = [
   {
@@ -103,17 +96,17 @@ export const descriptionSlashCommands: CommandList = [
     name: "insert",
     title: "Insert",
     commands: [
-      ...(openImageDialog
-        ? [
-            {
-              name: "image",
-              label: "Image",
-              aliases: ["img", "picture", "photo"],
-              iconName: "ImageUp",
-              action: openImageDialog,
-            } satisfies Command,
-          ]
-        : []),
+      // Envision's own dialog (components/editor-image), which can upload.
+      {
+        name: "image",
+        label: "Image",
+        aliases: ["img", "picture", "photo", "upload"],
+        iconName: "ImageUp",
+        action: ({ editor, range }) => {
+          editor.chain().focus().deleteRange(range).run()
+          openImageDialog(editor)
+        },
+      },
       {
         name: "table",
         label: "Table",

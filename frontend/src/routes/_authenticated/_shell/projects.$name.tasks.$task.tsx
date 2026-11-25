@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useSelector } from "@tanstack/react-form"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   useFrappeGetDoc,
@@ -24,7 +25,7 @@ import { TaskForm } from "@/components/tasks/task-form"
 import { useAutosaveForm } from "@/lib/autosave"
 import { useCommand, useScope, useScopeStack } from "@/lib/commands"
 import { frappeErrorMessage, frappeExceptionType } from "@/lib/frappe-error"
-import { taskGitHubKey, useTaskGitHub } from "@/lib/github"
+import { hasGitHubTag, taskGitHubKey, useTaskGitHub } from "@/lib/github"
 import { useMarkRecordRead } from "@/lib/inbox"
 import { isMilestoneProgressKey } from "@/lib/milestones"
 import {
@@ -118,6 +119,9 @@ function TaskScreen({
   const saved = React.useMemo(() => taskValues(task), [task])
   const autosave = useAutosaveForm({
     saved,
+    // Saving the description stores and prunes its images, so it waits for
+    // its Save button.
+    manual: ["description"],
     prepare: prepareTask,
     save: async (changes) => {
       const response = await update.call({ name: task.name, ...changes })
@@ -141,6 +145,21 @@ function TaskScreen({
   // asks first (components/github/publish-dialog). Until the Task's GitHub
   // state has loaded, it asks without knowing the repository.
   const github = useTaskGitHub(task.name)
+  const liveTags = useSelector(form.store, (state) => state.values.tags)
+  const liveParent = useSelector(
+    form.store,
+    (state) => state.values.parent_task
+  )
+  const liveParentGitHub = useTaskGitHub(
+    liveParent && liveParent !== (task.parent_task ?? "") ? liveParent : null
+  )
+  const publicImagesOnly = Boolean(
+    task.requires_public_images ||
+    github.data?.message.requires_public_images ||
+    hasGitHubTag(liveTags) ||
+    liveParentGitHub.data?.message.requires_public_images
+  )
+
   const { data: projectTasks } = useProjectTasks(project)
   const publishTarget = React.useMemo<PublishTarget | null>(() => {
     const view = github.data?.message
@@ -174,7 +193,11 @@ function TaskScreen({
   useCommand("task.collapseDescription", () => setExpanded(false), {
     enabled: expanded,
   })
-  useCommand("task.save", () => void flush(), { enabled: canWrite })
+  // ⌘↵ in the comment box posts the comment; it does not save the page.
+  const inComment = useScopeStack().includes("task-comment")
+  useCommand("task.save", () => void autosave.saveAll(), {
+    enabled: canWrite && !inComment,
+  })
 
   // 09k: the Subtasks between the description and the comments.
   const footer = (
@@ -185,7 +208,7 @@ function TaskScreen({
         task={task}
         canAdd={canWrite}
       />
-      <TaskComments task={task} />
+      <TaskComments task={task} publicImagesOnly={publicImagesOnly} />
     </>
   )
   const activity = (
@@ -222,7 +245,12 @@ function TaskScreen({
             project={project}
             listeners={autosave.listeners}
             confirmTags={confirmTags}
-            status={autosave.status}
+            descriptionSave={{
+              dirty: autosave.manualPending,
+              error: autosave.manualPending ? autosave.failure : null,
+              onSave: autosave.saveAll,
+              onDiscard: autosave.discard,
+            }}
             descriptionRevision={autosave.replaced.description ?? 0}
             descriptionConflict={
               autosave.conflicts.includes("description")
@@ -242,6 +270,7 @@ function TaskScreen({
             onExpand={() => setExpanded(true)}
             onCollapse={() => setExpanded(false)}
             onSubmit={() => void flush()}
+            publicImagesOnly={publicImagesOnly}
             footer={footer}
             activity={activity}
           />
@@ -260,6 +289,7 @@ function TaskScreen({
         reason={autosave.error}
         saving={autosave.status === "saving"}
         conflict={autosave.status === "conflict"}
+        description={autosave.manualPending}
       />
       {publishDialog}
     </>

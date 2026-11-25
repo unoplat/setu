@@ -9,6 +9,7 @@ import {
 } from "@/components/github/use-github-tag-confirm"
 import { DatePicker } from "@/components/milestones/date-picker"
 import {
+  type DescriptionSave,
   DescriptionField,
   DetailLayout,
   KindRow,
@@ -18,11 +19,7 @@ import {
   DetailHead,
   RailEnd,
 } from "@/components/record-detail"
-import type {
-  AutosaveListeners,
-  AutosaveStatus,
-  ConflictChoice,
-} from "@/lib/autosave"
+import type { AutosaveListeners, ConflictChoice } from "@/lib/autosave"
 import { dueHint, formatDay, useMilestones } from "@/lib/milestones"
 import { useModules } from "@/lib/modules"
 import { directParent, type TaskDetail } from "@/lib/tasks"
@@ -54,7 +51,8 @@ export const TaskForm = withForm({
     listeners: {} as AutosaveListeners,
     /** A tags change, which adding `github` may first confirm. */
     confirmTags: applyTags as ConfirmTags,
-    status: "idle" as AutosaveStatus,
+    /** The description's Save button: it is not autosaved. */
+    descriptionSave: {} as DescriptionSave,
     /** Moves when the description was replaced from outside. */
     descriptionRevision: 0,
     /** Set while the description was changed elsewhere as it was written. */
@@ -66,6 +64,8 @@ export const TaskForm = withForm({
     onCollapse: () => {},
     /** Enter in the title: save now. */
     onSubmit: () => {},
+    /** Disallow private image uploads (GitHub-synced tasks and subtasks). */
+    publicImagesOnly: false,
     /** What follows the description in the content column: the comments. */
     footer: null as React.ReactNode,
     /** What closes the rail: the activity log. */
@@ -77,7 +77,7 @@ export const TaskForm = withForm({
     project,
     listeners,
     confirmTags,
-    status,
+    descriptionSave,
     descriptionRevision,
     descriptionConflict,
     indicator,
@@ -85,6 +85,7 @@ export const TaskForm = withForm({
     onExpand,
     onCollapse,
     onSubmit,
+    publicImagesOnly,
     footer,
     activity,
   }) {
@@ -359,7 +360,7 @@ export const TaskForm = withForm({
             </form.Field>
           </DetailHead>
 
-          <form.Field name="description" listeners={listeners.typed}>
+          <form.Field name="description">
             {(field) => (
               <DescriptionField
                 value={field.state.value}
@@ -374,7 +375,9 @@ export const TaskForm = withForm({
                 subtitle={`${task.subject} · Task`}
                 toggleCommand="task.toggleDescription"
                 collapseCommand="task.collapseDescription"
-                status={status}
+                saveCommand="task.save"
+                save={descriptionSave}
+                publicImagesOnly={publicImagesOnly}
               />
             )}
           </form.Field>

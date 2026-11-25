@@ -3,7 +3,6 @@ from zoneinfo import ZoneInfo
 
 import frappe
 from frappe import _
-from frappe.core.doctype.file.utils import extract_images_from_html
 from frappe.desk.form.document_follow import _follow_document
 from frappe.desk.form.load import add_comments, get_versions
 from frappe.utils import get_datetime, get_fullname, get_system_timezone, markdown, sanitize_html, strip_html
@@ -150,7 +149,8 @@ def comment_on(doc, content: str, reply_to: str | None = None) -> dict:
 			"reference_name": doc.name,
 			"comment_email": frappe.session.user,
 			"comment_by": get_fullname(frappe.session.user),
-			"content": extract_images_from_html(doc, content, is_private=True),
+			# Its images are stored by setu.api.media.store_comment_images.
+			"content": content,
 			"envision_reply_to": reply_to or None,
 		}
 	)

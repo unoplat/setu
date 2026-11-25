@@ -85,11 +85,14 @@ export function RecordComments({
   record,
   project = null,
   source,
+  publicImagesOnly = false,
 }: {
   /** The record's name (its id). */
   record: string
   project?: string | null
   source: ActivitySource
+  /** Disallow private image uploads (GitHub-synced tasks and subtasks). */
+  publicImagesOnly?: boolean
 }) {
   const { mutate: revalidate } = useSWRConfig()
   const { data, error, isLoading, mutate } = useActivity(
@@ -203,6 +206,7 @@ export function RecordComments({
         record={record}
         source={source}
         editor={editor}
+        publicImagesOnly={publicImagesOnly}
         replyTo={
           replyEntry
             ? {
@@ -315,6 +319,7 @@ function CommentComposer({
   record,
   source,
   editor,
+  publicImagesOnly,
   replyTo,
   onCancelReply,
   onPosted,
@@ -322,6 +327,7 @@ function CommentComposer({
   record: string
   source: ActivitySource
   editor: React.Ref<CommentEditorHandle>
+  publicImagesOnly: boolean
   /** The comment this one will quote, if it is a reply. */
   replyTo: { quote: ActivityQuote; person: Assignee } | null
   onCancelReply: () => void
@@ -375,6 +381,7 @@ function CommentComposer({
           <CommentEditor
             key={draft}
             ref={editor}
+            publicImagesOnly={publicImagesOnly}
             header={
               replyTo ? (
                 <div className="px-3.5 pt-3.5">

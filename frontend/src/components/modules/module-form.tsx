@@ -4,6 +4,7 @@ import { Property } from "@/components/detail-properties"
 import { AssigneeCombobox } from "@/components/milestones/assignee-combobox"
 import { ProjectCombobox } from "@/components/project-combobox"
 import {
+  type DescriptionSave,
   DescriptionField,
   DetailLayout,
   KindRow,
@@ -13,11 +14,7 @@ import {
   DetailHead,
   RailEnd,
 } from "@/components/record-detail"
-import type {
-  AutosaveListeners,
-  AutosaveStatus,
-  ConflictChoice,
-} from "@/lib/autosave"
+import type { AutosaveListeners, ConflictChoice } from "@/lib/autosave"
 import type { ModuleDetail } from "@/lib/modules"
 
 import {
@@ -39,7 +36,8 @@ export const ModuleForm = withForm({
     module: {} as ModuleDetail,
     projectName: "",
     listeners: {} as AutosaveListeners,
-    status: "idle" as AutosaveStatus,
+    /** The description's Save button: it is not autosaved. */
+    descriptionSave: {} as DescriptionSave,
     /** Moves when the description was replaced from outside. */
     descriptionRevision: 0,
     /** Set while the description was changed elsewhere as it was written. */
@@ -61,7 +59,7 @@ export const ModuleForm = withForm({
     module,
     projectName,
     listeners,
-    status,
+    descriptionSave,
     descriptionRevision,
     descriptionConflict,
     indicator,
@@ -158,7 +156,7 @@ export const ModuleForm = withForm({
             </form.Field>
           </DetailHead>
 
-          <form.Field name="description" listeners={listeners.typed}>
+          <form.Field name="description">
             {(field) => (
               <DescriptionField
                 value={field.state.value}
@@ -173,7 +171,8 @@ export const ModuleForm = withForm({
                 subtitle={`${module.module_name} · Module`}
                 toggleCommand="module.toggleDescription"
                 collapseCommand="module.collapseDescription"
-                status={status}
+                saveCommand="module.save"
+                save={descriptionSave}
               />
             )}
           </form.Field>

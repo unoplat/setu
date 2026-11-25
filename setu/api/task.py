@@ -151,11 +151,13 @@ def create_task(
 		check_parent_task(task, parent_task)
 		task.parent_task = parent_task
 		check_parent_due_date(task)
+	tags = clean_tags(tags)
+	if any(tag.casefold() == github_links.GITHUB_TAG for tag in tags):
+		task.flags.envision_require_public_images = True
 	task.insert()
 	if parent_task:
 		note_subtask(parent_task, _("Added subtask {0}").format(task.subject))
 
-	tags = clean_tags(tags)
 	for tag in tags:
 		task.add_tag(tag)
 	if tags:
@@ -281,6 +283,10 @@ def update_task(
 	if task.parent_task and (moved or as_date(task.exp_end_date) != previous_due):
 		check_parent_due_date(task)
 
+	cleaned_tags = clean_tags(tags) if tags is not None else None
+	if cleaned_tags and any(tag.casefold() == github_links.GITHUB_TAG for tag in cleaned_tags):
+		task.flags.envision_require_public_images = True
+
 	fields = (subject, description, start_date, due_date, status, priority, milestone, module, parent_task)
 	# ``moved`` too: clearing the parent leaves ``parent_task`` as None above.
 	if moved or any(value is not None for value in fields):
@@ -290,8 +296,8 @@ def update_task(
 			note_subtask(previous_parent, _("Moved out subtask {0}").format(task.subject))
 		if task.parent_task:
 			note_subtask(task.parent_task, _("Moved in subtask {0}").format(task.subject))
-	if tags is not None:
-		replace_tags(task, clean_tags(tags))
+	if cleaned_tags is not None:
+		replace_tags(task, cleaned_tags)
 		# A github tag added later publishes too (docs/adr/0008); removing it
 		# never stops a published Task's sync (only turning Project sync off does).
 		github_links.guarded(github_links.tags_changed, task.name)
@@ -302,7 +308,7 @@ def update_task(
 		replace_assignee(task, assignee)
 		if assignee and assignee not in assigned:
 			close_new_assignments(task, [assignee])
-	if tags is not None or assignee is not None or assignees is not None:
+	if cleaned_tags is not None or assignee is not None or assignees is not None or moved:
 		task.reload()
 	return task_detail(task)
 
@@ -782,6 +788,7 @@ def task_detail(task) -> dict:
 		"is_group": bool(task.is_group),
 		"ancestors": task_ancestors(task),
 		"tags": task_tags(task),
+		"requires_public_images": github_links.requires_public_images(task.name, user_tags=task._user_tags),
 		"project": task.project,
 		"project_name": frappe.db.get_value("Project", task.project, "project_name")
 		if task.project

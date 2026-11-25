@@ -4,6 +4,7 @@ import { useSelector } from "@tanstack/react-form"
 import { PersonValue, Property } from "@/components/detail-properties"
 import { ProjectCombobox } from "@/components/project-combobox"
 import {
+  type DescriptionSave,
   DescriptionField,
   DetailLayout,
   KindRow,
@@ -14,11 +15,7 @@ import {
   RailEnd,
 } from "@/components/record-detail"
 import { FieldError } from "@/components/ui/field"
-import type {
-  AutosaveListeners,
-  AutosaveStatus,
-  ConflictChoice,
-} from "@/lib/autosave"
+import type { AutosaveListeners, ConflictChoice } from "@/lib/autosave"
 import { isWebAddress, normalizeUrl, type LinkDetail } from "@/lib/links"
 
 import {
@@ -43,7 +40,8 @@ export const LinkForm = withForm({
     link: {} as LinkDetail,
     projectName: "",
     listeners: {} as AutosaveListeners,
-    status: "idle" as AutosaveStatus,
+    /** The description's Save button: it is not autosaved. */
+    descriptionSave: {} as DescriptionSave,
     /** Moves when the description was replaced from outside. */
     descriptionRevision: 0,
     /** Set while the description was changed elsewhere as it was written. */
@@ -65,7 +63,7 @@ export const LinkForm = withForm({
     link,
     projectName,
     listeners,
-    status,
+    descriptionSave,
     descriptionRevision,
     descriptionConflict,
     indicator,
@@ -208,7 +206,7 @@ export const LinkForm = withForm({
             }}
           </form.Field>
 
-          <form.Field name="description" listeners={listeners.typed}>
+          <form.Field name="description">
             {(field) => (
               <DescriptionField
                 value={field.state.value}
@@ -223,7 +221,8 @@ export const LinkForm = withForm({
                 subtitle={`${link.link_name} · Link`}
                 toggleCommand="link.toggleDescription"
                 collapseCommand="link.collapseDescription"
-                status={status}
+                saveCommand="link.save"
+                save={descriptionSave}
               />
             )}
           </form.Field>

@@ -266,7 +266,7 @@ export const COMMANDS = {
   "milestone.save": {
     title: "Save now",
     description:
-      "Save the milestone's edits right away instead of waiting for autosave.",
+      "Save the milestone's description, and any other edit, right away.",
     group: "Milestone",
     scope: "milestone",
     defaultBinding: hotkey("Mod+Enter"),
@@ -321,7 +321,7 @@ export const COMMANDS = {
   "module.save": {
     title: "Save now",
     description:
-      "Save the module's edits right away instead of waiting for autosave.",
+      "Save the module's description, and any other edit, right away.",
     group: "Module",
     scope: "module",
     defaultBinding: hotkey("Mod+Enter"),
@@ -375,8 +375,7 @@ export const COMMANDS = {
   },
   "link.save": {
     title: "Save now",
-    description:
-      "Save the link's edits right away instead of waiting for autosave.",
+    description: "Save the link's description, and any other edit, right away.",
     group: "Link",
     scope: "link",
     defaultBinding: hotkey("Mod+Enter"),
@@ -415,8 +414,7 @@ export const COMMANDS = {
   },
   "task.save": {
     title: "Save now",
-    description:
-      "Save the task's edits right away instead of waiting for autosave.",
+    description: "Save the task's description, and any other edit, right away.",
     group: "Task",
     scope: "task",
     defaultBinding: hotkey("Mod+Enter"),

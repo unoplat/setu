@@ -43,6 +43,7 @@ export const ProjectSettingsForm = withForm({
     projectName: "",
     state: "pristine" as SaveState,
     expanded: false,
+    descriptionRevision: 0,
     error: null as string | null,
     onExpand: () => {},
     onCollapse: () => {},
@@ -52,6 +53,7 @@ export const ProjectSettingsForm = withForm({
     projectName,
     state,
     expanded,
+    descriptionRevision,
     error,
     onExpand,
     onCollapse,
@@ -204,6 +206,7 @@ export const ProjectSettingsForm = withForm({
                   >
                     <DescriptionEditor
                       value={field.state.value}
+                      revision={descriptionRevision}
                       onChange={(html) => field.handleChange(html)}
                       onBlur={field.handleBlur}
                       expanded={expanded}

@@ -61,6 +61,8 @@ export const CreateTaskForm = withForm({
     confirmTags: applyTags as ConfirmTags,
     /** Where the new task publishes on GitHub, when it will. */
     githubNotice: null as React.ReactNode,
+    /** Disallow private image uploads (GitHub-tagged tasks and subtasks). */
+    publicImagesOnly: false,
   },
   render: function CreateTaskFormView({
     form,
@@ -70,6 +72,7 @@ export const CreateTaskForm = withForm({
     withParent,
     confirmTags,
     githubNotice,
+    publicImagesOnly,
   }) {
     const subject = useSelector(form.store, (state) => state.values.subject)
     const status = useSelector(form.store, (state) => state.values.status)
@@ -225,6 +228,7 @@ export const CreateTaskForm = withForm({
                     onBlur={field.handleBlur}
                     expanded={false}
                     label="Task description"
+                    publicImagesOnly={publicImagesOnly}
                   />
                 </React.Suspense>
               </CompactField>
