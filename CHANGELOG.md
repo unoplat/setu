@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/unoplat/setu/compare/v0.6.0...v0.7.0) (2026-11-25)
+
+
+### Features
+
+* **editor:** enforce public-only inline images on GitHub-tracked tasks ([41185f5](https://github.com/unoplat/setu/commit/41185f54841a146ad670b7f04f101ebb0e048a1b))
+* **github:** expose requires_public_images for tasks and subtasks ([a5fc9ea](https://github.com/unoplat/setu/commit/a5fc9eaff72286960244731a30ced3d9a7b75ddb))
+* **records:** save descriptions with a Save button ([54357ff](https://github.com/unoplat/setu/commit/54357ff3d07764ee21731f5a553abd24056f6514))
+
+
+### Bug Fixes
+
+* **editor:** refresh rewritten inline image URLs after save ([38b0769](https://github.com/unoplat/setu/commit/38b0769f90c60d74e53ad906623ba7aa9ce4ab17))
+* **editor:** store inline images on save instead of uploading ([deb6a46](https://github.com/unoplat/setu/commit/deb6a4666391eb38ed04e0ac1ba8d94c674641d1))
+* **editor:** store inline images on save, safeguard lifecycle, and enforce public images for GitHub sync ([eb161ac](https://github.com/unoplat/setu/commit/eb161ac92f9e25e7184f65870882b312533d51e9))
+* **media:** resolve private image URLs after GitHub conversion ([b65c235](https://github.com/unoplat/setu/commit/b65c23505b82ab98a7a714033dcfb501444b6733))
+* **media:** safeguard inline images across undo, paste, and GitHub sync ([479e604](https://github.com/unoplat/setu/commit/479e6043ed5e77ad61d4794da049b00cef12d622))
+
 ## [0.6.0](https://github.com/unoplat/setu/compare/v0.5.0...v0.6.0) (2026-11-18)
 
 
