@@ -36,7 +36,7 @@ from bs4.element import PageElement, PreformattedString
 from frappe.utils import sanitize_html
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
-from markdownify import ASTERISK, ATX, BACKSLASH, markdownify
+from markdownify import ASTERISK, ATX, BACKSLASH, MarkdownConverter
 
 LossCode = Literal[
 	# Envision → GitHub: formatting Markdown has no syntax for.
@@ -178,6 +178,7 @@ _BLOCK_TAGS = frozenset(
 )
 _VOID_TAGS = frozenset({"area", "br", "col", "hr", "img", "input", "wbr"})
 _PLAIN_LANGUAGES = frozenset({"plaintext", "plain", "text", "txt"})
+_BACKTICK_RUN = re.compile(r"`+")
 _DEFAULT_ALIGNMENTS = frozenset({"", "left", "start"})
 # What markdownify writes as GitHub Markdown, as the editor uses it. Labels
 # and inputs are a task item's checkbox, reported with its list.
@@ -260,20 +261,23 @@ def html_to_markdown(html: str | None, *, site_url: str | None = None) -> Markdo
 	soup = BeautifulSoup(source, "html.parser")
 	_prepare(soup, _hostname(site_url) if site_url else None, dropped)
 	prepared = str(soup)
-	markdown = markdownify(
-		prepared,
-		autolinks=True,
-		bullets="-",
-		code_language_callback=_fence_language,
-		escape_asterisks=True,
-		escape_misc=True,
-		escape_underscores=True,
-		heading_style=ATX,
-		keep_inline_images_in=["div", "p", "span", "td", "th"],
-		newline_style=BACKSLASH,
-		strong_em_symbol=ASTERISK,
-		table_infer_header=False,
-	).strip()
+	markdown = (
+		_Converter(
+			autolinks=True,
+			bullets="-",
+			code_language_callback=_fence_language,
+			escape_asterisks=True,
+			escape_misc=True,
+			escape_underscores=True,
+			heading_style=ATX,
+			keep_inline_images_in=["div", "p", "span", "td", "th"],
+			newline_style=BACKSLASH,
+			strong_em_symbol=ASTERISK,
+			table_infer_header=False,
+		)
+		.convert(prepared)
+		.strip()
+	)
 	# Only worth checking when nothing was reported: then any difference is
 	# something markdownify escaped or nested in a way that changes the Issue.
 	if not dropped and _canonical_html(_render(markdown, [])) != _canonical_html(prepared):
@@ -823,6 +827,26 @@ def _check_math(soup: BeautifulSoup, dropped: list[LossCode]) -> None:
 		):
 			_flag(dropped, "math")
 			return
+
+
+class _Converter(MarkdownConverter):
+	"""markdownify, with a code fence longer than any backtick run in its code.
+
+	markdownify always fences with three backticks, so a line of ``` inside the
+	code would end the block early on GitHub. CommonMark closes a fence only on
+	a run at least as long as the one that opened it.
+	"""
+
+	def convert_pre(self, el, text, parent_tags):
+		markdown = super().convert_pre(el, text, parent_tags)
+		longest = max((len(run) for run in _BACKTICK_RUN.findall(text)), default=0)
+		if longest < 3:
+			return markdown
+		# markdownify writes "\n\n```lang\n<code>\n```\n\n": widen both fences.
+		fence = "`" * (longest + 1)
+		opening, _, rest = markdown.partition("```")
+		body, _, closing = rest.rpartition("```")
+		return f"{opening}{fence}{body}{fence}{closing}"
 
 
 def _fence_language(pre: Tag) -> str:
