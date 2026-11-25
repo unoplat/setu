@@ -297,6 +297,7 @@ def _adopt_site_images(html: str, doctype: str, name: str, *, require_public: bo
 	owned_loaded = False
 	owned_by_name: dict[str, object] = {}
 	owned_by_url: dict[str, object] = {}
+	published: dict[tuple[str, str], str] = {}
 
 	def load_owned() -> None:
 		nonlocal owned_loaded
@@ -322,13 +323,27 @@ def _adopt_site_images(html: str, doctype: str, name: str, *, require_public: bo
 			return match.group(0)
 		path, fid = parsed
 
-		if require_public and path.startswith("/private/files/"):
-			_throw_public_image_required()
-
 		load_owned()
 
 		by_fid = owned_by_name.get(fid) if fid else None
 		existing = (by_fid if by_fid and by_fid.file_url == path else None) or owned_by_url.get(path)
+
+		if require_public and path.startswith("/private/files/"):
+			# A dirty editor or Ctrl+Z after GitHub conversion can still submit
+			# a private URL that already belongs to this Task; resolve it to its
+			# public twin instead of trapping Save, while still refusing private
+			# URLs pasted from other records.
+			if doctype == "Task" and existing and existing.is_private:
+				key = (path, existing.name)
+				public_address = published.get(key)
+				if not public_address:
+					public_address = _publish_private_image(name, path, existing.name)
+					if public_address:
+						published[key] = public_address
+				if public_address:
+					return f"{prefix}{quote}{public_address}{quote}"
+			_throw_public_image_required()
+
 		if existing:
 			if existing.envision_unused_since:
 				frappe.db.set_value(
