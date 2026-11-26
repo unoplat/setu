@@ -1,6 +1,7 @@
 import type * as React from "react"
 import type { SlashCommandList } from "reactjs-tiptap-editor/slashcommand"
 
+import { openExcalidrawDialog } from "@/components/editor-excalidraw/open-excalidraw-dialog"
 import { openImageDialog } from "@/components/editor-image/open-image-dialog"
 
 import { DEFAULT_MERMAID_CODE, MERMAID_LANGUAGE } from "./mermaid-code-block"
@@ -107,6 +108,16 @@ export const descriptionSlashCommands: CommandList = [
         action: ({ editor, range }) => {
           editor.chain().focus().deleteRange(range).run()
           openImageDialog(editor)
+        },
+      },
+      {
+        name: "excalidraw",
+        label: "Excalidraw drawing",
+        aliases: ["draw", "whiteboard", "sketch", "diagram"],
+        iconName: "Excalidraw",
+        action: ({ editor, range }) => {
+          editor.chain().focus().deleteRange(range).run()
+          openExcalidrawDialog(editor)
         },
       },
       {

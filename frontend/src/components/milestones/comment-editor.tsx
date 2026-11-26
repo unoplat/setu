@@ -15,6 +15,8 @@ import "reactjs-tiptap-editor/style.css"
 
 import { replaceDocument } from "@/components/create-project/description-html"
 import { descriptionSlashCommands } from "@/components/create-project/slash-commands"
+import { EditorExcalidrawDialog } from "@/components/editor-excalidraw/editor-excalidraw-dialog"
+import { ExcalidrawImageBubble } from "@/components/editor-excalidraw/excalidraw-image-bubble"
 import { EditorImageDialog } from "@/components/editor-image/editor-image-dialog"
 import { makeDraftImagesPublic } from "@/components/editor-image/image-file"
 import { useTheme } from "@/components/theme-provider"
@@ -124,10 +126,12 @@ export default function CommentEditor({
         <EditorContent editor={editor} className="envision-rte-content" />
         <RichTextBubbleText buttonBubble={selectionControls} />
         <RichTextBubbleLink />
+        <ExcalidrawImageBubble editor={editor} />
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
-      {/* "/image": the image is stored when the comment is posted. */}
+      {/* "/image" and "/excalidraw": stored when the comment is posted. */}
       <EditorImageDialog editor={editor} publicOnly={publicImagesOnly} />
+      <EditorExcalidrawDialog editor={editor} publicOnly={publicImagesOnly} />
     </div>
   )
 }

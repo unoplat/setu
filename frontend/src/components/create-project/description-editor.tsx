@@ -41,6 +41,9 @@ import { RichTextUnderline } from "reactjs-tiptap-editor/textunderline"
 import { themeActions } from "reactjs-tiptap-editor/theme"
 import "reactjs-tiptap-editor/style.css"
 
+import { EditorExcalidrawDialog } from "@/components/editor-excalidraw/editor-excalidraw-dialog"
+import { ExcalidrawImageBubble } from "@/components/editor-excalidraw/excalidraw-image-bubble"
+import { ExcalidrawToolbarButton } from "@/components/editor-excalidraw/excalidraw-toolbar-button"
 import {
   EditorImageDialog,
   ImageToolbarButton,
@@ -238,6 +241,7 @@ export default function DescriptionEditor({
             <span className="envision-rte-separator" />
             <RichTextLink />
             <ImageToolbarButton editor={editor} />
+            <ExcalidrawToolbarButton editor={editor} />
             <RichTextBlockquote />
             <RichTextHorizontalRule />
             <RichTextCodeBlock />
@@ -251,12 +255,14 @@ export default function DescriptionEditor({
         <RichTextBubbleText buttonBubble={selectionControls} />
         <RichTextBubbleLink />
         <RichTextBubbleImage />
+        <ExcalidrawImageBubble editor={editor} />
         <RichTextBubbleTable />
         <RichTextBubbleColumns />
         <RichTextBubbleCodeBlock />
         <SlashCommandList commandList={descriptionSlashCommands} />
       </RichTextProvider>
       <EditorImageDialog editor={editor} publicOnly={publicImagesOnly} />
+      <EditorExcalidrawDialog editor={editor} publicOnly={publicImagesOnly} />
       {/* Outside the provider: the package redefines the colour variables
           for everything inside it. Clicking the hint writes at the end. */}
       {plain && !expanded ? (
