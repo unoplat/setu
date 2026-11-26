@@ -1,8 +1,64 @@
+import fs from "fs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig, lazyPlugins } from "vite-plus"
+import { defineConfig, lazyPlugins, type Plugin } from "vite-plus"
+
+const EXCALIDRAW_FONTS_SRC = path.resolve(
+  __dirname,
+  "node_modules/@excalidraw/excalidraw/dist/prod/fonts"
+)
+
+/**
+ * Serves Excalidraw's canvas fonts locally in dev and copies them into
+ * `<outDir>/excalidraw-assets/fonts` on build so `window.EXCALIDRAW_ASSET_PATH`
+ * resolves under `--base=/assets/setu/envision/` without hitting external CDNs.
+ */
+function excalidrawAssets(): Plugin {
+  let base = "/"
+  let outDir = path.resolve(__dirname, "../setu/public/envision")
+  let shouldCopy = false
+
+  return {
+    name: "envision-excalidraw-assets",
+    configResolved(config) {
+      base = config.base.endsWith("/") ? config.base : `${config.base}/`
+      outDir = path.resolve(config.root, config.build.outDir)
+      shouldCopy = config.command === "build" && !process.env.VITEST
+    },
+    configureServer(server) {
+      const prefix = `${base}excalidraw-assets/fonts/`
+      server.middlewares.use((req, res, next) => {
+        const reqPath = req.url?.split("?")[0]
+        if (!reqPath || !reqPath.startsWith(prefix)) {
+          next()
+          return
+        }
+        const rel = decodeURIComponent(reqPath.slice(prefix.length))
+        const full = path.resolve(EXCALIDRAW_FONTS_SRC, rel)
+        if (
+          !full.startsWith(`${EXCALIDRAW_FONTS_SRC}${path.sep}`) ||
+          !fs.existsSync(full) ||
+          !fs.statSync(full).isFile()
+        ) {
+          next()
+          return
+        }
+        if (full.endsWith(".woff2")) {
+          res.setHeader("Content-Type", "font/woff2")
+        }
+        fs.createReadStream(full).pipe(res)
+      })
+    },
+    writeBundle() {
+      if (!shouldCopy || !fs.existsSync(EXCALIDRAW_FONTS_SRC)) return
+      const dest = path.join(outDir, "excalidraw-assets", "fonts")
+      fs.mkdirSync(path.dirname(dest), { recursive: true })
+      fs.cpSync(EXCALIDRAW_FONTS_SRC, dest, { recursive: true })
+    },
+  }
+}
 
 // Frappe site URL comes from the environment; the default lives in mise.toml.
 // Dev requests for Frappe paths are proxied so the session cookie is
@@ -258,6 +314,7 @@ export default defineConfig({
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     tailwindcss(),
+    excalidrawAssets(),
   ]),
   build: {
     outDir: "../setu/public/envision",

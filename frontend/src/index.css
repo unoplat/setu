@@ -258,6 +258,37 @@
 	font-size: 0.75rem;
 	color: hsl(var(--muted-foreground));
 }
+/* Floating editor bubble menus mounted inside `.reactjs-tiptap-editor` (where
+   colour tokens are bare HSL channels), such as the Excalidraw edit action. */
+.envision-rte-bubble {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	border: 1px solid hsl(var(--border));
+	border-radius: 0.375rem;
+	background: hsl(var(--popover));
+	padding: 0.25rem;
+	color: hsl(var(--popover-foreground));
+	box-shadow:
+		0 4px 6px -1px rgb(0 0 0 / 0.1),
+		0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+.envision-rte-bubble-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	border-radius: 0.25rem;
+	padding: 0.25rem 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	line-height: 1.25rem;
+	color: hsl(var(--popover-foreground));
+	transition: background-color 120ms ease;
+}
+.envision-rte-bubble-btn:hover {
+	background: hsl(var(--accent));
+	color: hsl(var(--accent-foreground));
+}
 .envision-rte-content {
 	/* Selection, table and code block menus are positioned inside it. */
 	position: relative;
@@ -390,6 +421,49 @@
 }
 .envision-comment img {
 	max-width: 100%;
+	border-radius: 0.5rem;
+}
+/* A Mermaid code block (create-project/mermaid-code-block.ts): the code, then
+   the diagram it draws. A read-only description shows the diagram alone once
+   it draws; an empty or invalid one keeps its code. Inside the editor the
+   colour variables are HSL channels. */
+.envision-code-block[data-mermaid="true"] > pre {
+	margin-bottom: 0;
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.envision-mermaid-preview:empty {
+	display: none;
+}
+.envision-mermaid-preview {
+	display: flex;
+	justify-content: center;
+	overflow-x: auto;
+	margin-bottom: 1rem;
+	border: 1px solid hsl(var(--border));
+	border-top: 0;
+	border-radius: 0 0 0.5rem 0.5rem;
+	padding: 1rem;
+	user-select: none;
+}
+.envision-mermaid-preview svg {
+	max-width: 100%;
+	height: auto;
+}
+.envision-mermaid-message {
+	margin: 0;
+	font-size: 0.8125rem;
+	color: hsl(var(--muted-foreground));
+}
+.ProseMirror[contenteditable="false"]
+	.envision-code-block[data-state="ready"]
+	> pre {
+	display: none;
+}
+.ProseMirror[contenteditable="false"]
+	.envision-code-block[data-state="ready"]
+	> .envision-mermaid-preview {
+	border-top: 1px solid hsl(var(--border));
 	border-radius: 0.5rem;
 }
 /* The "/" menu is appended to <body> with no z-index of its own, which would

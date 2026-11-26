@@ -1,7 +1,10 @@
 import type * as React from "react"
 import type { SlashCommandList } from "reactjs-tiptap-editor/slashcommand"
 
+import { openExcalidrawDialog } from "@/components/editor-excalidraw/open-excalidraw-dialog"
 import { openImageDialog } from "@/components/editor-image/open-image-dialog"
+
+import { DEFAULT_MERMAID_CODE, MERMAID_LANGUAGE } from "./mermaid-code-block"
 
 type CommandList = NonNullable<
   React.ComponentProps<typeof SlashCommandList>["commandList"]
@@ -108,6 +111,16 @@ export const descriptionSlashCommands: CommandList = [
         },
       },
       {
+        name: "excalidraw",
+        label: "Excalidraw drawing",
+        aliases: ["draw", "whiteboard", "sketch", "diagram"],
+        iconName: "Excalidraw",
+        action: ({ editor, range }) => {
+          editor.chain().focus().deleteRange(range).run()
+          openExcalidrawDialog(editor)
+        },
+      },
+      {
         name: "table",
         label: "Table",
         aliases: ["grid"],
@@ -132,6 +145,25 @@ export const descriptionSlashCommands: CommandList = [
             .focus()
             .deleteRange(range)
             .insertColumns({ cols: 2 })
+            .run()
+        },
+      },
+      // A code block GitHub also draws (see mermaid-code-block.ts).
+      {
+        name: "mermaid",
+        label: "Mermaid diagram",
+        aliases: ["diagram", "flowchart", "chart", "graph"],
+        iconName: "Mermaid",
+        action: ({ editor, range }) => {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .insertContent({
+              type: "codeBlock",
+              attrs: { language: MERMAID_LANGUAGE },
+              content: [{ type: "text", text: DEFAULT_MERMAID_CODE }],
+            })
             .run()
         },
       },
