@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/unoplat/setu/compare/v0.7.0...v0.8.0) (2026-11-26)
+
+
+### Features
+
+* **editor:** add editable Excalidraw drawings ([733558c](https://github.com/unoplat/setu/commit/733558c62b7e75c1fb0c9ee3989053c5a42381d7))
+* **editor:** draw Mermaid diagrams from mermaid code blocks ([5680604](https://github.com/unoplat/setu/commit/5680604635b60d6e8838c32ec77a7c28b88c3dd5))
+
+
+### Bug Fixes
+
+* **github:** fence code blocks longer than any backtick run inside ([7f3c6f4](https://github.com/unoplat/setu/commit/7f3c6f43351956ee26f6a15ad9adf30b50b6bfc8))
+
 ## [0.7.0](https://github.com/unoplat/setu/compare/v0.6.0...v0.7.0) (2026-11-25)
 
 
