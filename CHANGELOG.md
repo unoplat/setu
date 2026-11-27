@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0](https://github.com/unoplat/setu/compare/v0.8.0...v0.9.0) (2026-11-27)
+
+
+### Features
+
+* improve mobile saved views and sidebar branding ([e1df665](https://github.com/unoplat/setu/commit/e1df665783ad878d9522cf2618d0732c5aa367f7))
+* **views:** switch saved views from the mobile header ([5702bb0](https://github.com/unoplat/setu/commit/5702bb05503acc894b196f6203b283fb5e838419))
+
+
+### Bug Fixes
+
+* **editor:** bind editor typography to design tokens ([b2b3a37](https://github.com/unoplat/setu/commit/b2b3a376a56e4c9478f613f298a4b1f031d42dce))
+* **sidebar:** use theme-aware Envision logo ([7d09d1a](https://github.com/unoplat/setu/commit/7d09d1abc3fb8eb682ef21248aea5da195121021))
+
 ## [0.8.0](https://github.com/unoplat/setu/compare/v0.7.0...v0.8.0) (2026-11-26)
 
 
