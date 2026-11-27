@@ -24,6 +24,7 @@ import {
   useInboxEvents,
   useRevalidateInboxCounts,
 } from "@/lib/inbox"
+import { EnvisionLogo } from "@/components/envision-logo"
 import { useProjects } from "@/lib/projects"
 
 // Paper: "Projects Sidebar — Empty" (00 — Empty Projects), built on the
@@ -124,13 +125,13 @@ export function EnvisionSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
-                E
-              </div>
-              <div className="grid flex-1 text-start text-sm leading-tight">
-                <span className="truncate font-medium">Envision</span>
-                <span className="truncate text-xs">Project work</span>
-              </div>
+              <EnvisionLogo
+                aria-hidden
+                className="size-8 rounded-lg ring-1 ring-sidebar-border"
+              />
+              <span className="flex-1 truncate text-start text-sm font-medium">
+                Envision
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

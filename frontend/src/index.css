@@ -35,6 +35,10 @@
 	--color-sidebar-primary: var(--sidebar-primary);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar: var(--sidebar);
+	/* Envision app mark; the dark variant matches setu/public/images/envision.svg. */
+	--color-brand-tile: var(--brand-tile);
+	--color-brand-mark: var(--brand-mark);
+	--color-brand-accent: var(--brand-accent);
 	--color-chart-5: var(--chart-5);
 	--color-chart-4: var(--chart-4);
 	--color-chart-3: var(--chart-3);
@@ -121,6 +125,9 @@
 	--sidebar-accent: oklch(0.967 0.001 286.375);
 	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
 	--sidebar-border: oklch(0.92 0.004 286.32);
+	--brand-tile: #ffffff;
+	--brand-mark: #18181b;
+	--brand-accent: #2b7fff;
 	--sidebar-ring: oklch(0.705 0.015 286.067);
 	--success: oklch(0.723 0.193 149.579);
 	--warning: oklch(0.705 0.187 47.602);
@@ -159,6 +166,9 @@
 	--sidebar-accent: oklch(0.274 0.006 286.033);
 	--sidebar-accent-foreground: oklch(0.985 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
+	--brand-tile: #18181b;
+	--brand-mark: #fafafa;
+	--brand-accent: #2b7fff;
 	--sidebar-ring: oklch(0.552 0.016 285.938);
 	--success: oklch(0.723 0.193 149.579);
 	--warning: oklch(0.705 0.187 47.602);
