@@ -266,8 +266,14 @@ export function ProjectBoard({
       </div>
       <MobileBoardHeader
         context={projectName}
-        title={view ? view.view_name : "Tasks"}
+        title={view ? view.view_name : "All tasks"}
         filters={filters.filters}
+        views={{
+          project: name,
+          list: views ?? NO_VIEWS,
+          current: view,
+          edited: filters.edited,
+        }}
       >
         <BoardToolbar
           project={name}
