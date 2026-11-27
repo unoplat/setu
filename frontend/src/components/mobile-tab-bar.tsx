@@ -10,6 +10,7 @@ import {
   BottomNavList,
 } from "@/components/ui/bottom-nav"
 import { UnreadBadge } from "@/components/unread-badge"
+import { openViewsSheet } from "@/components/views/views-sheet-store"
 import { useInboxCounts } from "@/lib/inbox"
 
 /**
@@ -22,6 +23,8 @@ import { useInboxCounts } from "@/lib/inbox"
  *   pads the content and shortens the boards so nothing ends up under it.
  * - Projects stays lit inside a project; My tasks on its Views. Search opens
  *   the search palette, so it is a button, never the current page.
+ * - On My tasks, a second tap on My tasks opens its saved views sheet
+ *   (Paper: "Saved views · 2 Tap My tasks tab → sheet").
  */
 export function MobileTabBar() {
   const matchRoute = useMatchRoute()
@@ -29,6 +32,8 @@ export function MobileTabBar() {
   const unread = counts?.message.unread ?? 0
 
   if (matchRoute({ to: "/projects/$name/tasks/$task" })) return null
+
+  const inMyTasks = Boolean(matchRoute({ to: "/my-tasks", fuzzy: true }))
 
   const inProjects = Boolean(
     matchRoute({ to: "/" }) ||
@@ -52,7 +57,15 @@ export function MobileTabBar() {
         </BottomNavItem>
         <BottomNavItem>
           {/* Link's default fuzzy match keeps My tasks lit on its Views. */}
-          <BottomNavButton render={<Link to="/my-tasks" />}>
+          <BottomNavButton
+            aria-haspopup={inMyTasks ? "dialog" : undefined}
+            onClick={(event: React.MouseEvent) => {
+              if (!inMyTasks) return
+              event.preventDefault()
+              openViewsSheet()
+            }}
+            render={<Link to="/my-tasks" />}
+          >
             <SquareCheckIcon />
             <span>My tasks</span>
           </BottomNavButton>

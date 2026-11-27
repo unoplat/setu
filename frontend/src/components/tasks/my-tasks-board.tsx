@@ -267,9 +267,15 @@ export function MyTasksBoard({
         />
       </div>
       <MobileBoardHeader
-        context={view ? "My tasks" : undefined}
-        title={view ? view.view_name : "My tasks"}
+        context="My tasks"
+        title={view ? view.view_name : "All my tasks"}
         filters={filters.filters}
+        views={{
+          project: null,
+          list: views ?? NO_VIEWS,
+          current: view,
+          edited: filters.edited,
+        }}
       >
         <BoardToolbar
           project={null}
