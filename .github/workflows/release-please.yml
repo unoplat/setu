@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
 
 permissions:
   contents: write
@@ -11,10 +12,28 @@ permissions:
   pull-requests: write
 
 jobs:
-  release-please:
-    name: Release
+  release-develop:
+    name: Release (Develop)
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 
     steps:
       - uses: googleapis/release-please-action@v5
         id: release
+        with:
+          target-branch: develop
+          config-file: release-please-config-develop.json
+          manifest-file: .release-please-manifest-develop.json
+
+  release-main:
+    name: Release (Main)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          target-branch: main
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

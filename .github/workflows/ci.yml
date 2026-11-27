@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request:
 
 concurrency:
-  group: version-16-setu-${{ github.event.number }}
+  group: version-16-setu-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
